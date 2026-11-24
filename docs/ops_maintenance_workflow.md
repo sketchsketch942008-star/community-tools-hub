@@ -69,16 +69,31 @@ flowchart TD
 | `meta-card-previewer` | **MetaCard Studio** | `v1.0.0` | 实时模拟 Twitter Card / Google SERP 卡片与标签生成 | ✅ PASS |
 | `dev-secret-sanitizer` | **SecretSanitizer** | `v1.0.0` | 纯前端正则脱敏敏感 Token、API Key、私钥与 IP | ✅ PASS |
 | `curl-code-studio` | **cURL Code Studio** | `v1.0.0` | cURL 一键转多语言（Python/JS/Axios/Go）与敏感脱敏 | ✅ PASS |
+| `cron-webhook-studio` | **Cron & Webhook Studio** | `v1.0.0` | 5字段双时区时间轴计算与 Web Crypto 原生 HMAC 签名 | ✅ PASS |
 
 ---
 
 ## 5. 后续排期与候选工具池 (Next-Wave Intake)
 
-根据推特主账号运营于 `#4` 发布的调研提案，下一阶段拟接入工具池：
+根据推特主账号运营与协调员部署，下一阶段重点接入与储备工具池：
 
-1. **PromptGuard (AI提示词与日志本地脱敏)**：与现有 `SecretSanitizer` 整合或进阶升级，增加占位还原机制。
-2. **DevSocial Snapshot (代码与技术分享卡片生成器)**：Canvas/SVG 纯前端高亮生成，契合推特发布场景。
-3. **Cron & Webhook Visualizer**：定时任务可视化解析与时间轴。
+1. **SQLite WASM 查看器 (SQLite Local Explorer)**：
+   - 特性：纯前端基于 sql.js 或官方 SQLite WASM 加载本地 `.db/.sqlite` 文件，零后端中转，支持只读 SQL 查询与表格导出。
+   - 质检重点：文件拖拽大文件内存溢出防护、SQL 注入（由于纯客户端无后门，保障 UI 渲染安全）、跨浏览器 Worker 支持。
+2. **SVG 极简无损优化器 (SVG Clean & Minifier)**：
+   - 特性：去除无用 XML 命名空间、注释、冗余元数据、浮点数精度截断，即时预览与体积对比。
+   - 质检重点：DOM 渲染对比（无视觉损坏）、XSS 过滤（清除 `<script>` 与 `on*` 属性注入）。
+3. **PromptGuard (AI提示词与日志本地脱敏)**：与现有 `SecretSanitizer` 整合或进阶升级，增加占位还原机制。
+4. **DevSocial Snapshot (代码与技术分享卡片生成器)**：Canvas/SVG 纯前端高亮生成，契合推特发布场景。
+
+---
+
+## 6. 常态化巡检守护模式机制 (Daemon Mode Specification)
+
+针对 OpenTools Hub 全矩阵，运维端（小泡狐）激活常态化守护与应急机制：
+1. **守护状态**：`ACTIVE_DAEMON`。监控全站 4 款工具及后续入库工具的静态可访问性、HTML5 合规性与回归测试覆盖。
+2. **零容忍阈值**：一旦任何工具出现语法破坏、外链单点崩溃或测试失败，阻断生产发布并生成自愈工单。
+3. **环境健康度**：目前矩阵健康度评级为 **Grade A+ (100% PASS, 0 Error, 0 Warning)**。
 
 ---
 
