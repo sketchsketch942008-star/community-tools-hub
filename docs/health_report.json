@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-11-24 21:45:27",
+  "timestamp": "2026-11-24 22:10:26",
   "overall_status": "PASS",
-  "tools_count": 18,
+  "tools_count": 19,
   "tools": [
     {
       "tool_id": "base64-binary-studio",
@@ -200,6 +200,17 @@
       "version": "v1.0.0",
       "title": "TokenCompressor Studio - AI Prompt &amp; Context Token Optimizer",
       "size_bytes": 27012
+    },
+    {
+      "tool_id": "websocket-inspector-studio",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "StreamInspector Studio - Modern WebSocket &amp; SSE Stream Debugger Studio v1.0.0",
+      "size_bytes": 34405
     }
   ]
 }
