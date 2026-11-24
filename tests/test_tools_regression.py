@@ -35,22 +35,25 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         self.assertIn("./tools/dev-secret-sanitizer/index.html", portal_html)
         self.assertIn("./tools/curl-code-studio/index.html", portal_html)
         self.assertIn("./tools/cron-webhook-studio/index.html", portal_html)
+        self.assertIn("./tools/svg-cleaner-studio/index.html", portal_html)
 
         # 检查实际工具文件存在
         meta_tool = self.tools_dir / "meta-card-previewer" / "index.html"
         sanitizer_tool = self.tools_dir / "dev-secret-sanitizer" / "index.html"
         curl_tool = self.tools_dir / "curl-code-studio" / "index.html"
         cron_tool = self.tools_dir / "cron-webhook-studio" / "index.html"
+        svg_tool = self.tools_dir / "svg-cleaner-studio" / "index.html"
         self.assertTrue(meta_tool.exists(), "MetaCard Studio index.html must exist")
         self.assertTrue(sanitizer_tool.exists(), "SecretSanitizer index.html must exist")
         self.assertTrue(curl_tool.exists(), "cURL Code Studio index.html must exist")
         self.assertTrue(cron_tool.exists(), "Cron & Webhook Studio index.html must exist")
+        self.assertTrue(svg_tool.exists(), "SVG Cleaner Studio index.html must exist")
 
     def test_hub_health_checker_execution(self):
         """执行自主健康巡检引擎并验证 PASS 状态"""
         report = hub_health_checker.run_health_check()
         self.assertEqual(report["overall_status"], "PASS", f"Health check failed: {report}")
-        self.assertEqual(report["tools_count"], 4)
+        self.assertEqual(report["tools_count"], 5)
         
         for tool in report["tools"]:
             self.assertEqual(tool["status"], "PASS", f"Tool {tool['tool_id']} not passing: {tool}")

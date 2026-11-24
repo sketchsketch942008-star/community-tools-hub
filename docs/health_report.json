@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-11-24 09:30:16",
+  "timestamp": "2026-11-24 09:38:06",
   "overall_status": "PASS",
-  "tools_count": 4,
+  "tools_count": 5,
   "tools": [
     {
       "tool_id": "cron-webhook-studio",
@@ -46,6 +46,17 @@
       "version": "v1.0.0",
       "title": "MetaCard Studio - 社交媒体卡片与元标签实时生成器",
       "size_bytes": 11431
+    },
+    {
+      "tool_id": "svg-cleaner-studio",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "SVG Cleaner & Security Studio - 矢量图形无损压缩与 XSS 脱敏清洗器",
+      "size_bytes": 9484
     }
   ]
 }
