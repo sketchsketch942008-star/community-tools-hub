@@ -54,6 +54,7 @@ flowchart LR
 | **SecurityHeaders Studio** | [`tools/security-headers-studio`](./tools/security-headers-studio/index.html) | `v1.0.0` | 现代 CORS 与 CSP 安全策略可视化工坊；OWASP 漏洞诊断、多服务器配置（Nginx/Caddy/Workers/Next.js）导出 | 纯前端沙盒 | [OK] PASS |
 | **PromptGuard Studio** | [`tools/prompt-guard-studio`](./tools/prompt-guard-studio/index.html) | `v1.0.0` | AI 提示词隐私脱敏与双向可逆还原工坊；PII/凭据安全占位符替换、AI 回复一键反向还原、注入攻击静态筛查 | 纯前端沙盒 | [OK] PASS |
 | **StreamInspector Studio** | [`tools/websocket-inspector-studio`](./tools/websocket-inspector-studio/index.html) | `v1.0.0` | 现代 WebSocket 与 Server-Sent Events (SSE) 流式调试工坊；毫秒级时序帧控制台、实时 JSON 格式化与客户端代码导出 | 纯前端沙盒 | [OK] PASS |
+| **OpenAPI & Swagger Studio** | [`tools/openapi-swagger-studio`](./tools/openapi-swagger-studio/index.html) | `v1.0.0` | OpenAPI 3.0 / Swagger 可视化规范设计工坊；交互式接口文档、Schema 自动 Mock 数据、TypeScript 与 cURL 代码导出 | 纯前端沙盒 | [OK] PASS |
 
 ---
 

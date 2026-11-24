@@ -88,6 +88,7 @@ flowchart TD
 | `security-headers-studio` | **SecurityHeaders Studio** | `v1.0.0` | 现代 CORS 与 CSP 安全策略可视化工坊；OWASP 诊断评级与多服务器一键导出 | [OK] PASS |
 | `prompt-guard-studio` | **PromptGuard Studio** | `v1.0.0` | AI 提示词隐私脱敏与双向可逆还原工坊；PII/凭据安全占位符替换、AI 回复一键反向还原、注入攻击静态筛查 | [OK] PASS |
 | `websocket-inspector-studio` | **StreamInspector Studio** | `v1.0.0` | 现代 WebSocket 与 Server-Sent Events (SSE) 流式调试工坊；毫秒级时序帧控制台、实时 JSON 格式化与客户端代码导出 | [OK] PASS |
+| `openapi-swagger-studio` | **OpenAPI & Swagger Studio** | `v1.0.0` | OpenAPI 3.0 / Swagger 可视化规范设计工坊；交互式接口文档、Schema 自动 Mock 数据与 TypeScript/cURL 导出 | [OK] PASS |
 
 ---
 
@@ -99,7 +100,7 @@ flowchart TD
    - 特性：纯前端基于 sql.js 或官方 SQLite WASM 加载本地 `.db/.sqlite` 文件，零后端中转，支持只读 SQL 查询与表格导出。
    - 质检重点：文件拖拽大文件内存溢出防护、SQL 注入（由于纯客户端无后门，保障 UI 渲染安全）、跨浏览器 Worker 支持。
 2. **DevSocial Studio (社交媒体技术分享高保真卡片与图表生成器)**：Canvas/SVG 纯前端高亮生成，契合推特发布场景。
-3. **OpenAPI & Swagger Schema Studio (接口规范可视编辑与 Mock 工坊)**：纯前端编辑 OpenAPI 3.0 / Swagger 规范，实时预览交互式文档与 Mock 数据。
+3. **GraphQL Playground & Schema Studio (GraphQL 接口离线查询与 Mock 工坊)**：纯前端查询编辑、Schema AST 可视化与 Mock 模拟器。
 
 ---
 

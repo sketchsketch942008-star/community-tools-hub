@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-11-24 23:08:14",
+  "timestamp": "2026-11-24 23:10:36",
   "overall_status": "PASS",
-  "tools_count": 19,
+  "tools_count": 20,
   "tools": [
     {
       "tool_id": "base64-binary-studio",
@@ -134,6 +134,17 @@
       "version": "v1.0.0",
       "title": "MetaCard Studio - 社交媒体卡片与元标签实时生成器",
       "size_bytes": 11431
+    },
+    {
+      "tool_id": "openapi-swagger-studio",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "OpenAPI &amp; Swagger Studio - Interactive API Spec Designer &amp; Mock Engine v1.0.0",
+      "size_bytes": 34757
     },
     {
       "tool_id": "prompt-guard-studio",
