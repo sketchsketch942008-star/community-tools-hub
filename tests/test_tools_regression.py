@@ -43,6 +43,7 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         self.assertIn("./tools/base64-binary-studio/index.html", portal_html)
         self.assertIn("./tools/markdown-table-studio/index.html", portal_html)
         self.assertIn("./tools/hash-checksum-studio/index.html", portal_html)
+        self.assertIn("./tools/schema-codegen-studio/index.html", portal_html)
 
         # 检查实际工具文件存在
         meta_tool = self.tools_dir / "meta-card-previewer" / "index.html"
@@ -57,6 +58,7 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         base64_tool = self.tools_dir / "base64-binary-studio" / "index.html"
         md_tool = self.tools_dir / "markdown-table-studio" / "index.html"
         hash_tool = self.tools_dir / "hash-checksum-studio" / "index.html"
+        schema_tool = self.tools_dir / "schema-codegen-studio" / "index.html"
         self.assertTrue(meta_tool.exists(), "MetaCard Studio index.html must exist")
         self.assertTrue(sanitizer_tool.exists(), "SecretSanitizer index.html must exist")
         self.assertTrue(curl_tool.exists(), "cURL Code Studio index.html must exist")
@@ -69,12 +71,13 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         self.assertTrue(base64_tool.exists(), "Base64 Binary Studio index.html must exist")
         self.assertTrue(md_tool.exists(), "Markdown Table Studio index.html must exist")
         self.assertTrue(hash_tool.exists(), "Hash & Checksum Studio index.html must exist")
+        self.assertTrue(schema_tool.exists(), "SchemaForge Studio index.html must exist")
 
     def test_hub_health_checker_execution(self):
         """执行自主健康巡检引擎并验证 PASS 状态"""
         report = hub_health_checker.run_health_check()
         self.assertEqual(report["overall_status"], "PASS", f"Health check failed: {report}")
-        self.assertEqual(report["tools_count"], 12)
+        self.assertEqual(report["tools_count"], 13)
         
         for tool in report["tools"]:
             self.assertEqual(tool["status"], "PASS", f"Tool {tool['tool_id']} not passing: {tool}")
@@ -198,6 +201,19 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         self.assertIn("recomputeAllHashes", content)
         self.assertIn("crypto.subtle.digest", content)
         self.assertIn("checkMatch", content)
+        self.assertIn("navigator.clipboard.writeText", content)
+
+    def test_schema_codegen_studio_features(self):
+        """验证 SchemaForge Studio 页面结构与核心功能"""
+        tool_file = self.tools_dir / "schema-codegen-studio" / "index.html"
+        self.assertTrue(tool_file.exists())
+        content = tool_file.read_text(encoding="utf-8")
+        self.assertIn("SchemaForge - JSON to TypeScript, Zod & Go Struct Studio", content)
+        self.assertIn("regenerateSchemas", content)
+        self.assertIn("generateTypeScript", content)
+        self.assertIn("generateZod", content)
+        self.assertIn("generateGo", content)
+        self.assertIn("generatePydantic", content)
         self.assertIn("navigator.clipboard.writeText", content)
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-11-24 13:12:08",
+  "timestamp": "2026-11-24 14:12:31",
   "overall_status": "PASS",
-  "tools_count": 12,
+  "tools_count": 13,
   "tools": [
     {
       "tool_id": "base64-binary-studio",
@@ -123,6 +123,17 @@
       "version": "v1.0.0",
       "title": "RegexLab Studio - 现代离线安全正则表达式工坊与测试矩阵沙盒",
       "size_bytes": 31395
+    },
+    {
+      "tool_id": "schema-codegen-studio",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "SchemaForge - JSON to TypeScript, Zod & Go Struct Studio",
+      "size_bytes": 21586
     },
     {
       "tool_id": "svg-cleaner-studio",

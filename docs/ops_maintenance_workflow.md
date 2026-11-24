@@ -81,6 +81,7 @@ flowchart TD
 | `base64-binary-studio` | **Base64, Hex & Data URI Binary Inspector Studio** | `v1.0.0` | Base64/Hex/DataURI 多维互转沙盒；Magic Bytes 嗅探、体积膨胀率分析与本地文件还原 | [OK] PASS |
 | `markdown-table-studio` | **Markdown Table & ASCII Matrix Studio** | `v1.0.0` | GFM Markdown/ASCII 网格/Unicode 框线与 CSV/JSON 多维互转工坊；矩阵编辑与导出 | [OK] PASS |
 | `hash-checksum-studio` | **Hash & Checksum Studio** | `v1.0.0` | 现代离线多重哈希计算与完整性校验沙盒；SHA-256/512/MD5/CRC32 并发计算与自动比对 | [OK] PASS |
+| `schema-codegen-studio` | **SchemaForge Studio** | `v1.0.0` | 纯前端 JSON 转 TypeScript Interface、Zod Schema、Go Struct 与 Python Pydantic | [OK] PASS |
 
 ---
 
@@ -99,7 +100,7 @@ flowchart TD
 ## 6. 常态化巡检守护模式机制 (Daemon Mode Specification)
 
 针对 OpenTools Hub 全矩阵，运维端（小泡狐）激活常态化守护与应急机制：
-1. **守护状态**：`ACTIVE_DAEMON`。监控全站 4 款工具及后续入库工具的静态可访问性、HTML5 合规性与回归测试覆盖。
+1. **守护状态**：`ACTIVE_DAEMON`。监控全站 13 款工具及后续入库工具的静态可访问性、HTML5 合规性与回归测试覆盖。
 2. **零容忍阈值**：一旦任何工具出现语法破坏、外链单点崩溃或测试失败，阻断生产发布并生成自愈工单。
 3. **环境健康度**：目前矩阵健康度评级为 **Grade A+ (100% PASS, 0 Error, 0 Warning)**。
 

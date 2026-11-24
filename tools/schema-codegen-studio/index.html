@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SchemaForge - JSON to TypeScript, Zod & Go Struct Studio</title>
+  <meta name="description" content="纯前端零依赖的 JSON 转 TypeScript Interface、Zod Schema、Go Struct 及 Python Pydantic 代码生成沙盒。100% 内存安全零隐私外发。">
+  <style>
+    :root {
+      --bg-primary: #0a0e17;
+      --bg-panel: #111827;
+      --bg-input: #1a2234;
+      --border-color: #243049;
+      --accent-color: #38bdf8;
+      --accent-hover: #0284c7;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --code-bg: #070c14;
+      --badge-bg: #1e293b;
+      --badge-text: #38bdf8;
+      --success-text: #4ade80;
+      --fail-text: #f87171;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: rgba(17, 24, 39, 0.85);
+      border-bottom: 1px solid var(--border-color);
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(12px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+
+    .brand-badges {
+      display: flex;
+      gap: 6px;
+    }
+
+    .badge {
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      font-weight: 600;
+      border: 1px solid var(--border-color);
+      letter-spacing: 0.04em;
+    }
+
+    .badge-pass {
+      color: var(--success-text);
+      border-color: rgba(74, 222, 128, 0.3);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .nav-link {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .nav-link:hover {
+      color: var(--accent-color);
+    }
+
+    .app-main {
+      flex: 1;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Options Bar */
+    .options-bar {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .options-left {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .opt-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .opt-input {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 0.78rem;
+      color: #fff;
+      font-family: monospace;
+      outline: none;
+    }
+
+    .opt-input:focus {
+      border-color: var(--accent-color);
+    }
+
+    .btn {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 5px 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn:hover {
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+    }
+
+    .btn-primary {
+      background: var(--accent-color);
+      border-color: var(--accent-hover);
+      color: #000;
+      font-weight: 700;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      color: #fff;
+    }
+
+    /* Split Content Grid */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.25fr;
+      gap: 16px;
+      flex: 1;
+    }
+
+    @media (max-width: 1024px) {
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      background: rgba(0, 0, 0, 0.25);
+      border-bottom: 1px solid var(--border-color);
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent-color);
+      letter-spacing: 0.05em;
+    }
+
+    .panel-body {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+    }
+
+    .json-textarea {
+      width: 100%;
+      min-height: 480px;
+      flex: 1;
+      background: var(--code-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 14px;
+      color: var(--text-main);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      outline: none;
+      resize: vertical;
+      white-space: pre;
+    }
+
+    .json-textarea:focus {
+      border-color: var(--accent-color);
+    }
+
+    /* Tab navigation */
+    .tab-btn-group {
+      display: flex;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 6px 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+
+    .tab-btn.active {
+      color: var(--accent-color);
+      border-bottom-color: var(--accent-color);
+    }
+
+    .code-output-box {
+      width: 100%;
+      min-height: 480px;
+      flex: 1;
+      background: var(--code-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 14px;
+      color: #38bdf8;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      overflow-y: auto;
+      white-space: pre;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-title">SchemaForge Studio</div>
+      <div class="brand-badges">
+        <span class="badge">[v1.0.0]</span>
+        <span class="badge">[TS/ZOD/GO/PYDANTIC]</span>
+        <span class="badge badge-pass">[OFFLINE SAFE]</span>
+      </div>
+    </div>
+    <div class="nav-links">
+      <a href="../../index.html" class="nav-link">[OpenTools Hub]</a>
+      <a href="https://github.com/sketchsketch942008-star/community-tools-hub" target="_blank" rel="noopener noreferrer" class="nav-link">[GitHub Repo]</a>
+    </div>
+  </header>
+
+  <div class="app-main">
+
+    <!-- Top Config Options -->
+    <div class="options-bar">
+      <div class="options-left">
+        <span class="opt-label">ROOT MODEL NAME:</span>
+        <input type="text" id="rootNameInput" class="opt-input" value="ApiResponse" oninput="regenerateSchemas()">
+        <button class="btn" onclick="loadSampleUser()">[用户模型示例]</button>
+        <button class="btn" onclick="loadSamplePagination()">[分页响应示例]</button>
+        <button class="btn" onclick="formatJson()">[格式化 JSON]</button>
+      </div>
+      <div>
+        <button class="btn btn-primary" id="copyBtn" onclick="copyCurrentCode()">[复制当前代码]</button>
+      </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="content-grid">
+
+      <!-- Left: JSON Source Input -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">INPUT JSON PAYLOAD / 原始 JSON</span>
+          <span class="badge" id="jsonParseStatus" style="color:var(--success-text);">[VALID JSON]</span>
+        </div>
+        <div class="panel-body">
+          <textarea id="jsonInput" class="json-textarea" placeholder="在此粘贴 JSON 文本..." oninput="regenerateSchemas()"></textarea>
+        </div>
+      </div>
+
+      <!-- Right: Target Schema Code Output -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="tab-btn-group">
+            <button class="tab-btn active" id="tabTs" onclick="switchTab('ts')">[TypeScript]</button>
+            <button class="tab-btn" id="tabZod" onclick="switchTab('zod')">[Zod Schema]</button>
+            <button class="tab-btn" id="tabGo" onclick="switchTab('go')">[Go Struct]</button>
+            <button class="tab-btn" id="tabPydantic" onclick="switchTab('pydantic')">[Pydantic (Python)]</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <pre class="code-output-box" id="codeOutput"></pre>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    // State
+    let currentTab = 'ts';
+    let parsedJson = null;
+
+    function capitalize(str) {
+      if (!str) return 'Field';
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    function toPascalCase(str) {
+      return str
+        .replace(/[-_](\w)/g, (_, c) => c.toUpperCase())
+        .replace(/^\w/, c => c.toUpperCase());
+    }
+
+    function getType(val) {
+      if (val === null) return 'null';
+      if (Array.isArray(val)) return 'array';
+      return typeof val;
+    }
+
+    // Generator 1: TypeScript
+    function generateTypeScript(rootName, data) {
+      const subTypes = [];
+
+      function parseObject(name, obj) {
+        let lines = [`export interface ${name} {`];
+        for (const [key, val] of Object.entries(obj)) {
+          const t = getType(val);
+          let fieldType = 'any';
+
+          if (t === 'string') fieldType = 'string';
+          else if (t === 'number') fieldType = 'number';
+          else if (t === 'boolean') fieldType = 'boolean';
+          else if (t === 'null') fieldType = 'any | null';
+          else if (t === 'object') {
+            const childName = `${name}_${toPascalCase(key)}`;
+            parseObject(childName, val);
+            fieldType = childName;
+          } else if (t === 'array') {
+            if (val.length === 0) {
+              fieldType = 'any[]';
+            } else {
+              const elemType = getType(val[0]);
+              if (elemType === 'object') {
+                const childName = `${name}_${toPascalCase(key)}Item`;
+                parseObject(childName, val[0]);
+                fieldType = `${childName}[]`;
+              } else if (elemType === 'string') fieldType = 'string[]';
+              else if (elemType === 'number') fieldType = 'number[]';
+              else if (elemType === 'boolean') fieldType = 'boolean[]';
+              else fieldType = 'any[]';
+            }
+          }
+
+          lines.push(`  ${key}: ${fieldType};`);
+        }
+        lines.push('}');
+        subTypes.push(lines.join('\n'));
+      }
+
+      if (getType(data) === 'object') {
+        parseObject(rootName, data);
+      } else if (getType(data) === 'array') {
+        if (data.length > 0 && getType(data[0]) === 'object') {
+          parseObject(`${rootName}Item`, data[0]);
+          subTypes.push(`export type ${rootName} = ${rootName}Item[];`);
+        } else {
+          subTypes.push(`export type ${rootName} = any[];`);
+        }
+      }
+
+      return subTypes.reverse().join('\n\n');
+    }
+
+    // Generator 2: Zod
+    function generateZod(rootName, data) {
+      const schemas = [];
+
+      function parseZodObject(name, obj) {
+        let lines = [`export const ${name} = z.object({`];
+        for (const [key, val] of Object.entries(obj)) {
+          const t = getType(val);
+          let fieldZod = 'z.any()';
+
+          if (t === 'string') fieldZod = 'z.string()';
+          else if (t === 'number') fieldZod = 'z.number()';
+          else if (t === 'boolean') fieldZod = 'z.boolean()';
+          else if (t === 'null') fieldZod = 'z.any().nullable()';
+          else if (t === 'object') {
+            const childName = `${name}_${toPascalCase(key)}`;
+            parseZodObject(childName, val);
+            fieldZod = childName;
+          } else if (t === 'array') {
+            if (val.length === 0) fieldZod = 'z.array(z.any())';
+            else {
+              const elemType = getType(val[0]);
+              if (elemType === 'object') {
+                const childName = `${name}_${toPascalCase(key)}Item`;
+                parseZodObject(childName, val[0]);
+                fieldZod = `z.array(${childName})`;
+              } else if (elemType === 'string') fieldZod = 'z.array(z.string())';
+              else if (elemType === 'number') fieldZod = 'z.array(z.number())';
+              else if (elemType === 'boolean') fieldZod = 'z.array(z.boolean())';
+              else fieldZod = 'z.array(z.any())';
+            }
+          }
+
+          lines.push(`  ${key}: ${fieldZod},`);
+        }
+        lines.push('});');
+        lines.push(`export type ${name} = z.infer<typeof ${name}>;`);
+        schemas.push(lines.join('\n'));
+      }
+
+      if (getType(data) === 'object') {
+        parseZodObject(rootName, data);
+      } else if (getType(data) === 'array') {
+        if (data.length > 0 && getType(data[0]) === 'object') {
+          parseZodObject(`${rootName}Item`, data[0]);
+          schemas.push(`export const ${rootName} = z.array(${rootName}Item);\nexport type ${rootName} = z.infer<typeof ${rootName}>;`);
+        } else {
+          schemas.push(`export const ${rootName} = z.array(z.any());\nexport type ${rootName} = z.infer<typeof ${rootName}>;`);
+        }
+      }
+
+      return `import { z } from "zod";\n\n` + schemas.reverse().join('\n\n');
+    }
+
+    // Generator 3: Go Struct
+    function generateGo(rootName, data) {
+      const structs = [];
+
+      function parseGoObject(name, obj) {
+        let lines = [`type ${name} struct {`];
+        for (const [key, val] of Object.entries(obj)) {
+          const fieldName = toPascalCase(key);
+          const t = getType(val);
+          let goType = 'interface{}';
+
+          if (t === 'string') goType = 'string';
+          else if (t === 'number') goType = Number.isInteger(val) ? 'int' : 'float64';
+          else if (t === 'boolean') goType = 'bool';
+          else if (t === 'object') {
+            const childName = `${name}${fieldName}`;
+            parseGoObject(childName, val);
+            goType = childName;
+          } else if (t === 'array') {
+            if (val.length === 0) goType = '[]interface{}';
+            else {
+              const elemType = getType(val[0]);
+              if (elemType === 'object') {
+                const childName = `${name}${fieldName}Item`;
+                parseGoObject(childName, val[0]);
+                goType = `[]${childName}`;
+              } else if (elemType === 'string') goType = '[]string';
+              else if (elemType === 'number') goType = Number.isInteger(val[0]) ? '[]int' : '[]float64';
+              else if (elemType === 'boolean') goType = '[]bool';
+              else goType = '[]interface{}';
+            }
+          }
+
+          lines.push(`\t${fieldName}\t${goType}\t\`json:"${key}"\``);
+        }
+        lines.push('}');
+        structs.push(lines.join('\n'));
+      }
+
+      if (getType(data) === 'object') {
+        parseGoObject(rootName, data);
+      } else if (getType(data) === 'array') {
+        if (data.length > 0 && getType(data[0]) === 'object') {
+          parseGoObject(`${rootName}Item`, data[0]);
+          structs.push(`type ${rootName} []${rootName}Item`);
+        } else {
+          structs.push(`type ${rootName} []interface{}`);
+        }
+      }
+
+      return structs.reverse().join('\n\n');
+    }
+
+    // Generator 4: Python Pydantic
+    function generatePydantic(rootName, data) {
+      const models = [];
+
+      function parsePyObject(name, obj) {
+        let lines = [`class ${name}(BaseModel):`];
+        for (const [key, val] of Object.entries(obj)) {
+          const t = getType(val);
+          let pyType = 'Any';
+
+          if (t === 'string') pyType = 'str';
+          else if (t === 'number') pyType = Number.isInteger(val) ? 'int' : 'float';
+          else if (t === 'boolean') pyType = 'bool';
+          else if (t === 'null') pyType = 'Optional[Any] = None';
+          else if (t === 'object') {
+            const childName = `${name}${toPascalCase(key)}`;
+            parsePyObject(childName, val);
+            pyType = childName;
+          } else if (t === 'array') {
+            if (val.length === 0) pyType = 'List[Any]';
+            else {
+              const elemType = getType(val[0]);
+              if (elemType === 'object') {
+                const childName = `${name}${toPascalCase(key)}Item`;
+                parsePyObject(childName, val[0]);
+                pyType = `List[${childName}]`;
+              } else if (elemType === 'string') pyType = 'List[str]';
+              else if (elemType === 'number') pyType = Number.isInteger(val[0]) ? 'List[int]' : 'List[float]';
+              else if (elemType === 'boolean') pyType = 'List[bool]';
+              else pyType = 'List[Any]';
+            }
+          }
+
+          lines.push(`    ${key}: ${pyType}`);
+        }
+        models.push(lines.join('\n'));
+      }
+
+      if (getType(data) === 'object') {
+        parsePyObject(rootName, data);
+      } else if (getType(data) === 'array') {
+        if (data.length > 0 && getType(data[0]) === 'object') {
+          parsePyObject(`${rootName}Item`, data[0]);
+          models.push(`${rootName} = List[${rootName}Item]`);
+        } else {
+          models.push(`${rootName} = List[Any]`);
+        }
+      }
+
+      return `from pydantic import BaseModel\nfrom typing import List, Optional, Any\n\n` + models.reverse().join('\n\n');
+    }
+
+    function regenerateSchemas() {
+      const text = document.getElementById('jsonInput').value.trim();
+      const statusEl = document.getElementById('jsonParseStatus');
+      const rootName = document.getElementById('rootNameInput').value.trim() || 'ApiResponse';
+      const outBox = document.getElementById('codeOutput');
+
+      if (!text) {
+        statusEl.textContent = '[EMPTY JSON]';
+        statusEl.style.color = 'var(--text-muted)';
+        outBox.textContent = '// 在左侧粘贴 JSON 即可在此生成代码';
+        return;
+      }
+
+      try {
+        parsedJson = JSON.parse(text);
+        statusEl.textContent = '[VALID JSON]';
+        statusEl.style.color = 'var(--success-text)';
+      } catch (err) {
+        statusEl.textContent = '[INVALID JSON: ' + err.message + ']';
+        statusEl.style.color = 'var(--fail-text)';
+        outBox.textContent = `// 解析失败: ${err.message}`;
+        return;
+      }
+
+      if (currentTab === 'ts') {
+        outBox.textContent = generateTypeScript(rootName, parsedJson);
+      } else if (currentTab === 'zod') {
+        outBox.textContent = generateZod(rootName, parsedJson);
+      } else if (currentTab === 'go') {
+        outBox.textContent = generateGo(rootName, parsedJson);
+      } else if (currentTab === 'pydantic') {
+        outBox.textContent = generatePydantic(rootName, parsedJson);
+      }
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      const idMap = { ts: 'tabTs', zod: 'tabZod', go: 'tabGo', pydantic: 'tabPydantic' };
+      if (idMap[tab]) document.getElementById(idMap[tab]).classList.add('active');
+      regenerateSchemas();
+    }
+
+    function loadSampleUser() {
+      const sample = {
+        id: 1001,
+        username: "xiaopaohu",
+        is_active: true,
+        profile: {
+          display_name: "OpenTools Hub Maintainer",
+          avatar_url: "https://example.com/avatar.png",
+          bio: "Autonomous agent coordinator and developer"
+        },
+        roles: ["admin", "developer", "maintainer"],
+        metrics: {
+          uptime_hours: 8760,
+          quality_score: 99.8
+        }
+      };
+      document.getElementById('rootNameInput').value = "UserProfile";
+      document.getElementById('jsonInput').value = JSON.stringify(sample, null, 2);
+      regenerateSchemas();
+    }
+
+    function loadSamplePagination() {
+      const sample = {
+        code: 200,
+        message: "success",
+        data: {
+          page: 1,
+          page_size: 20,
+          total: 100,
+          items: [
+            { id: "tool-1", name: "MetaCard Studio", status: "PASS", hits: 1420 },
+            { id: "tool-2", name: "RegexLab Studio", status: "PASS", hits: 2890 }
+          ]
+        }
+      };
+      document.getElementById('rootNameInput').value = "PaginatedResponse";
+      document.getElementById('jsonInput').value = JSON.stringify(sample, null, 2);
+      regenerateSchemas();
+    }
+
+    function formatJson() {
+      try {
+        const val = JSON.parse(document.getElementById('jsonInput').value);
+        document.getElementById('jsonInput').value = JSON.stringify(val, null, 2);
+        regenerateSchemas();
+      } catch (e) {
+        alert("无法格式化: " + e.message);
+      }
+    }
+
+    function copyCurrentCode() {
+      const text = document.getElementById('codeOutput').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyBtn');
+        const orig = btn.textContent;
+        btn.textContent = '[COPIED!]';
+        btn.style.background = '#4ade80';
+        setTimeout(() => {
+          btn.textContent = orig;
+          btn.style.background = '';
+        }, 1800);
+      });
+    }
+
+    // Initialize
+    loadSampleUser();
+  </script>
+</body>
+</html>
