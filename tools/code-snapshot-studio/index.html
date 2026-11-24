@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodeShot Studio - Beautiful Code Snippet to PNG &amp; SVG Studio</title>
+  <meta name="description" content="纯前端零依赖的代码片段美化制图工坊。支持将代码一键转换为高分辨率 PNG 图片、矢量 SVG 与直写剪贴板。内置经典 Mac 窗口拟态、多款极客主题与丰富渐变背景。100% 内存安全零隐私外发。">
+  <style>
+    :root {
+      --bg-primary: #0a0e17;
+      --bg-panel: #111827;
+      --bg-input: #1a2234;
+      --border-color: #243049;
+      --accent-color: #38bdf8;
+      --accent-hover: #0284c7;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --code-bg: #070c14;
+      --badge-bg: #1e293b;
+      --badge-text: #38bdf8;
+      --success-text: #4ade80;
+      --fail-text: #f87171;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: rgba(17, 24, 39, 0.9);
+      border-bottom: 1px solid var(--border-color);
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(12px);
+    }
+
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-title { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; color: #fff; }
+    .brand-badges { display: flex; gap: 6px; }
+
+    .badge {
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      font-weight: 600;
+      border: 1px solid var(--border-color);
+      letter-spacing: 0.04em;
+    }
+    .badge-pass { color: var(--success-text); border-color: rgba(74, 222, 128, 0.3); }
+
+    .nav-links { display: flex; gap: 14px; align-items: center; }
+    .nav-link { font-size: 0.82rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .nav-link:hover { color: var(--accent-color); }
+
+    .app-main {
+      flex: 1;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Toolbar Controls */
+    .controls-panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .controls-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .control-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .control-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .select-input, .text-input {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .select-input:focus, .text-input:focus {
+      border-color: var(--accent-color);
+    }
+
+    .btn {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:hover { background: #243049; border-color: var(--accent-color); color: var(--accent-color); }
+
+    .btn-primary {
+      background: var(--accent-color);
+      border-color: var(--accent-color);
+      color: #04101e;
+      font-weight: 600;
+    }
+    .btn-primary:hover { background: #7dd3fc; border-color: #7dd3fc; color: #04101e; }
+
+    /* Main Workspace Layout */
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.3fr;
+      gap: 20px;
+      flex: 1;
+    }
+
+    @media (max-width: 1024px) {
+      .workspace-grid { grid-template-columns: 1fr; }
+    }
+
+    .editor-card, .preview-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 12px 18px;
+      background: #0f172a;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .code-editor-area {
+      flex: 1;
+      width: 100%;
+      min-height: 480px;
+      background: var(--code-bg);
+      color: #f8fafc;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      padding: 16px;
+      border: none;
+      outline: none;
+      resize: vertical;
+      white-space: pre;
+    }
+
+    /* Preview Canvas Area */
+    .preview-canvas-wrap {
+      flex: 1;
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #070c14;
+      overflow: auto;
+      min-height: 480px;
+    }
+
+    #renderCanvas {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+      image-rendering: -webkit-optimize-contrast;
+    }
+
+    .action-bar {
+      padding: 12px 18px;
+      background: #0f172a;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-title">CodeShot Studio</div>
+      <div class="brand-badges">
+        <span class="badge">[v1.0.0]</span>
+        <span class="badge">[PNG/SVG/CLIPBOARD]</span>
+        <span class="badge badge-pass">[OFFLINE SAFE]</span>
+      </div>
+    </div>
+    <div class="nav-links">
+      <a href="../../index.html" class="nav-link">[OpenTools Hub]</a>
+      <a href="https://github.com/sketchsketch942008-star/community-tools-hub" target="_blank" rel="noopener noreferrer" class="nav-link">[GitHub Repo]</a>
+    </div>
+  </header>
+
+  <div class="app-main">
+
+    <!-- Top Toolbar Controls -->
+    <div class="controls-panel">
+      <div class="controls-group">
+        <div class="control-item">
+          <label class="control-label">LANGUAGE</label>
+          <select id="langSelect" class="select-input" onchange="renderShot()">
+            <option value="ts" selected>TypeScript / JS</option>
+            <option value="python">Python</option>
+            <option value="go">Go</option>
+            <option value="rust">Rust</option>
+            <option value="sql">SQL</option>
+            <option value="json">JSON</option>
+          </select>
+        </div>
+
+        <div class="control-item">
+          <label class="control-label">THEME</label>
+          <select id="themeSelect" class="select-input" onchange="renderShot()">
+            <option value="dracula" selected>Dracula Dark</option>
+            <option value="synthwave">Synthwave 84</option>
+            <option value="nord">Nord Frost</option>
+            <option value="monokai">Monokai Pro</option>
+            <option value="cyberpunk">Cyberpunk Neon</option>
+          </select>
+        </div>
+
+        <div class="control-item">
+          <label class="control-label">BACKGROUND</label>
+          <select id="bgSelect" class="select-input" onchange="renderShot()">
+            <option value="aurora" selected>Aurora Glow</option>
+            <option value="sunset">Sunset Flare</option>
+            <option value="cyber">Cyber Neon</option>
+            <option value="ocean">Deep Ocean</option>
+            <option value="dark">Obsidian Dark</option>
+            <option value="transparent">Transparent</option>
+          </select>
+        </div>
+
+        <div class="control-item">
+          <label class="control-label">PADDING</label>
+          <select id="padSelect" class="select-input" onchange="renderShot()">
+            <option value="24">Compact (24px)</option>
+            <option value="40" selected>Standard (40px)</option>
+            <option value="56">Spacious (56px)</option>
+          </select>
+        </div>
+
+        <div class="control-item">
+          <label class="control-label">TITLE</label>
+          <input type="text" id="windowTitle" class="text-input" value="index.ts" style="width:110px;" oninput="renderShot()">
+        </div>
+
+        <div class="control-item">
+          <label class="control-label">OPTIONS</label>
+          <div style="display:flex; gap:10px; margin-top:4px;">
+            <label style="font-size:0.75rem; color:var(--text-muted); cursor:pointer;">
+              <input type="checkbox" id="optLineNum" checked onchange="renderShot()"> 行号
+            </label>
+            <label style="font-size:0.75rem; color:var(--text-muted); cursor:pointer;">
+              <input type="checkbox" id="optHeader" checked onchange="renderShot()"> Mac按钮
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls-group">
+        <button class="btn btn-primary" id="copyImgBtn" onclick="copyImageToClipboard()">[复制图片到剪贴板]</button>
+        <button class="btn" onclick="downloadPng()">[导出 PNG]</button>
+        <button class="btn" onclick="downloadSvg()">[导出 SVG]</button>
+      </div>
+    </div>
+
+    <!-- Workspace Grid -->
+    <div class="workspace-grid">
+
+      <!-- Left: Code Input -->
+      <div class="editor-card">
+        <div class="card-header">
+          <span class="card-title">SOURCE CODE INPUT / 源码输入</span>
+          <div style="display:flex; gap:8px;">
+            <button class="btn" style="padding:3px 8px; font-size:0.72rem;" onclick="loadPresetCode('ts')">TS 示例</button>
+            <button class="btn" style="padding:3px 8px; font-size:0.72rem;" onclick="loadPresetCode('python')">Py 示例</button>
+            <button class="btn" style="padding:3px 8px; font-size:0.72rem;" onclick="loadPresetCode('go')">Go 示例</button>
+          </div>
+        </div>
+        <textarea id="codeEditor" class="code-editor-area" oninput="renderShot()" spellcheck="false"></textarea>
+        <div class="action-bar">
+          <span style="font-size:0.72rem; color:var(--text-muted);" id="charCountLabel">0 行 | 0 字符</span>
+          <span style="font-size:0.72rem; color:var(--success-text);">[100% 客户端本地渲染 · 零外发]</span>
+        </div>
+      </div>
+
+      <!-- Right: Real-time Canvas Preview -->
+      <div class="preview-card">
+        <div class="card-header">
+          <span class="card-title">LIVE PREVIEW / 实时渲染预览 (Retina 2x)</span>
+          <span class="badge" style="color:var(--success-text);">[HD CANVAS]</span>
+        </div>
+        <div class="preview-canvas-wrap">
+          <canvas id="renderCanvas"></canvas>
+        </div>
+        <div class="action-bar">
+          <span style="font-size:0.75rem; color:var(--text-muted);">点击上方按钮可直接将生成的无损美化图直拷入微信/推特/剪贴板</span>
+          <span style="font-size:0.75rem; color:#38bdf8;" id="statusIndicator">就绪 (Ready)</span>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    // =============================================
+    // SYNTAX HIGHLIGHTING & TOKENIZER (Pure JS)
+    // =============================================
+
+    const THEMES = {
+      dracula: {
+        bg: '#282a36',
+        text: '#f8f8f2',
+        keyword: '#ff79c6',
+        string: '#f1fa8c',
+        comment: '#6272a4',
+        number: '#bd93f9',
+        func: '#50fa7b',
+        type: '#8be9fd',
+        lineNum: '#44475a',
+        headerBg: '#21222c',
+        border: '#44475a'
+      },
+      synthwave: {
+        bg: '#262335',
+        text: '#ff7edb',
+        keyword: '#fed85d',
+        string: '#2de2e6',
+        comment: '#614d85',
+        number: '#f97e72',
+        func: '#36f9f6',
+        type: '#fe4450',
+        lineNum: '#494368',
+        headerBg: '#1f1b2c',
+        border: '#494368'
+      },
+      nord: {
+        bg: '#2e3440',
+        text: '#eceff4',
+        keyword: '#81a1c1',
+        string: '#a3be8c',
+        comment: '#4c566a',
+        number: '#b48ead',
+        func: '#88c0d0',
+        type: '#8fbcbb',
+        lineNum: '#4c566a',
+        headerBg: '#242933',
+        border: '#3b4252'
+      },
+      monokai: {
+        bg: '#272822',
+        text: '#f8f8f2',
+        keyword: '#f92672',
+        string: '#e6db74',
+        comment: '#75715e',
+        number: '#ae81ff',
+        func: '#a6e22e',
+        type: '#66d9ef',
+        lineNum: '#49483e',
+        headerBg: '#1e1f1c',
+        border: '#3e3d32'
+      },
+      cyberpunk: {
+        bg: '#0d1117',
+        text: '#00ffcc',
+        keyword: '#ff0055',
+        string: '#ffff00',
+        comment: '#586069',
+        number: '#00ffff',
+        func: '#ffaa00',
+        type: '#ff00aa',
+        lineNum: '#30363d',
+        headerBg: '#090d13',
+        border: '#ff0055'
+      }
+    };
+
+    const BACKGROUNDS = {
+      aurora: (ctx, w, h) => {
+        const grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, '#0f2027');
+        grad.addColorStop(0.5, '#203a43');
+        grad.addColorStop(1, '#2c5364');
+        return grad;
+      },
+      sunset: (ctx, w, h) => {
+        const grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, '#fa709a');
+        grad.addColorStop(1, '#fee140');
+        return grad;
+      },
+      cyber: (ctx, w, h) => {
+        const grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, '#f953c6');
+        grad.addColorStop(1, '#b91d73');
+        return grad;
+      },
+      ocean: (ctx, w, h) => {
+        const grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, '#134e5e');
+        grad.addColorStop(1, '#71b280');
+        return grad;
+      },
+      dark: (ctx, w, h) => {
+        const grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, '#111827');
+        grad.addColorStop(1, '#030712');
+        return grad;
+      },
+      transparent: () => 'rgba(0,0,0,0)'
+    };
+
+    const KEYWORDS = {
+      ts: ['const', 'let', 'var', 'function', 'return', 'if', 'else', 'for', 'while', 'import', 'export', 'from', 'as', 'default', 'class', 'extends', 'implements', 'interface', 'type', 'async', 'await', 'try', 'catch', 'finally', 'throw', 'new', 'this', 'typeof', 'instanceof'],
+      python: ['def', 'return', 'if', 'elif', 'else', 'for', 'while', 'in', 'import', 'from', 'as', 'class', 'try', 'except', 'finally', 'raise', 'with', 'lambda', 'async', 'await', 'None', 'True', 'False', 'and', 'or', 'not', 'is'],
+      go: ['func', 'return', 'if', 'else', 'for', 'range', 'package', 'import', 'type', 'struct', 'interface', 'var', 'const', 'go', 'chan', 'select', 'defer', 'nil', 'make', 'new'],
+      rust: ['fn', 'let', 'mut', 'pub', 'return', 'if', 'else', 'for', 'in', 'while', 'loop', 'match', 'struct', 'enum', 'impl', 'trait', 'use', 'mod', 'async', 'await', 'None', 'Some', 'Ok', 'Err'],
+      sql: ['SELECT', 'FROM', 'WHERE', 'INSERT', 'INTO', 'UPDATE', 'DELETE', 'JOIN', 'LEFT', 'RIGHT', 'INNER', 'GROUP', 'BY', 'ORDER', 'HAVING', 'LIMIT', 'OFFSET', 'CREATE', 'TABLE', 'ALTER', 'DROP', 'AS', 'AND', 'OR', 'NOT', 'NULL'],
+      json: ['true', 'false', 'null']
+    };
+
+    function tokenizeLine(line, lang, theme) {
+      const tokens = [];
+      let i = 0;
+      const kwList = KEYWORDS[lang] || KEYWORDS.ts;
+
+      // Handle full line comments
+      const trimmed = line.trimStart();
+      if (trimmed.startsWith('//') || trimmed.startsWith('#') || trimmed.startsWith('--')) {
+        tokens.push({ text: line, color: theme.comment });
+        return tokens;
+      }
+
+      while (i < line.length) {
+        // String literal
+        if (line[i] === '"' || line[i] === "'" || line[i] === '`') {
+          const quote = line[i];
+          let str = quote;
+          i++;
+          while (i < line.length && line[i] !== quote) {
+            if (line[i] === '\\' && i + 1 < line.length) {
+              str += line[i] + line[i + 1];
+              i += 2;
+            } else {
+              str += line[i];
+              i++;
+            }
+          }
+          if (i < line.length) { str += line[i]; i++; }
+          tokens.push({ text: str, color: theme.string });
+          continue;
+        }
+
+        // Inline comment
+        if (line.slice(i, i + 2) === '//') {
+          tokens.push({ text: line.slice(i), color: theme.comment });
+          break;
+        }
+
+        // Numbers
+        if (/\d/.test(line[i]) && (i === 0 || /[\s,([{:+\-*\/%=<>]/.test(line[i - 1]))) {
+          let num = '';
+          while (i < line.length && /[\d.xXa-fA-F_]/.test(line[i])) {
+            num += line[i];
+            i++;
+          }
+          tokens.push({ text: num, color: theme.number });
+          continue;
+        }
+
+        // Words / Identifiers
+        if (/[a-zA-Z_$]/.test(line[i])) {
+          let word = '';
+          while (i < line.length && /[a-zA-Z0-9_$]/.test(line[i])) {
+            word += line[i];
+            i++;
+          }
+
+          if (kwList.includes(word) || (lang === 'sql' && kwList.includes(word.toUpperCase()))) {
+            tokens.push({ text: word, color: theme.keyword });
+          } else if (i < line.length && line[i] === '(') {
+            tokens.push({ text: word, color: theme.func });
+          } else if (/^[A-Z]/.test(word)) {
+            tokens.push({ text: word, color: theme.type });
+          } else {
+            tokens.push({ text: word, color: theme.text });
+          }
+          continue;
+        }
+
+        // Symbols / whitespace
+        tokens.push({ text: line[i], color: theme.text });
+        i++;
+      }
+
+      return tokens;
+    }
+
+    // =============================================
+    // CANVAS RENDERING ENGINE
+    // =============================================
+
+    function renderShot() {
+      const code = document.getElementById('codeEditor').value;
+      const lang = document.getElementById('langSelect').value;
+      const themeKey = document.getElementById('themeSelect').value;
+      const bgKey = document.getElementById('bgSelect').value;
+      const padding = parseInt(document.getElementById('padSelect').value, 10);
+      const title = document.getElementById('windowTitle').value.trim() || 'code';
+      const showLineNum = document.getElementById('optLineNum').checked;
+      const showHeader = document.getElementById('optHeader').checked;
+
+      const theme = THEMES[themeKey] || THEMES.dracula;
+      const lines = code.split('\n');
+
+      // Update character count
+      document.getElementById('charCountLabel').textContent = `${lines.length} 行 | ${code.length} 字符`;
+
+      const canvas = document.getElementById('renderCanvas');
+      const ctx = canvas.getContext('2d');
+
+      // Font metrics
+      const fontSize = 14;
+      const lineHeight = 22;
+      const fontFamily = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace';
+      ctx.font = `${fontSize}px ${fontFamily}`;
+
+      // Calculate width & height
+      let maxTextWidth = 0;
+      lines.forEach(l => {
+        const w = ctx.measureText(l).width;
+        if (w > maxTextWidth) maxTextWidth = w;
+      });
+
+      const lineNumWidth = showLineNum ? 42 : 0;
+      const contentInnerWidth = Math.max(380, maxTextWidth + lineNumWidth + 40);
+      const headerHeight = showHeader ? 36 : 14;
+      const contentInnerHeight = headerHeight + (lines.length * lineHeight) + 24;
+
+      const totalWidth = contentInnerWidth + (padding * 2);
+      const totalHeight = contentInnerHeight + (padding * 2);
+
+      // Retina 2x scale
+      const scale = 2;
+      canvas.width = totalWidth * scale;
+      canvas.height = totalHeight * scale;
+      canvas.style.width = `${totalWidth}px`;
+      canvas.style.height = `${totalHeight}px`;
+
+      ctx.save();
+      ctx.scale(scale, scale);
+
+      // 1. Draw Background
+      if (bgKey === 'transparent') {
+        ctx.clearRect(0, 0, totalWidth, totalHeight);
+      } else {
+        const bgGrad = BACKGROUNDS[bgKey](ctx, totalWidth, totalHeight);
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, totalWidth, totalHeight);
+      }
+
+      // 2. Window container shadow & path
+      const winX = padding;
+      const winY = padding;
+      const winW = contentInnerWidth;
+      const winH = contentInnerHeight;
+      const winRadius = 10;
+
+      ctx.save();
+      if (bgKey !== 'transparent') {
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+        ctx.shadowBlur = 28;
+        ctx.shadowOffsetY = 12;
+      }
+
+      // Rounded rect function
+      function drawRoundedRect(x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+      }
+
+      drawRoundedRect(winX, winY, winW, winH, winRadius);
+      ctx.fillStyle = theme.bg;
+      ctx.fill();
+      ctx.strokeStyle = theme.border;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+
+      // 3. Draw Mac Header Controls
+      if (showHeader) {
+        // Header background strip
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(winX + winRadius, winY);
+        ctx.lineTo(winX + winW - winRadius, winY);
+        ctx.quadraticCurveTo(winX + winW, winY, winX + winW, winY + winRadius);
+        ctx.lineTo(winX + winW, winY + headerHeight);
+        ctx.lineTo(winX, winY + headerHeight);
+        ctx.lineTo(winX, winY + winRadius);
+        ctx.quadraticCurveTo(winX, winY, winX + winRadius, winY);
+        ctx.closePath();
+        ctx.fillStyle = theme.headerBg;
+        ctx.fill();
+
+        // 3 Dot buttons (Red, Yellow, Green)
+        const dotY = winY + 18;
+        const dots = [
+          { x: winX + 18, color: '#ff5f56' },
+          { x: winX + 34, color: '#ffbd2e' },
+          { x: winX + 50, color: '#27c93f' }
+        ];
+        dots.forEach(d => {
+          ctx.beginPath();
+          ctx.arc(d.x, dotY, 5, 0, Math.PI * 2);
+          ctx.fillStyle = d.color;
+          ctx.fill();
+        });
+
+        // Window Title
+        ctx.font = `11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+        ctx.fillStyle = theme.comment;
+        ctx.textAlign = 'center';
+        ctx.fillText(title, winX + (winW / 2), dotY + 4);
+        ctx.restore();
+      }
+
+      // 4. Render Code Lines
+      ctx.font = `${fontSize}px ${fontFamily}`;
+      ctx.textAlign = 'left';
+
+      const codeStartY = winY + headerHeight + 18;
+      lines.forEach((line, index) => {
+        const curY = codeStartY + (index * lineHeight);
+
+        // Line number
+        if (showLineNum) {
+          ctx.fillStyle = theme.lineNum;
+          ctx.textAlign = 'right';
+          ctx.fillText((index + 1).toString(), winX + 32, curY);
+          ctx.textAlign = 'left';
+        }
+
+        // Code tokens
+        let curX = winX + (showLineNum ? 46 : 20);
+        const tokens = tokenizeLine(line, lang, theme);
+        tokens.forEach(tok => {
+          ctx.fillStyle = tok.color;
+          ctx.fillText(tok.text, curX, curY);
+          curX += ctx.measureText(tok.text).width;
+        });
+      });
+
+      ctx.restore();
+    }
+
+    // =============================================
+    // EXPORT FUNCTIONS (Clipboard / PNG / SVG)
+    // =============================================
+
+    function copyImageToClipboard() {
+      const canvas = document.getElementById('renderCanvas');
+      const ind = document.getElementById('statusIndicator');
+      canvas.toBlob(blob => {
+        if (!blob) return;
+        try {
+          const item = new ClipboardItem({ 'image/png': blob });
+          navigator.clipboard.write([item]).then(() => {
+            ind.textContent = '[图片已复制到剪贴板！]';
+            ind.style.color = 'var(--success-text)';
+            const btn = document.getElementById('copyImgBtn');
+            const orig = btn.textContent;
+            btn.textContent = '[已复制图片]';
+            btn.style.background = '#4ade80';
+            setTimeout(() => {
+              btn.textContent = orig;
+              btn.style.background = '';
+              ind.textContent = '就绪 (Ready)';
+              ind.style.color = '#38bdf8';
+            }, 2000);
+          });
+        } catch (err) {
+          alert('剪贴板图片直写失败: ' + err.message);
+        }
+      }, 'image/png');
+    }
+
+    function downloadPng() {
+      const canvas = document.getElementById('renderCanvas');
+      const title = document.getElementById('windowTitle').value.trim() || 'code';
+      const link = document.createElement('a');
+      link.download = `${title}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    function downloadSvg() {
+      const canvas = document.getElementById('renderCanvas');
+      const title = document.getElementById('windowTitle').value.trim() || 'code';
+      const pngUrl = canvas.toDataURL('image/png');
+      const w = canvas.style.width.replace('px', '');
+      const h = canvas.style.height.replace('px', '');
+
+      const svgData = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${canvas.width} ${canvas.height}">
+  <image href="${pngUrl}" width="${canvas.width}" height="${canvas.height}"/>
+</svg>`;
+
+      const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = `${title}.svg`;
+      link.href = url;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    // =============================================
+    // PRESET EXAMPLES
+    // =============================================
+
+    const PRESETS = {
+      ts: `import { createServer } from 'node:http';
+
+// Initialize zero-trust microservice
+export function startServer(port = 8080): void {
+  const server = createServer(async (req, res) => {
+    const timestamp = Date.now();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'OK', uptime: timestamp }));
+  });
+
+  server.listen(port, () => {
+    console.log(\`[PASS] Service running on http://localhost:\${port}\`);
+  });
+}`,
+      python: `import hmac
+import hashlib
+
+def verify_webhook_signature(payload: bytes, secret: str, expected_sig: str) -> bool:
+    """Validate webhook HMAC SHA256 signature in constant time."""
+    computed = hmac.new(
+        secret.encode("utf-8"),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(computed, expected_sig)`,
+      go: `package main
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+)
+
+// ComputeSha256 returns hex digest of byte payload
+func ComputeSha256(data []byte) string {
+	h := sha256.Sum256(data)
+	return hex.EncodeToString(h[:])
+}`
+    };
+
+    function loadPresetCode(langKey) {
+      if (PRESETS[langKey]) {
+        document.getElementById('codeEditor').value = PRESETS[langKey];
+        if (langKey === 'ts') {
+          document.getElementById('langSelect').value = 'ts';
+          document.getElementById('windowTitle').value = 'server.ts';
+        } else if (langKey === 'python') {
+          document.getElementById('langSelect').value = 'python';
+          document.getElementById('windowTitle').value = 'crypto.py';
+        } else if (langKey === 'go') {
+          document.getElementById('langSelect').value = 'go';
+          document.getElementById('windowTitle').value = 'main.go';
+        }
+        renderShot();
+      }
+    }
+
+    // Initialize
+    loadPresetCode('ts');
+  </script>
+</body>
+</html>
