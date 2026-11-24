@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hash & Checksum Studio - 现代离线哈希计算与完整性校验沙盒</title>
+  <meta name="description" content="纯前端零依赖的现代多重哈希计算与文件完整性校验沙盒。支持 SHA-256、SHA-512、MD5、CRC32 及文件拖拽秒级离线比对，100% 内存安全零隐私外发。">
+  <style>
+    :root {
+      --bg-primary: #0a0e17;
+      --bg-panel: #111827;
+      --bg-input: #1a2234;
+      --border-color: #243049;
+      --accent-color: #38bdf8;
+      --accent-hover: #0284c7;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --code-bg: #070c14;
+      --badge-bg: #1e293b;
+      --badge-text: #38bdf8;
+      --success-text: #4ade80;
+      --fail-text: #f87171;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: rgba(17, 24, 39, 0.85);
+      border-bottom: 1px solid var(--border-color);
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(12px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+
+    .brand-badges {
+      display: flex;
+      gap: 6px;
+    }
+
+    .badge {
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      font-weight: 600;
+      border: 1px solid var(--border-color);
+      letter-spacing: 0.04em;
+    }
+
+    .badge-pass {
+      color: var(--success-text);
+      border-color: rgba(74, 222, 128, 0.3);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .nav-link {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .nav-link:hover {
+      color: var(--accent-color);
+    }
+
+    .app-main {
+      flex: 1;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Verification Ribbon */
+    .verify-ribbon {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 14px 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .verify-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 300px;
+    }
+
+    .verify-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .verify-input {
+      flex: 1;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 6px 12px;
+      color: #fff;
+      font-family: monospace;
+      font-size: 0.8rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .verify-input:focus {
+      border-color: var(--accent-color);
+    }
+
+    .verify-status {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 4px;
+      background: var(--badge-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+    }
+
+    .verify-status.match {
+      background: rgba(74, 222, 128, 0.15);
+      color: var(--success-text);
+      border-color: rgba(74, 222, 128, 0.3);
+    }
+
+    .verify-status.mismatch {
+      background: rgba(248, 113, 113, 0.15);
+      color: var(--fail-text);
+      border-color: rgba(248, 113, 113, 0.3);
+    }
+
+    /* Content Layout */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.3fr;
+      gap: 16px;
+      flex: 1;
+    }
+
+    @media (max-width: 1024px) {
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      background: rgba(0, 0, 0, 0.25);
+      border-bottom: 1px solid var(--border-color);
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent-color);
+      letter-spacing: 0.05em;
+    }
+
+    .panel-body {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+    }
+
+    /* Input Controls */
+    .drop-zone {
+      border: 2px dashed var(--border-color);
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      background: rgba(26, 34, 52, 0.5);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--accent-color);
+      background: rgba(56, 189, 248, 0.08);
+    }
+
+    .drop-text {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .drop-text strong {
+      color: var(--accent-color);
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .text-input-area {
+      width: 100%;
+      min-height: 180px;
+      flex: 1;
+      background: var(--code-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: var(--text-main);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      outline: none;
+      resize: vertical;
+    }
+
+    .text-input-area:focus {
+      border-color: var(--accent-color);
+    }
+
+    /* Hash Results Cards */
+    .hash-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow-y: auto;
+      max-height: 520px;
+    }
+
+    .hash-card {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: border-color 0.15s;
+    }
+
+    .hash-card.matched {
+      border-color: var(--success-text);
+      background: rgba(74, 222, 128, 0.05);
+    }
+
+    .hash-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .algo-name {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent-color);
+      letter-spacing: 0.05em;
+    }
+
+    .copy-btn {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .copy-btn:hover {
+      border-color: var(--accent-color);
+      color: #fff;
+    }
+
+    .hash-value {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.78rem;
+      color: #fff;
+      word-break: break-all;
+      background: var(--code-bg);
+      padding: 6px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(36, 48, 73, 0.4);
+      user-select: all;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-title">Hash & Checksum Studio</div>
+      <div class="brand-badges">
+        <span class="badge">[v1.0.0]</span>
+        <span class="badge">[SHA256/512/MD5/CRC32]</span>
+        <span class="badge badge-pass">[OFFLINE SAFE]</span>
+      </div>
+    </div>
+    <div class="nav-links">
+      <a href="../../index.html" class="nav-link">[OpenTools Hub]</a>
+      <a href="https://github.com/sketchsketch942008-star/community-tools-hub" target="_blank" rel="noopener noreferrer" class="nav-link">[GitHub Repo]</a>
+    </div>
+  </header>
+
+  <div class="app-main">
+
+    <!-- Verify Expected Checksum Bar -->
+    <div class="verify-ribbon">
+      <div class="verify-left">
+        <span class="verify-label">VERIFY CHECKSUM / 完整性比对:</span>
+        <input type="text" id="expectedInput" class="verify-input" placeholder="在此粘贴期望的哈希校验值 (如 GitHub Release SHA256)..." oninput="checkMatch()">
+      </div>
+      <div class="verify-status" id="verifyStatusBadge">[AWAITING INPUT]</div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="content-grid">
+
+      <!-- Left: Input Source -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">INPUT SOURCE / 输入源</span>
+          <span class="badge" id="sourceMeta">[0 B]</span>
+        </div>
+        <div class="panel-body">
+          
+          <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+            <input type="file" id="fileInput" class="file-input" onchange="handleFileSelect(event)">
+            <div class="drop-text">
+              <strong>点击选择文件</strong> 或拖拽任意大文件/固件/安装包至此 (100% 本地内存计算，不上传)
+            </div>
+          </div>
+
+          <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-top:4px;">
+            或者直接输入纯文本 (UTF-8 Plain Text)：
+          </div>
+          <textarea id="textInput" class="text-input-area" placeholder="在此输入需要计算哈希的文本内容..." oninput="onTextChange()">OpenTools Hub - Professional Autonomous Micro-Tools Matrix v1.0.0</textarea>
+
+        </div>
+      </div>
+
+      <!-- Right: Computed Hashes -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">COMPUTED CHECKSUMS / 多重哈希矩阵</span>
+          <span class="badge" id="computeTime">[0.00 ms]</span>
+        </div>
+        <div class="panel-body">
+          
+          <div class="hash-list">
+            
+            <!-- SHA-256 -->
+            <div class="hash-card" id="cardSha256">
+              <div class="hash-card-header">
+                <span class="algo-name">SHA-256 (256-bit Secure Hash)</span>
+                <button class="copy-btn" onclick="copyHash('valSha256', this)">[COPY]</button>
+              </div>
+              <div class="hash-value" id="valSha256">...</div>
+            </div>
+
+            <!-- SHA-512 -->
+            <div class="hash-card" id="cardSha512">
+              <div class="hash-card-header">
+                <span class="algo-name">SHA-512 (512-bit High Security)</span>
+                <button class="copy-btn" onclick="copyHash('valSha512', this)">[COPY]</button>
+              </div>
+              <div class="hash-value" id="valSha512">...</div>
+            </div>
+
+            <!-- SHA-1 -->
+            <div class="hash-card" id="cardSha1">
+              <div class="hash-card-header">
+                <span class="algo-name">SHA-1 (160-bit Legacy / Git Hash)</span>
+                <button class="copy-btn" onclick="copyHash('valSha1', this)">[COPY]</button>
+              </div>
+              <div class="hash-value" id="valSha1">...</div>
+            </div>
+
+            <!-- MD5 -->
+            <div class="hash-card" id="cardMd5">
+              <div class="hash-card-header">
+                <span class="algo-name">MD5 (128-bit RFC 1321)</span>
+                <button class="copy-btn" onclick="copyHash('valMd5', this)">[COPY]</button>
+              </div>
+              <div class="hash-value" id="valMd5">...</div>
+            </div>
+
+            <!-- CRC32 -->
+            <div class="hash-card" id="cardCrc32">
+              <div class="hash-card-header">
+                <span class="algo-name">CRC32 (32-bit Checksum / Zip & Ethernet)</span>
+                <button class="copy-btn" onclick="copyHash('valCrc32', this)">[COPY]</button>
+              </div>
+              <div class="hash-value" id="valCrc32">...</div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    // State
+    let currentBuffer = new ArrayBuffer(0);
+    const computedHashes = {
+      sha256: '',
+      sha512: '',
+      sha1: '',
+      md5: '',
+      crc32: ''
+    };
+
+    // Native CRC32 Table
+    const crcTable = new Uint32Array(256);
+    for (let i = 0; i < 256; i++) {
+      let c = i;
+      for (let j = 0; j < 8; j++) {
+        c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      }
+      crcTable[i] = c;
+    }
+
+    function calculateCrc32(bytes) {
+      let crc = 0 ^ (-1);
+      for (let i = 0; i < bytes.length; i++) {
+        crc = (crc >>> 8) ^ crcTable[(crc ^ bytes[i]) & 0xFF];
+      }
+      return ((crc ^ (-1)) >>> 0).toString(16).padStart(8, '0');
+    }
+
+    // Native MD5 (RFC 1321)
+    function calculateMd5(bytes) {
+      function safeAdd(x, y) {
+        const lsw = (x & 0xffff) + (y & 0xffff);
+        const msw = (x >> 16) + (y >> 16) + (lsw >> 16);
+        return (msw << 16) | (lsw & 0xffff);
+      }
+      function bitRol(num, cnt) {
+        return (num << cnt) | (num >>> (32 - cnt));
+      }
+      function md5cmn(q, a, b, x, s, t) {
+        return safeAdd(bitRol(safeAdd(safeAdd(a, q), safeAdd(x, t)), s), b);
+      }
+      function md5ff(a, b, c, d, x, s, t) {
+        return md5cmn((b & c) | (~b & d), a, b, x, s, t);
+      }
+      function md5gg(a, b, c, d, x, s, t) {
+        return md5cmn((b & d) | (c & ~d), a, b, x, s, t);
+      }
+      function md5hh(a, b, c, d, x, s, t) {
+        return md5cmn(b ^ c ^ d, a, b, x, s, t);
+      }
+      function md5ii(a, b, c, d, x, s, t) {
+        return md5cmn(c ^ (b | ~d), a, b, x, s, t);
+      }
+
+      const len = bytes.length;
+      const words = [];
+      for (let i = 0; i < len; i++) {
+        words[i >> 2] |= bytes[i] << ((i % 4) * 8);
+      }
+      words[len >> 2] |= 0x80 << ((len % 4) * 8);
+      words[(((len + 8) >> 6) << 4) + 14] = len * 8;
+
+      let a = 1732584193, b = -271733879, c = -1732584194, d = 271733878;
+      for (let i = 0; i < words.length; i += 16) {
+        const olda = a, oldb = b, oldc = c, oldd = d;
+        a = md5ff(a, b, c, d, words[i] || 0, 7, -680876936);
+        d = md5ff(d, a, b, c, words[i + 1] || 0, 12, -389564586);
+        c = md5ff(c, d, a, b, words[i + 2] || 0, 17, 606105819);
+        b = md5ff(b, c, d, a, words[i + 3] || 0, 22, -1044525330);
+        a = md5ff(a, b, c, d, words[i + 4] || 0, 7, -176418897);
+        d = md5ff(d, a, b, c, words[i + 5] || 0, 12, 1200080426);
+        c = md5ff(c, d, a, b, words[i + 6] || 0, 17, -1473231341);
+        b = md5ff(b, c, d, a, words[i + 7] || 0, 22, -45705983);
+        a = md5ff(a, b, c, d, words[i + 8] || 0, 7, 1770035416);
+        d = md5ff(d, a, b, c, words[i + 9] || 0, 12, -1958414417);
+        c = md5ff(c, d, a, b, words[i + 10] || 0, 17, -42063);
+        b = md5ff(b, c, d, a, words[i + 11] || 0, 22, -1990404162);
+        a = md5ff(a, b, c, d, words[i + 12] || 0, 7, 1804603682);
+        d = md5ff(d, a, b, c, words[i + 13] || 0, 12, -40341101);
+        c = md5ff(c, d, a, b, words[i + 14] || 0, 17, -1502002290);
+        b = md5ff(b, c, d, a, words[i + 15] || 0, 22, 1236535329);
+
+        a = md5gg(a, b, c, d, words[i + 1] || 0, 5, -165796510);
+        d = md5gg(d, a, b, c, words[i + 6] || 0, 9, -1069501632);
+        c = md5gg(c, d, a, b, words[i + 11] || 0, 14, 643717713);
+        b = md5gg(b, c, d, a, words[i] || 0, 20, -373897302);
+        a = md5gg(a, b, c, d, words[i + 5] || 0, 5, -701558691);
+        d = md5gg(d, a, b, c, words[i + 10] || 0, 9, 38016083);
+        c = md5gg(c, d, a, b, words[i + 15] || 0, 14, -660478335);
+        b = md5gg(b, c, d, a, words[i + 4] || 0, 20, -405537848);
+        a = md5gg(a, b, c, d, words[i + 9] || 0, 5, 568446438);
+        d = md5gg(d, a, b, c, words[i + 14] || 0, 9, -1019803690);
+        c = md5gg(c, d, a, b, words[i + 3] || 0, 14, -187363961);
+        b = md5gg(b, c, d, a, words[i + 8] || 0, 20, 1163531501);
+        a = md5gg(a, b, c, d, words[i + 13] || 0, 5, -1444681467);
+        d = md5gg(d, a, b, c, words[i + 2] || 0, 9, -51403784);
+        c = md5gg(c, d, a, b, words[i + 7] || 0, 14, 1735328473);
+        b = md5gg(b, c, d, a, words[i + 12] || 0, 20, -1926607734);
+
+        a = md5hh(a, b, c, d, words[i + 5] || 0, 4, -378558);
+        d = md5hh(d, a, b, c, words[i + 8] || 0, 11, -2022574463);
+        c = md5hh(c, d, a, b, words[i + 11] || 0, 16, 1839030562);
+        b = md5hh(b, c, d, a, words[i + 14] || 0, 23, -35309556);
+        a = md5hh(a, b, c, d, words[i + 1] || 0, 4, -1530992060);
+        d = md5hh(d, a, b, c, words[i + 4] || 0, 11, 1272893353);
+        c = md5hh(c, d, a, b, words[i + 7] || 0, 16, -155497632);
+        b = md5hh(b, c, d, a, words[i + 10] || 0, 23, -1094730640);
+        a = md5hh(a, b, c, d, words[i + 13] || 0, 4, 681279174);
+        d = md5hh(d, a, b, c, words[i] || 0, 11, -358537222);
+        c = md5hh(c, d, a, b, words[i + 3] || 0, 16, -722521979);
+        b = md5hh(b, c, d, a, words[i + 6] || 0, 23, 76029189);
+        a = md5hh(a, b, c, d, words[i + 9] || 0, 4, -640364487);
+        d = md5hh(d, a, b, c, words[i + 12] || 0, 11, -421815835);
+        c = md5hh(c, d, a, b, words[i + 15] || 0, 16, 530742520);
+        b = md5hh(b, c, d, a, words[i + 2] || 0, 23, -995338651);
+
+        a = md5ii(a, b, c, d, words[i] || 0, 6, -198630844);
+        d = md5ii(d, a, b, c, words[i + 7] || 0, 10, 1126891415);
+        c = md5ii(c, d, a, b, words[i + 14] || 0, 15, -1416354905);
+        b = md5ii(b, c, d, a, words[i + 5] || 0, 21, -57434055);
+        a = md5ii(a, b, c, d, words[i + 12] || 0, 6, 1700485571);
+        d = md5ii(d, a, b, c, words[i + 3] || 0, 10, -1894986606);
+        c = md5ii(c, d, a, b, words[i + 10] || 0, 15, -1051523);
+        b = md5ii(b, c, d, a, words[i + 1] || 0, 21, -2054922799);
+        a = md5ii(a, b, c, d, words[i + 8] || 0, 6, 1873313359);
+        d = md5ii(d, a, b, c, words[i + 15] || 0, 10, -30611744);
+        c = md5ii(c, d, a, b, words[i + 6] || 0, 15, -1560198380);
+        b = md5ii(b, c, d, a, words[i + 13] || 0, 21, 1309151649);
+        a = md5ii(a, b, c, d, words[i + 4] || 0, 6, -145523070);
+        d = md5ii(d, a, b, c, words[i + 11] || 0, 10, -1120210379);
+        c = md5ii(c, d, a, b, words[i + 2] || 0, 15, 718787259);
+        b = md5ii(b, c, d, a, words[i + 9] || 0, 21, -343485551);
+
+        a = safeAdd(a, olda);
+        b = safeAdd(b, oldb);
+        c = safeAdd(c, oldc);
+        d = safeAdd(d, oldd);
+      }
+
+      function rhex(n) {
+        let s = '', j;
+        for (j = 0; j <= 3; j++) {
+          s += ((n >> (j * 8 + 4)) & 0x0f).toString(16) + ((n >> (j * 8)) & 0x0f).toString(16);
+        }
+        return s;
+      }
+      return rhex(a) + rhex(b) + rhex(c) + rhex(d);
+    }
+
+    function bufferToHex(buffer) {
+      return Array.from(new Uint8Array(buffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+    }
+
+    async function recomputeAllHashes() {
+      const t0 = performance.now();
+      const bytes = new Uint8Array(currentBuffer);
+
+      // Web Crypto API for SHA family
+      const [sha256Buf, sha512Buf, sha1Buf] = await Promise.all([
+        crypto.subtle.digest('SHA-256', currentBuffer),
+        crypto.subtle.digest('SHA-512', currentBuffer),
+        crypto.subtle.digest('SHA-1', currentBuffer)
+      ]);
+
+      computedHashes.sha256 = bufferToHex(sha256Buf);
+      computedHashes.sha512 = bufferToHex(sha512Buf);
+      computedHashes.sha1 = bufferToHex(sha1Buf);
+      computedHashes.md5 = calculateMd5(bytes);
+      computedHashes.crc32 = calculateCrc32(bytes);
+
+      document.getElementById('valSha256').textContent = computedHashes.sha256;
+      document.getElementById('valSha512').textContent = computedHashes.sha512;
+      document.getElementById('valSha1').textContent = computedHashes.sha1;
+      document.getElementById('valMd5').textContent = computedHashes.md5;
+      document.getElementById('valCrc32').textContent = computedHashes.crc32;
+
+      const t1 = performance.now();
+      document.getElementById('computeTime').textContent = `[${(t1 - t0).toFixed(2)} ms]`;
+      document.getElementById('sourceMeta').textContent = `[${bytes.length.toLocaleString()} Bytes]`;
+
+      checkMatch();
+    }
+
+    function checkMatch() {
+      const expected = document.getElementById('expectedInput').value.trim().toLowerCase();
+      const badge = document.getElementById('verifyStatusBadge');
+
+      // Reset card highlights
+      document.querySelectorAll('.hash-card').forEach(c => c.classList.remove('matched'));
+
+      if (!expected) {
+        badge.textContent = '[AWAITING INPUT]';
+        badge.className = 'verify-status';
+        return;
+      }
+
+      let matchedAlgo = null;
+      if (expected === computedHashes.sha256) {
+        matchedAlgo = 'SHA-256';
+        document.getElementById('cardSha256').classList.add('matched');
+      } else if (expected === computedHashes.sha512) {
+        matchedAlgo = 'SHA-512';
+        document.getElementById('cardSha512').classList.add('matched');
+      } else if (expected === computedHashes.sha1) {
+        matchedAlgo = 'SHA-1';
+        document.getElementById('cardSha1').classList.add('matched');
+      } else if (expected === computedHashes.md5) {
+        matchedAlgo = 'MD5';
+        document.getElementById('cardMd5').classList.add('matched');
+      } else if (expected === computedHashes.crc32) {
+        matchedAlgo = 'CRC32';
+        document.getElementById('cardCrc32').classList.add('matched');
+      }
+
+      if (matchedAlgo) {
+        badge.textContent = `[MATCH: ${matchedAlgo}]`;
+        badge.className = 'verify-status match';
+      } else {
+        badge.textContent = '[MISMATCH]';
+        badge.className = 'verify-status mismatch';
+      }
+    }
+
+    function onTextChange() {
+      const text = document.getElementById('textInput').value;
+      currentBuffer = new TextEncoder().encode(text).buffer;
+      recomputeAllHashes();
+    }
+
+    function handleFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        currentBuffer = evt.target.result;
+        document.getElementById('textInput').value = `[File: ${file.name} (${file.size.toLocaleString()} Bytes)]`;
+        recomputeAllHashes();
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    // Drag Drop
+    const dropZone = document.getElementById('dropZone');
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        const file = e.dataTransfer.files[0];
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          currentBuffer = evt.target.result;
+          document.getElementById('textInput').value = `[File: ${file.name} (${file.size.toLocaleString()} Bytes)]`;
+          recomputeAllHashes();
+        };
+        reader.readAsArrayBuffer(file);
+      }
+    });
+
+    function copyHash(elementId, btn) {
+      const val = document.getElementById(elementId).textContent;
+      navigator.clipboard.writeText(val).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = '[COPIED!]';
+        btn.style.color = '#4ade80';
+        setTimeout(() => {
+          btn.textContent = orig;
+          btn.style.color = '';
+        }, 1800);
+      });
+    }
+
+    // Initial Load
+    onTextChange();
+  </script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-11-24 13:06:18",
+  "timestamp": "2026-11-24 13:10:36",
   "overall_status": "PASS",
-  "tools_count": 11,
+  "tools_count": 12,
   "tools": [
     {
       "tool_id": "base64-binary-studio",
@@ -57,6 +57,17 @@
       "version": "v1.0.0",
       "title": "SecretSanitizer - 开发者敏感凭证与日志隐私脱敏器",
       "size_bytes": 9159
+    },
+    {
+      "tool_id": "hash-checksum-studio",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "Hash & Checksum Studio - 现代离线哈希计算与完整性校验沙盒",
+      "size_bytes": 23705
     },
     {
       "tool_id": "json-semantic-diff",

@@ -80,6 +80,7 @@ flowchart TD
 | `regex-lab-studio` | **RegexLab Studio** | `v1.0.0` | 现代离线安全正则表达式工坊；捕获组多色分解、用例矩阵与代码导出 | [OK] PASS |
 | `base64-binary-studio` | **Base64, Hex & Data URI Binary Inspector Studio** | `v1.0.0` | Base64/Hex/DataURI 多维互转沙盒；Magic Bytes 嗅探、体积膨胀率分析与本地文件还原 | [OK] PASS |
 | `markdown-table-studio` | **Markdown Table & ASCII Matrix Studio** | `v1.0.0` | GFM Markdown/ASCII 网格/Unicode 框线与 CSV/JSON 多维互转工坊；矩阵编辑与导出 | [OK] PASS |
+| `hash-checksum-studio` | **Hash & Checksum Studio** | `v1.0.0` | 现代离线多重哈希计算与完整性校验沙盒；SHA-256/512/MD5/CRC32 并发计算与自动比对 | [OK] PASS |
 
 ---
 
