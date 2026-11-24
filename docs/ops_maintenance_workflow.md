@@ -74,6 +74,7 @@ flowchart TD
 | `curl-code-studio` | **cURL Code Studio** | `v1.0.0` | cURL 一键转多语言（Python/JS/Axios/Go）与敏感脱敏 | ✅ PASS |
 | `cron-webhook-studio` | **Cron & Webhook Studio** | `v1.0.0` | 5字段双时区时间轴计算与 Web Crypto 原生 HMAC 签名 | ✅ PASS |
 | `svg-cleaner-studio` | **SVG Cleaner & Security Studio** | `v1.0.0` | Figma/Sketch 冗余清理、XSS 脚本剥离与 React JSX 导出 | ✅ PASS |
+| `json-semantic-diff` | **JSON Semantic Diff & JSONPath Studio** | `v1.0.0` | 键无序语义 Diff、RFC 6902 Patch 生成与 JSONPath 提取 | ✅ PASS |
 
 ---
 
