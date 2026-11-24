@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Markdown Table & ASCII Matrix Studio - 表格转换与排版沙盒</title>
+  <meta name="description" content="纯前端零依赖的 Markdown 表格、ASCII 网格、Unicode 框线与 CSV/JSON 多维互转工坊。实时可视化单元格编辑、对齐调整与一键导出。">
+  <style>
+    :root {
+      --bg-primary: #0a0e17;
+      --bg-panel: #111827;
+      --bg-input: #1a2234;
+      --border-color: #243049;
+      --accent-color: #38bdf8;
+      --accent-hover: #0284c7;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --code-bg: #070c14;
+      --badge-bg: #1e293b;
+      --badge-text: #38bdf8;
+      --success-text: #4ade80;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: rgba(17, 24, 39, 0.85);
+      border-bottom: 1px solid var(--border-color);
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(12px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+
+    .brand-badges {
+      display: flex;
+      gap: 6px;
+    }
+
+    .badge {
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      font-weight: 600;
+      border: 1px solid var(--border-color);
+      letter-spacing: 0.04em;
+    }
+
+    .badge-pass {
+      color: var(--success-text);
+      border-color: rgba(74, 222, 128, 0.3);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .nav-link {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .nav-link:hover {
+      color: var(--accent-color);
+    }
+
+    .app-main {
+      flex: 1;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Toolbar */
+    .toolbar-panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .toolbar-left {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .toolbar-right {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 6px 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn:hover {
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+    }
+
+    .btn-primary {
+      background: var(--accent-color);
+      border-color: var(--accent-hover);
+      color: #000;
+      font-weight: 700;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      color: #fff;
+    }
+
+    /* Content Area */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 16px;
+      flex: 1;
+    }
+
+    @media (max-width: 1024px) {
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      background: rgba(0, 0, 0, 0.25);
+      border-bottom: 1px solid var(--border-color);
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent-color);
+      letter-spacing: 0.05em;
+    }
+
+    .panel-body {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+      overflow-x: auto;
+    }
+
+    /* Grid Table View */
+    .grid-table-wrapper {
+      flex: 1;
+      overflow: auto;
+      max-height: 520px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--code-bg);
+    }
+
+    .editor-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+
+    .editor-table th, .editor-table td {
+      border: 1px solid var(--border-color);
+      padding: 6px 10px;
+      min-width: 110px;
+    }
+
+    .editor-table th {
+      background: var(--bg-input);
+      color: var(--accent-color);
+      font-weight: 700;
+      text-align: left;
+    }
+
+    .cell-input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.8rem;
+    }
+
+    .cell-input:focus {
+      color: var(--accent-color);
+    }
+
+    /* Output Formats */
+    .tab-btn-group {
+      display: flex;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 6px 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+
+    .tab-btn.active {
+      color: var(--accent-color);
+      border-bottom-color: var(--accent-color);
+    }
+
+    .output-box {
+      background: var(--code-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: #38bdf8;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      flex: 1;
+      min-height: 280px;
+      max-height: 520px;
+      overflow-y: auto;
+      white-space: pre;
+    }
+
+    .raw-paste-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+    .paste-textarea {
+      width: 100%;
+      height: 70px;
+      background: var(--code-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: #fff;
+      font-family: monospace;
+      font-size: 0.75rem;
+      padding: 6px 8px;
+      outline: none;
+      resize: none;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-title">Markdown Table & ASCII Matrix Studio</div>
+      <div class="brand-badges">
+        <span class="badge">[v1.0.0]</span>
+        <span class="badge">[GFM / ASCII / HTML]</span>
+        <span class="badge badge-pass">[OFFLINE SAFE]</span>
+      </div>
+    </div>
+    <div class="nav-links">
+      <a href="../../index.html" class="nav-link">[OpenTools Hub]</a>
+      <a href="https://github.com/sketchsketch942008-star/community-tools-hub" target="_blank" rel="noopener noreferrer" class="nav-link">[GitHub Repo]</a>
+    </div>
+  </header>
+
+  <div class="app-main">
+
+    <!-- Action Toolbar -->
+    <div class="toolbar-panel">
+      <div class="toolbar-left">
+        <button class="btn" onclick="addRow()">[+ 行 (Add Row)]</button>
+        <button class="btn" onclick="addCol()">[+ 列 (Add Col)]</button>
+        <button class="btn" onclick="removeRow()">[- 删最后一行]</button>
+        <button class="btn" onclick="removeCol()">[- 删最后一列]</button>
+        <button class="btn" onclick="transposeTable()">[转置表格 (Transpose)]</button>
+        <button class="btn" onclick="loadSampleData()">[加载示例数据]</button>
+        <button class="btn" onclick="clearTable()">[清空表格]</button>
+      </div>
+      <div class="toolbar-right">
+        <button class="btn btn-primary" id="copyBtn" onclick="copyOutput()">[复制当前代码]</button>
+      </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="content-grid">
+
+      <!-- Left: Interactive Visual Grid Table -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">INTERACTIVE GRID / 可视化表格编辑</span>
+          <span class="badge" id="gridDimensions">[4 行 x 4 列]</span>
+        </div>
+        <div class="panel-body">
+          
+          <!-- Quick Import Paste Area -->
+          <div class="raw-paste-panel">
+            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">快速导入（粘贴 CSV / TSV / 现有 Markdown 表格并一键解析）：</span>
+            <div style="display:flex; gap:8px;">
+              <textarea class="paste-textarea" id="pasteInput" placeholder="在此粘贴 CSV、TSV 或 Markdown 原始文本..."></textarea>
+              <button class="btn btn-secondary" style="height:70px; min-width:80px;" onclick="importRawData()">[解析导入]</button>
+            </div>
+          </div>
+
+          <!-- Table Container -->
+          <div class="grid-table-wrapper">
+            <table class="editor-table" id="editorTable">
+              <thead id="tableHead"></thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Right: Formatted Code Export -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="tab-btn-group">
+            <button class="tab-btn active" id="tabGfm" onclick="switchOutputTab('gfm')">[GFM Markdown]</button>
+            <button class="tab-btn" id="tabAscii" onclick="switchOutputTab('ascii')">[Unicode 框线]</button>
+            <button class="tab-btn" id="tabHtml" onclick="switchOutputTab('html')">[HTML Table]</button>
+            <button class="tab-btn" id="tabJson" onclick="switchOutputTab('json')">[JSON Array]</button>
+            <button class="tab-btn" id="tabCsv" onclick="switchOutputTab('csv')">[CSV 纯文本]</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <pre class="output-box" id="outputBox"></pre>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    // State
+    let currentTab = 'gfm';
+    let headers = ["工具模块", "版本", "运行模式", "健康状态"];
+    let rows = [
+      ["MetaCard Studio", "v1.0.0", "纯前端沙盒", "PASS"],
+      ["SecretSanitizer", "v1.0.0", "纯前端沙盒", "PASS"],
+      ["cURL Code Studio", "v1.0.0", "纯前端沙盒", "PASS"],
+      ["RegexLab Studio", "v1.0.0", "纯前端沙盒", "PASS"]
+    ];
+
+    function renderEditorTable() {
+      const thead = document.getElementById('tableHead');
+      const tbody = document.getElementById('tableBody');
+
+      // Headers
+      let headHtml = '<tr>';
+      headers.forEach((h, cIdx) => {
+        headHtml += `<th><input type="text" class="cell-input" value="${escapeHtml(h)}" oninput="updateHeader(${cIdx}, this.value)"></th>`;
+      });
+      headHtml += '</tr>';
+      thead.innerHTML = headHtml;
+
+      // Rows
+      let bodyHtml = '';
+      rows.forEach((row, rIdx) => {
+        bodyHtml += '<tr>';
+        row.forEach((cell, cIdx) => {
+          bodyHtml += `<td><input type="text" class="cell-input" value="${escapeHtml(cell)}" oninput="updateCell(${rIdx}, ${cIdx}, this.value)"></td>`;
+        });
+        bodyHtml += '</tr>';
+      });
+      tbody.innerHTML = bodyHtml;
+
+      document.getElementById('gridDimensions').textContent = `[${rows.length + 1} 行 x ${headers.length} 列]`;
+      renderOutput();
+    }
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function updateHeader(cIdx, val) {
+      headers[cIdx] = val;
+      renderOutput();
+    }
+
+    function updateCell(rIdx, cIdx, val) {
+      rows[rIdx][cIdx] = val;
+      renderOutput();
+    }
+
+    function addRow() {
+      const emptyRow = new Array(headers.length).fill('');
+      rows.push(emptyRow);
+      renderEditorTable();
+    }
+
+    function addCol() {
+      headers.push(`Column ${headers.length + 1}`);
+      rows.forEach(r => r.push(''));
+      renderEditorTable();
+    }
+
+    function removeRow() {
+      if (rows.length > 1) {
+        rows.pop();
+        renderEditorTable();
+      }
+    }
+
+    function removeCol() {
+      if (headers.length > 1) {
+        headers.pop();
+        rows.forEach(r => r.pop());
+        renderEditorTable();
+      }
+    }
+
+    function transposeTable() {
+      const matrix = [headers, ...rows];
+      const transposed = matrix[0].map((_, colIndex) => matrix.map(row => row[colIndex]));
+      headers = transposed[0];
+      rows = transposed.slice(1);
+      renderEditorTable();
+    }
+
+    function clearTable() {
+      headers = ["Header 1", "Header 2"];
+      rows = [["", ""]];
+      renderEditorTable();
+    }
+
+    function loadSampleData() {
+      headers = ["工具模块", "版本", "运行模式", "健康状态"];
+      rows = [
+        ["MetaCard Studio", "v1.0.0", "纯前端沙盒", "PASS"],
+        ["SecretSanitizer", "v1.0.0", "纯前端沙盒", "PASS"],
+        ["cURL Code Studio", "v1.0.0", "纯前端沙盒", "PASS"],
+        ["RegexLab Studio", "v1.0.0", "纯前端沙盒", "PASS"]
+      ];
+      renderEditorTable();
+    }
+
+    function importRawData() {
+      const raw = document.getElementById('pasteInput').value.trim();
+      if (!raw) return;
+
+      const lines = raw.split(/\r?\n/).filter(l => l.trim().length > 0);
+      if (lines.length === 0) return;
+
+      // Check if Markdown Table
+      if (lines[0].includes('|')) {
+        const parsed = [];
+        lines.forEach(l => {
+          // ignore separator line |---|---|
+          if (/^\|?(\s*:?-+:?\s*\|?)+$/.test(l.trim())) return;
+          const cells = l.split('|').map(c => c.trim()).filter((c, i, arr) => !(i === 0 && c === '') && !(i === arr.length - 1 && c === ''));
+          if (cells.length > 0) parsed.push(cells);
+        });
+        if (parsed.length > 0) {
+          headers = parsed[0];
+          rows = parsed.slice(1);
+          renderEditorTable();
+          return;
+        }
+      }
+
+      // Check CSV / TSV
+      const delimiter = lines[0].includes('\t') ? '\t' : ',';
+      const parsed = lines.map(l => l.split(delimiter).map(c => c.trim().replace(/^["']|["']$/g, '')));
+      if (parsed.length > 0) {
+        headers = parsed[0];
+        rows = parsed.slice(1);
+        renderEditorTable();
+      }
+    }
+
+    function renderOutput() {
+      const out = document.getElementById('outputBox');
+      if (currentTab === 'gfm') {
+        let md = `| ${headers.join(' | ')} |\n`;
+        md += `| ${headers.map(() => ':---').join(' | ')} |\n`;
+        rows.forEach(r => {
+          md += `| ${r.join(' | ')} |\n`;
+        });
+        out.textContent = md.trim();
+      } else if (currentTab === 'ascii') {
+        out.textContent = generateBoxTable(headers, rows);
+      } else if (currentTab === 'html') {
+        let html = '<table>\n  <thead>\n    <tr>\n';
+        headers.forEach(h => html += `      <th>${escapeHtml(h)}</th>\n`);
+        html += '    </tr>\n  </thead>\n  <tbody>\n';
+        rows.forEach(r => {
+          html += '    <tr>\n';
+          r.forEach(c => html += `      <td>${escapeHtml(c)}</td>\n`);
+          html += '    </tr>\n';
+        });
+        html += '  </tbody>\n</table>';
+        out.textContent = html;
+      } else if (currentTab === 'json') {
+        const jsonArr = rows.map(r => {
+          const obj = {};
+          headers.forEach((h, i) => {
+            obj[h] = r[i] !== undefined ? r[i] : '';
+          });
+          return obj;
+        });
+        out.textContent = JSON.stringify(jsonArr, null, 2);
+      } else if (currentTab === 'csv') {
+        let csv = headers.map(h => `"${h.replace(/"/g, '""')}"`).join(',') + '\n';
+        rows.forEach(r => {
+          csv += r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',') + '\n';
+        });
+        out.textContent = csv.trim();
+      }
+    }
+
+    function generateBoxTable(headers, rows) {
+      const colWidths = headers.map((h, i) => {
+        let max = h.length;
+        rows.forEach(r => {
+          if (r[i] && r[i].length > max) max = r[i].length;
+        });
+        return Math.max(max, 4);
+      });
+
+      const topBorder = '┌' + colWidths.map(w => '─'.repeat(w + 2)).join('┬') + '┐';
+      const midBorder = '├' + colWidths.map(w => '─'.repeat(w + 2)).join('┼') + '┤';
+      const botBorder = '└' + colWidths.map(w => '─'.repeat(w + 2)).join('┴') + '┘';
+
+      let res = topBorder + '\n';
+      res += '│ ' + headers.map((h, i) => h.padEnd(colWidths[i])).join(' │ ') + ' │\n';
+      res += midBorder + '\n';
+      rows.forEach(r => {
+        res += '│ ' + r.map((c, i) => String(c).padEnd(colWidths[i])).join(' │ ') + ' │\n';
+      });
+      res += botBorder;
+      return res;
+    }
+
+    function switchOutputTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      const idMap = { gfm: 'tabGfm', ascii: 'tabAscii', html: 'tabHtml', json: 'tabJson', csv: 'tabCsv' };
+      if (idMap[tab]) document.getElementById(idMap[tab]).classList.add('active');
+      renderOutput();
+    }
+
+    function copyOutput() {
+      const content = document.getElementById('outputBox').textContent;
+      navigator.clipboard.writeText(content).then(() => {
+        const btn = document.getElementById('copyBtn');
+        const orig = btn.textContent;
+        btn.textContent = '[COPIED!]';
+        btn.style.background = '#4ade80';
+        setTimeout(() => {
+          btn.textContent = orig;
+          btn.style.background = '';
+        }, 1800);
+      });
+    }
+
+    // Initialize
+    renderEditorTable();
+  </script>
+</body>
+</html>

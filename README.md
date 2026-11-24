@@ -45,6 +45,7 @@ flowchart LR
 | **CSS Glassmorphism Studio** | [`tools/css-glassmorphism-studio`](./tools/css-glassmorphism-studio/index.html) | `v1.0.0` | 现代毛玻璃拟态与多重网格渐变工坊；Vanilla/Tailwind/React 三轨代码极速导出 | 纯前端沙盒 | [OK] PASS |
 | **RegexLab Studio** | [`tools/regex-lab-studio`](./tools/regex-lab-studio/index.html) | `v1.0.0` | 现代离线安全正则表达式工坊与测试矩阵沙盒；多色捕获组、断言矩阵与多语言导出 | 纯前端沙盒 | [OK] PASS |
 | **Base64 Binary Studio** | [`tools/base64-binary-studio`](./tools/base64-binary-studio/index.html) | `v1.0.0` | Base64/Hex/DataURI 多维互转沙盒；Magic Bytes 嗅探、体积膨胀率分析与本地文件还原 | 纯前端沙盒 | [OK] PASS |
+| **Markdown Table Studio** | [`tools/markdown-table-studio`](./tools/markdown-table-studio/index.html) | `v1.0.0` | GFM Markdown/ASCII 网格/Unicode 框线与 CSV/JSON 多维互转工坊；矩阵编辑与导出 | 纯前端沙盒 | [OK] PASS |
 
 ---
 

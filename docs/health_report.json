@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-11-24 12:11:34",
+  "timestamp": "2026-11-24 13:02:51",
   "overall_status": "PASS",
-  "tools_count": 10,
+  "tools_count": 11,
   "tools": [
     {
       "tool_id": "base64-binary-studio",
@@ -79,6 +79,17 @@
       "version": "v1.0.0",
       "title": "JWT Inspector & Signature Studio - 离线结构解析与签名验证沙箱",
       "size_bytes": 13945
+    },
+    {
+      "tool_id": "markdown-table-studio",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "Markdown Table & ASCII Matrix Studio - 表格转换与排版沙盒",
+      "size_bytes": 17901
     },
     {
       "tool_id": "meta-card-previewer",
