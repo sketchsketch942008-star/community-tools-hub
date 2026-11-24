@@ -85,6 +85,7 @@ flowchart TD
 | `color-palette-studio` | **Color Palette & Design Token Studio** | `v1.0.0` | 单品牌色扩展 Tailwind 50~950 线性色阶、WCAG 2.1 对比度评级与五格设计令牌导出 | [OK] PASS |
 | `code-snapshot-studio` | **CodeShot Studio** | `v1.0.0` | 纯前端代码美化与快照生成工坊；Mac 拟态、语法高亮与多主题，直写剪贴板或导出 PNG/SVG | [OK] PASS |
 | `token-compressor-studio` | **TokenCompressor Studio** | `v1.0.0` | AI 提示词与上下文 Token 压缩瘦身工坊；代码/JSON/日志四模净化、BPE 计量与成本测算 | [OK] PASS |
+| `security-headers-studio` | **SecurityHeaders Studio** | `v1.0.0` | 现代 CORS 与 CSP 安全策略可视化工坊；OWASP 诊断评级与多服务器一键导出 | [OK] PASS |
 
 ---
 

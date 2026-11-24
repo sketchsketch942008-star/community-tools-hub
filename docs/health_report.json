@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-11-24 19:24:07",
+  "timestamp": "2026-11-24 20:11:42",
   "overall_status": "PASS",
-  "tools_count": 16,
+  "tools_count": 17,
   "tools": [
     {
       "tool_id": "base64-binary-studio",
@@ -156,6 +156,17 @@
       "version": "v1.0.0",
       "title": "SchemaForge - JSON to TypeScript, Zod & Go Struct Studio",
       "size_bytes": 21586
+    },
+    {
+      "tool_id": "security-headers-studio",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "SecurityHeaders Studio - Modern CORS &amp; CSP Policy Visual Studio v1.0.0",
+      "size_bytes": 41545
     },
     {
       "tool_id": "svg-cleaner-studio",
