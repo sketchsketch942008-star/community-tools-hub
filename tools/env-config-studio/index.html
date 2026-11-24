@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EnvDrift &amp; Config Studio - Offline .env Diff, Linter &amp; K8s/Docker Converter v1.0.0</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --panel: #131c31;
+      --editor: #070b14;
+      --border: #26334d;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --green: #34d399;
+      --amber: #fbbf24;
+      --rose: #fb7185;
+      --purple: #c084fc;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .back-btn {
+      color: var(--primary);
+      text-decoration: none;
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+    .back-btn:hover { background: rgba(56, 189, 248, 0.2); }
+    h1 { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .badge {
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .badge-ver { background: rgba(192, 132, 252, 0.15); color: var(--purple); border: 1px solid rgba(192, 132, 252, 0.3); }
+    .badge-sec { background: rgba(52, 211, 153, 0.12); color: var(--green); border: 1px solid rgba(52, 211, 153, 0.3); }
+    .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    select, button, input { font-family: inherit; }
+    .select-box {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .btn {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: var(--mono);
+    }
+    .btn:hover { background: #2d3c56; }
+    .btn-primary { background: var(--primary); color: #0b1120; border-color: var(--primary); }
+    .btn-primary:hover { background: var(--primary-hover); color: #fff; }
+    .btn-mask-on { background: rgba(251, 191, 36, 0.2); border-color: var(--amber); color: var(--amber); }
+
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+      gap: 10px;
+      padding: 12px 20px;
+      background: #0e1627;
+      border-bottom: 1px solid var(--border);
+    }
+    .kpi-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+    .kpi-label { font-size: 11px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; }
+    .kpi-val { font-size: 20px; font-weight: 700; font-family: var(--mono); margin-top: 2px; }
+    .c-blue { color: var(--primary); }
+    .c-green { color: var(--green); }
+    .c-amber { color: var(--amber); }
+    .c-rose { color: var(--rose); }
+    .c-purple { color: var(--purple); }
+
+    .editors-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 14px 20px 10px;
+    }
+    @media (max-width: 900px) { .editors-grid { grid-template-columns: 1fr; } }
+    .editor-box {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .editor-head {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-family: var(--mono);
+      background: #162238;
+    }
+    .editor-actions { display: flex; gap: 6px; align-items: center; }
+    .mini-btn {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: var(--mono);
+      cursor: pointer;
+    }
+    .mini-btn:hover { color: var(--text); border-color: var(--primary); }
+    textarea.env-input {
+      width: 100%;
+      height: 220px;
+      background: var(--editor);
+      color: #e2e8f0;
+      border: none;
+      outline: none;
+      padding: 12px;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.55;
+      resize: vertical;
+    }
+
+    .output-section {
+      flex: 1;
+      margin: 6px 20px 16px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .tab-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #162238;
+      border-bottom: 1px solid var(--border);
+    }
+    .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: var(--mono);
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active {
+      background: var(--editor);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .tab-panel { display: none; padding: 14px; flex: 1; overflow: auto; }
+    .tab-panel.active { display: block; }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .filter-group { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .pill {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-family: var(--mono);
+      cursor: pointer;
+    }
+    .pill.active { border-color: var(--primary); color: var(--primary); background: rgba(56, 189, 248, 0.1); }
+    .search-input {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: var(--mono);
+      min-width: 200px;
+      outline: none;
+    }
+    .search-input:focus { border-color: var(--primary); }
+
+    table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+    th, td {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      word-break: break-all;
+    }
+    th { background: #0e172a; color: var(--muted); font-size: 11px; text-transform: uppercase; }
+    tr:hover td { background: rgba(56, 189, 248, 0.04); }
+    .st-tag {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10.5px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .st-MISSING { background: rgba(251, 113, 133, 0.18); color: var(--rose); border: 1px solid rgba(251, 113, 133, 0.35); }
+    .st-EXTRA { background: rgba(192, 132, 252, 0.18); color: var(--purple); border: 1px solid rgba(192, 132, 252, 0.35); }
+    .st-CHANGED { background: rgba(251, 191, 36, 0.18); color: var(--amber); border: 1px solid rgba(251, 191, 36, 0.35); }
+    .st-EMPTY { background: rgba(249, 115, 22, 0.18); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.35); }
+    .st-SAME { background: rgba(52, 211, 153, 0.14); color: var(--green); border: 1px solid rgba(52, 211, 153, 0.3); }
+    .st-ERR { background: rgba(251, 113, 133, 0.2); color: var(--rose); border: 1px solid rgba(251, 113, 133, 0.4); }
+    .st-WARN { background: rgba(251, 191, 36, 0.2); color: var(--amber); border: 1px solid rgba(251, 191, 36, 0.4); }
+    .st-RISK { background: rgba(244, 63, 94, 0.25); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.5); }
+
+    .lint-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 900px) { .lint-grid { grid-template-columns: 1fr; } }
+    .lint-box {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+    }
+    .lint-box h3 {
+      font-size: 13px;
+      font-family: var(--mono);
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+    }
+    .lint-item {
+      padding: 8px;
+      border-radius: 5px;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      margin-bottom: 8px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .lint-meta { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; font-family: var(--mono); }
+    .lint-desc { color: var(--muted); font-size: 11.5px; }
+
+    pre.code-out {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.55;
+      color: #bae6fd;
+      overflow: auto;
+      max-height: 400px;
+      white-space: pre;
+    }
+
+    footer {
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+      padding: 8px 20px;
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-family: var(--mono);
+    }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--green);
+      color: #0b1120;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+      z-index: 99;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <a href="../../index.html" class="back-btn">[BACK] Hub Portal</a>
+      <h1>
+        EnvDrift &amp; Config Studio
+        <span class="badge badge-ver">v1.0.0</span>
+        <span class="badge badge-sec">[100% OFFLINE]</span>
+      </h1>
+    </div>
+    <div class="controls">
+      <select id="presetSelect" class="select-box" onchange="applyPreset(this.value)">
+        <option value="fullstack">[PRESET] Fullstack SaaS (Next.js + PG + Stripe)</option>
+        <option value="ai_saas">[PRESET] AI Agent SaaS (LLM + Vector DB)</option>
+        <option value="microservice">[PRESET] K8s Microservice (gRPC + OTel)</option>
+        <option value="docker_stack">[PRESET] Docker Compose Multi-Container Stack</option>
+      </select>
+      <button id="maskToggleBtn" class="btn" onclick="toggleMaskMode()">[MASK: OFF]</button>
+      <button class="btn" onclick="swapEnvs()">[SWAP A/B]</button>
+      <button class="btn btn-primary" onclick="runFullAnalysis()">[ANALYZE]</button>
+    </div>
+  </header>
+
+  <section class="kpi-strip">
+    <div class="kpi-card"><div class="kpi-label">Env A Keys</div><div id="kpiA" class="kpi-val c-blue">0</div></div>
+    <div class="kpi-card"><div class="kpi-label">Env B Keys</div><div id="kpiB" class="kpi-val c-blue">0</div></div>
+    <div class="kpi-card"><div class="kpi-label">Missing in B</div><div id="kpiMissing" class="kpi-val c-rose">0</div></div>
+    <div class="kpi-card"><div class="kpi-label">Extra in B</div><div id="kpiExtra" class="kpi-val c-purple">0</div></div>
+    <div class="kpi-card"><div class="kpi-label">Changed</div><div id="kpiChanged" class="kpi-val c-amber">0</div></div>
+    <div class="kpi-card"><div class="kpi-label">Lint Issues</div><div id="kpiLint" class="kpi-val c-amber">0</div></div>
+    <div class="kpi-card"><div class="kpi-label">Secret Risks</div><div id="kpiSecrets" class="kpi-val c-rose">0</div></div>
+  </section>
+
+  <section class="editors-grid">
+    <div class="editor-box">
+      <div class="editor-head">
+        <span>[ENV A] Base / .env.example / .env.local</span>
+        <div class="editor-actions">
+          <input type="file" id="fileInputA" style="display:none" onchange="loadLocalFile(event, 'envA')">
+          <button class="mini-btn" onclick="document.getElementById('fileInputA').click()">[LOAD]</button>
+          <button class="mini-btn" onclick="copyTextArea('envA')">[COPY]</button>
+          <button class="mini-btn" onclick="clearTextArea('envA')">[CLEAR]</button>
+        </div>
+      </div>
+      <textarea id="envA" class="env-input" spellcheck="false" placeholder="Paste base .env / .env.example here..."></textarea>
+    </div>
+
+    <div class="editor-box">
+      <div class="editor-head">
+        <span>[ENV B] Target / .env.production / .env.staging</span>
+        <div class="editor-actions">
+          <input type="file" id="fileInputB" style="display:none" onchange="loadLocalFile(event, 'envB')">
+          <button class="mini-btn" onclick="document.getElementById('fileInputB').click()">[LOAD]</button>
+          <button class="mini-btn" onclick="copyTextArea('envB')">[COPY]</button>
+          <button class="mini-btn" onclick="clearTextArea('envB')">[CLEAR]</button>
+        </div>
+      </div>
+      <textarea id="envB" class="env-input" spellcheck="false" placeholder="Paste target .env.production here..."></textarea>
+    </div>
+  </section>
+
+  <section class="output-section">
+    <div class="tab-bar">
+      <div class="tabs">
+        <button id="tabBtnDiff" class="tab-btn active" onclick="switchTab('diff')">[1] SEMANTIC DIFF</button>
+        <button id="tabBtnLint" class="tab-btn" onclick="switchTab('lint')">[2] SYNTAX LINTER &amp; SECURITY</button>
+        <button id="tabBtnConvert" class="tab-btn" onclick="switchTab('convert')">[3] MULTI-FORMAT CONVERTER</button>
+        <button id="tabBtnCompat" class="tab-btn" onclick="switchTab('compat')">[4] RUNTIME COMPATIBILITY</button>
+      </div>
+      <div style="font-size:11px; color:var(--muted); font-family:var(--mono);">
+        Zero Network Upload | Memory Sandbox Active
+      </div>
+    </div>
+
+    <!-- Tab 1: Semantic Diff -->
+    <div id="tabDiff" class="tab-panel active">
+      <div class="toolbar">
+        <div class="filter-group">
+          <button class="pill active" data-filter="ALL" onclick="setDiffFilter('ALL')">ALL</button>
+          <button class="pill" data-filter="MISSING" onclick="setDiffFilter('MISSING')">MISSING</button>
+          <button class="pill" data-filter="EXTRA" onclick="setDiffFilter('EXTRA')">EXTRA</button>
+          <button class="pill" data-filter="CHANGED" onclick="setDiffFilter('CHANGED')">CHANGED</button>
+          <button class="pill" data-filter="EMPTY" onclick="setDiffFilter('EMPTY')">EMPTY</button>
+          <button class="pill" data-filter="SAME" onclick="setDiffFilter('SAME')">SAME</button>
+        </div>
+        <div class="filter-group">
+          <input type="text" id="diffSearch" class="search-input" placeholder="Filter keys..." oninput="renderDiffTable()">
+          <button class="btn btn-primary" onclick="exportMissingPatch()">[COPY MISSING PATCH]</button>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:110px;">Status</th>
+            <th style="width:240px;">Variable Key</th>
+            <th>Env A (Source)</th>
+            <th>Env B (Target)</th>
+          </tr>
+        </thead>
+        <tbody id="diffTableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Tab 2: Syntax Linter & Security Audit -->
+    <div id="tabLint" class="tab-panel">
+      <div class="lint-grid">
+        <div class="lint-box">
+          <h3>
+            <span>[AUDIT] Env A Diagnostics</span>
+            <span id="gradeA" class="badge badge-sec">Grade: A+</span>
+          </h3>
+          <div id="lintListA"></div>
+        </div>
+        <div class="lint-box">
+          <h3>
+            <span>[AUDIT] Env B Diagnostics</span>
+            <span id="gradeB" class="badge badge-sec">Grade: A+</span>
+          </h3>
+          <div id="lintListB"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3: Multi-Format Converter -->
+    <div id="tabConvert" class="tab-panel">
+      <div class="toolbar">
+        <div class="filter-group">
+          <select id="convertSource" class="select-box" onchange="renderConverter()">
+            <option value="envA">Source: Env A</option>
+            <option value="envB">Source: Env B</option>
+          </select>
+          <button class="pill active" data-fmt="example" onclick="setConvertFormat('example')">.env.example (Sanitized)</button>
+          <button class="pill" data-fmt="docker" onclick="setConvertFormat('docker')">Docker Compose YAML</button>
+          <button class="pill" data-fmt="k8s" onclick="setConvertFormat('k8s')">K8s ConfigMap + Secret</button>
+          <button class="pill" data-fmt="json" onclick="setConvertFormat('json')">JSON</button>
+          <button class="pill" data-fmt="shell" onclick="setConvertFormat('shell')">Bash / PowerShell</button>
+          <button class="pill" data-fmt="zod" onclick="setConvertFormat('zod')">TypeScript + Zod</button>
+        </div>
+        <div class="filter-group">
+          <button class="btn" onclick="copyConvertedOutput()">[COPY OUTPUT]</button>
+          <button class="btn btn-primary" onclick="downloadConvertedOutput()">[DOWNLOAD]</button>
+        </div>
+      </div>
+      <pre id="converterOutput" class="code-out"></pre>
+    </div>
+
+    <!-- Tab 4: Parser Compatibility Matrix -->
+    <div id="tabCompat" class="tab-panel">
+      <p style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">
+        Cross-runtime drift check for Env A &amp; Env B across Node.js <code style="color:var(--primary)">dotenv</code>, <code style="color:var(--primary)">docker-compose</code>, Python <code style="color:var(--primary)">python-dotenv</code>, and POSIX <code style="color:var(--primary)">bash source .env</code>:
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:90px;">Env / Line</th>
+            <th style="width:190px;">Key</th>
+            <th>Detected Hazard</th>
+            <th>Node dotenv</th>
+            <th>Docker Compose</th>
+            <th>Bash source</th>
+          </tr>
+        </thead>
+        <tbody id="compatTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <span>[OK] 100% Client-Side Offline Execution | Zero External CDN | Zero Telemetry</span>
+    <span>OpenTools Hub · Community Micro-Tool Matrix #22</span>
+  </footer>
+
+  <div id="toast" class="toast">[OK] Action completed</div>
+
+  <script>
+    const PRESETS = {
+      fullstack: {
+        envA: `# Core Application Settings
+NODE_ENV=development
+PORT=3000
+APP_NAME=OpenTools SaaS Platform
+PUBLIC_SITE_URL=http://localhost:3000
+
+# Database & Cache
+DATABASE_URL=postgres://dev_user:dev_pass#2026@localhost:5432/app_db
+REDIS_URL=redis://localhost:6379/0
+
+# Billing & Auth
+STRIPE_PUBLISHABLE_KEY=pk_test_51MockDemoKey000001
+STRIPE_WEBHOOK_SECRET=whsec_sample_local_secret_9988
+JWT_SECRET=local-dev-jwt-secret-key-min-32-chars
+ENABLE_TELEMETRY=false
+PORT=3001`,
+        envB: `# Production Config
+NODE_ENV=production
+PORT=8080
+APP_NAME="OpenTools SaaS Platform"
+PUBLIC_SITE_URL=https://app.example.com
+
+# Database & Cache
+DATABASE_URL="postgres://prod_user:StrongPass2026@db.internal:5432/prod_db"
+REDIS_URL=
+
+# Billing & Auth
+STRIPE_PUBLISHABLE_KEY=pk_live_51MockProdKey999999
+JWT_SECRET=sk-proj-99887766554433221100aabbccddeeff
+ENABLE_TELEMETRY=true
+SENTRY_DSN=https://abc123@o12345.ingest.sentry.io/999`
+      },
+      ai_saas: {
+        envA: `# AI Model Providers
+OPENAI_API_KEY=sk-proj-localdevplaceholder1234567890
+GEMINI_API_KEY=AIzaSyMockDemoKeyValue123456789012345
+DEFAULT_MODEL=gemini-2.5-flash
+MAX_TOKENS_PER_REQ=4096
+TEMPERATURE=0.2
+
+# Vector Database
+QDRANT_URL=http://localhost:6333
+QDRANT_COLLECTION=docs_v1
+RATE_LIMIT_RPM=60`,
+        envB: `# AI Model Providers
+OPENAI_API_KEY=sk-proj-prodplaceholder9876543210abcd
+DEFAULT_MODEL=gemini-2.5-pro
+MAX_TOKENS_PER_REQ=8192
+TEMPERATURE=0.1
+
+# Vector Database
+QDRANT_URL=https://qdrant.prod.internal:6333
+QDRANT_API_KEY=qdr_prod_token_sample_776655
+QDRANT_COLLECTION=docs_v2_prod
+RATE_LIMIT_RPM=300`
+      },
+      microservice: {
+        envA: `# Service Runtime
+SERVICE_NAME=orders-grpc-svc
+GRPC_PORT=50051
+HTTP_METRICS_PORT=9090
+LOG_LEVEL=debug
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+DB_MAX_OPEN_CONNS=10
+DB_SSL_MODE=disable`,
+        envB: `# Service Runtime
+SERVICE_NAME=orders-grpc-svc
+GRPC_PORT=50051
+HTTP_METRICS_PORT=9090
+LOG_LEVEL=info
+OTEL_EXPORTER_OTLP_ENDPOINT=https://otel-collector.monitoring:4317
+DB_MAX_OPEN_CONNS=50
+DB_SSL_MODE=verify-full
+TLS_CERT_PATH=/etc/certs/tls.crt`
+      },
+      docker_stack: {
+        envA: `# Docker Compose Infrastructure
+COMPOSE_PROJECT_NAME=edge_stack
+NGINX_PORT=8080
+MINIO_ROOT_USER=minioadmin
+MINIO_ROOT_PASSWORD=minioadmin_dev
+RABBITMQ_DEFAULT_USER=guest
+RABBITMQ_DEFAULT_PASS=guest_pass
+CELERY_CONCURRENCY=2`,
+        envB: `# Docker Compose Production
+COMPOSE_PROJECT_NAME=edge_stack_prod
+NGINX_PORT=443
+MINIO_ROOT_USER=prod_storage_admin
+MINIO_ROOT_PASSWORD=
+RABBITMQ_DEFAULT_USER=broker_prod
+RABBITMQ_DEFAULT_PASS="Prod#Broker!9981"
+CELERY_CONCURRENCY=8
+WATCHTOWER_CLEANUP=true`
+      }
+    };
+
+    const SECRET_VALUE_PATTERNS = [
+      { name: "OpenAI API Key", regex: /sk-(?:proj-)?[A-Za-z0-9_-]{16,}/ },
+      { name: "GitHub Token", regex: /(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{20,}/ },
+      { name: "AWS Access Key", regex: /AKIA[0-9A-Z]{16}/ },
+      { name: "Google/Gemini API Key", regex: /AIza[0-9A-Za-z_-]{20,}/ },
+      { name: "Slack Token", regex: /xox[baprs]-[0-9A-Za-z-]{10,}/ },
+      { name: "Stripe Key/Webhook", regex: /(?:sk_live|pk_live|whsec)_[0-9A-Za-z]{12,}/ },
+      { name: "DB Credential URI", regex: /(?:postgres|postgresql|mysql|mongodb|redis):\/\/[^:\s]+:[^@\s]+@/i },
+      { name: "JWT Token", regex: /eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\./ }
+    ];
+
+    const SECRET_KEY_REGEX = /(SECRET|TOKEN|PASSWORD|PASS|API_KEY|PRIVATE_KEY|CREDENTIAL|AUTH|DSN|DATABASE_URL)/i;
+
+    let maskMode = false;
+    let currentDiffFilter = "ALL";
+    let currentConvertFormat = "example";
+    let latestState = { parsedA: null, parsedB: null, diffRows: [] };
+    let debounceTimer = null;
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function utf8ToBase64(str) {
+      const bytes = new TextEncoder().encode(str);
+      let binary = "";
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return btoa(binary);
+    }
+
+    function parseEnvText(rawText, envLabel) {
+      const lines = rawText.split(/\r?\n/);
+      const entries = [];
+      const map = new Map();
+      const occurrences = new Map();
+      const issues = [];
+      const compatHazards = [];
+
+      lines.forEach((rawLine, idx) => {
+        const lineNo = idx + 1;
+        const trimmed = rawLine.trim();
+
+        if (!trimmed || trimmed.startsWith("#")) {
+          entries.push({ type: trimmed ? "comment" : "blank", raw: rawLine, lineNo });
+          return;
+        }
+
+        let workLine = trimmed;
+        let hasExportPrefix = false;
+        if (/^export\s+/.test(workLine)) {
+          hasExportPrefix = true;
+          workLine = workLine.replace(/^export\s+/, "");
+          compatHazards.push({
+            env: envLabel, lineNo, key: workLine.split("=")[0].trim(),
+            hazard: "export prefix used",
+            dotenv: "Supported (stripped)",
+            docker: "FAIL / Treated as part of key name",
+            bash: "Supported"
+          });
+        }
+
+        const eqIdx = workLine.indexOf("=");
+        if (eqIdx === -1) {
+          issues.push({
+            severity: "ERR", code: "MISSING_EQUALS", lineNo, key: trimmed.slice(0, 32),
+            message: "Line has no '=' assignment separator."
+          });
+          entries.push({ type: "invalid", raw: rawLine, lineNo });
+          return;
+        }
+
+        const key = workLine.slice(0, eqIdx).trim();
+        const rawVal = workLine.slice(eqIdx + 1);
+        const trimmedVal = rawVal.trim();
+
+        if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) {
+          issues.push({
+            severity: "WARN", code: "NON_POSIX_KEY", lineNo, key,
+            message: "Key contains non-POSIX characters (avoid hyphens or leading digits)."
+          });
+        } else if (/[a-z]/.test(key)) {
+          issues.push({
+            severity: "WARN", code: "LOWERCASE_KEY", lineNo, key,
+            message: "Convention recommends UPPER_SNAKE_CASE for environment variables."
+          });
+        }
+
+        if (occurrences.has(key)) {
+          const prevLine = occurrences.get(key);
+          issues.push({
+            severity: "ERR", code: "DUPLICATE_KEY", lineNo, key,
+            message: `Duplicate key (previously defined at line ${prevLine}). Node dotenv keeps first unless override:true; Docker Compose & Bash overwrite with last!`
+          });
+          compatHazards.push({
+            env: envLabel, lineNo, key,
+            hazard: `Duplicate key (first at L${prevLine})`,
+            dotenv: "Keeps first value (unless override)",
+            docker: "Overwrites with last value",
+            bash: "Overwrites with last value"
+          });
+        } else {
+          occurrences.set(key, lineNo);
+        }
+
+        let value = trimmedVal;
+        let quoted = false;
+        let quoteChar = "";
+
+        if (trimmedVal.startsWith('"') || trimmedVal.startsWith("'")) {
+          quoteChar = trimmedVal[0];
+          if (trimmedVal.length >= 2 && trimmedVal.endsWith(quoteChar)) {
+            quoted = true;
+            value = trimmedVal.slice(1, -1);
+          } else {
+            issues.push({
+              severity: "ERR", code: "UNCLOSED_QUOTE", lineNo, key,
+              message: `Value starts with ${quoteChar} but has no matching closing quote on this line.`
+            });
+          }
+        } else {
+          if (/\s/.test(trimmedVal) && trimmedVal.length > 0) {
+            issues.push({
+              severity: "WARN", code: "UNQUOTED_SPACES", lineNo, key,
+              message: "Unquoted value contains spaces. Breaks `source .env` in POSIX shells."
+            });
+            compatHazards.push({
+              env: envLabel, lineNo, key,
+              hazard: "Unquoted spaces in value",
+              dotenv: "Parses full string",
+              docker: "Parses full string",
+              bash: "FAILS (executes 2nd word as command!)"
+            });
+          }
+          if (trimmedVal.includes("#")) {
+            issues.push({
+              severity: "WARN", code: "INLINE_COMMENT_TRAP", lineNo, key,
+              message: "Unquoted '#' detected. Node dotenv truncates everything after '#' as an inline comment (breaks passwords containing '#')!"
+            });
+            compatHazards.push({
+              env: envLabel, lineNo, key,
+              hazard: "Unquoted '#' character",
+              dotenv: "Truncates at '#' as comment",
+              docker: "Keeps '#' unless preceded by space",
+              bash: "Keeps '#' unless preceded by space"
+            });
+          }
+        }
+
+        if (value === "") {
+          issues.push({
+            severity: "WARN", code: "EMPTY_VALUE", lineNo, key,
+            message: "Key is declared with an empty value."
+          });
+        }
+
+        // Secret detection
+        let isSecret = SECRET_KEY_REGEX.test(key);
+        for (const pat of SECRET_VALUE_PATTERNS) {
+          if (pat.regex.test(value)) {
+            isSecret = true;
+            issues.push({
+              severity: "RISK", code: "HARDCODED_SECRET", lineNo, key,
+              message: `Suspected live credential detected (${pat.name}). Never commit plaintext secrets to Git.`
+            });
+            break;
+          }
+        }
+
+        const record = { type: "kv", key, value, rawVal: trimmedVal, quoted, quoteChar, lineNo, isSecret, hasExportPrefix };
+        entries.push(record);
+        map.set(key, record);
+      });
+
+      return { entries, map, issues, compatHazards };
+    }
+
+    function computeDiff(parsedA, parsedB) {
+      const allKeys = [];
+      const seen = new Set();
+      for (const k of parsedA.map.keys()) { seen.add(k); allKeys.push(k); }
+      for (const k of parsedB.map.keys()) { if (!seen.has(k)) { seen.add(k); allKeys.push(k); } }
+
+      return allKeys.map(key => {
+        const a = parsedA.map.get(key);
+        const b = parsedB.map.get(key);
+        let status = "SAME";
+        if (a && !b) status = "MISSING";
+        else if (!a && b) status = "EXTRA";
+        else if (b.value === "" && a.value !== "") status = "EMPTY";
+        else if (a.value !== b.value) status = "CHANGED";
+        return { key, status, valA: a ? a.value : null, valB: b ? b.value : null, isSecret: (a && a.isSecret) || (b && b.isSecret) };
+      });
+    }
+
+    function formatDisplayVal(val, isSecret) {
+      if (val === null) return '<span style="color:var(--muted); font-style:italic;">(not set)</span>';
+      if (val === "") return '<span style="color:#fb923c; font-style:italic;">(empty string)</span>';
+      if (maskMode && isSecret) {
+        return `<span style="color:var(--amber);">[MASKED:${val.length} chars]</span>`;
+      }
+      if (maskMode) {
+        return `<span style="color:var(--muted);">**** (${val.length})</span>`;
+      }
+      return escapeHtml(val);
+    }
+
+    function computeGrade(issues) {
+      let score = 100;
+      for (const i of issues) {
+        if (i.severity === "ERR") score -= 20;
+        else if (i.severity === "RISK") score -= 15;
+        else if (i.severity === "WARN") score -= 5;
+      }
+      if (score >= 95) return { text: "Grade: A+", cls: "badge-sec" };
+      if (score >= 80) return { text: "Grade: A", cls: "badge-sec" };
+      if (score >= 65) return { text: "Grade: B", cls: "st-WARN" };
+      if (score >= 45) return { text: "Grade: C", cls: "st-WARN" };
+      return { text: "Grade: D", cls: "st-ERR" };
+    }
+
+    function runFullAnalysis() {
+      const rawA = document.getElementById("envA").value;
+      const rawB = document.getElementById("envB").value;
+      const parsedA = parseEnvText(rawA, "Env A");
+      const parsedB = parseEnvText(rawB, "Env B");
+      const diffRows = computeDiff(parsedA, parsedB);
+
+      latestState = { parsedA, parsedB, diffRows };
+
+      document.getElementById("kpiA").innerText = parsedA.map.size;
+      document.getElementById("kpiB").innerText = parsedB.map.size;
+      document.getElementById("kpiMissing").innerText = diffRows.filter(r => r.status === "MISSING").length;
+      document.getElementById("kpiExtra").innerText = diffRows.filter(r => r.status === "EXTRA").length;
+      document.getElementById("kpiChanged").innerText = diffRows.filter(r => r.status === "CHANGED" || r.status === "EMPTY").length;
+
+      const allIssues = [...parsedA.issues, ...parsedB.issues];
+      document.getElementById("kpiLint").innerText = allIssues.filter(i => i.severity !== "RISK").length;
+      document.getElementById("kpiSecrets").innerText = allIssues.filter(i => i.severity === "RISK").length;
+
+      renderDiffTable();
+      renderLintReport();
+      renderConverter();
+      renderCompatMatrix();
+    }
+
+    function renderDiffTable() {
+      const tbody = document.getElementById("diffTableBody");
+      const search = document.getElementById("diffSearch").value.trim().toLowerCase();
+      const rows = latestState.diffRows.filter(r => {
+        if (currentDiffFilter !== "ALL" && r.status !== currentDiffFilter) return false;
+        if (search && !r.key.toLowerCase().includes(search)) return false;
+        return true;
+      });
+
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--muted); padding:20px;">[INFO] No matching variables for current filter.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = rows.map(r => `
+        <tr>
+          <td><span class="st-tag st-${r.status}">[${r.status}]</span></td>
+          <td style="font-weight:600; color:#fff;">${escapeHtml(r.key)}</td>
+          <td>${formatDisplayVal(r.valA, r.isSecret)}</td>
+          <td>${formatDisplayVal(r.valB, r.isSecret)}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderLintList(targetId, gradeId, issues) {
+      const g = computeGrade(issues);
+      const gEl = document.getElementById(gradeId);
+      gEl.innerText = g.text;
+      gEl.className = "badge " + g.cls;
+
+      const container = document.getElementById(targetId);
+      if (!issues.length) {
+        container.innerHTML = '<div style="color:var(--green); font-family:var(--mono); font-size:12px;">[PASS] Zero syntax errors, warnings, or hardcoded secret risks found.</div>';
+        return;
+      }
+      container.innerHTML = issues.map(i => `
+        <div class="lint-item">
+          <div class="lint-meta">
+            <span class="st-tag st-${i.severity}">[${i.severity}]</span>
+            <span style="color:var(--primary);">L${i.lineNo}</span>
+            <span style="font-weight:700; color:#fff;">${escapeHtml(i.key)}</span>
+            <span style="color:var(--muted); font-size:11px;">(${i.code})</span>
+          </div>
+          <div class="lint-desc">${escapeHtml(i.message)}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderLintReport() {
+      renderLintList("lintListA", "gradeA", latestState.parsedA.issues);
+      renderLintList("lintListB", "gradeB", latestState.parsedB.issues);
+    }
+
+    function renderCompatMatrix() {
+      const tbody = document.getElementById("compatTableBody");
+      const all = [...latestState.parsedA.compatHazards, ...latestState.parsedB.compatHazards];
+      if (!all.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--green); padding:20px;">[PASS] No cross-runtime .env parsing hazards detected across Node dotenv, Docker Compose, and Bash.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = all.map(h => `
+        <tr>
+          <td>${escapeHtml(h.env)} L${h.lineNo}</td>
+          <td style="font-weight:700; color:#fff;">${escapeHtml(h.key)}</td>
+          <td style="color:var(--amber);">${escapeHtml(h.hazard)}</td>
+          <td>${escapeHtml(h.dotenv)}</td>
+          <td>${escapeHtml(h.docker)}</td>
+          <td style="color:var(--rose);">${escapeHtml(h.bash)}</td>
+        </tr>
+      `).join("");
+    }
+
+    function inferPlaceholder(key, value) {
+      const k = key.toUpperCase();
+      if (/^https?:\/\//i.test(value)) return "https://example.com";
+      if (/^(postgres|mysql|mongodb|redis):\/\//i.test(value)) return `${value.split("://")[0]}://user:password@localhost:5432/dbname`;
+      if (value === "true" || value === "false") return value;
+      if (/^\d+$/.test(value) && (k.includes("PORT") || k.includes("MAX") || k.includes("LIMIT") || k.includes("CONCURRENCY"))) return value;
+      if (k.includes("KEY") || k.includes("SECRET") || k.includes("TOKEN") || k.includes("PASS")) return `<YOUR_${k}>`;
+      if (k === "NODE_ENV") return "development";
+      return `<SET_${k}>`;
+    }
+
+    function generateEnvExample(parsed) {
+      return parsed.entries.map(e => {
+        if (e.type === "comment" || e.type === "blank") return e.raw;
+        if (e.type === "kv") return `${e.key}=${inferPlaceholder(e.key, e.value)}`;
+        return `# [SKIPPED INVALID] ${e.raw}`;
+      }).join("\n");
+    }
+
+    function generateDockerCompose(parsed) {
+      const lines = ["services:", "  app:", "    image: your-org/your-app:latest", "    environment:"];
+      for (const [k, rec] of parsed.map.entries()) {
+        const escaped = rec.value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+        lines.push(`      ${k}: "${escaped}"`);
+      }
+      return lines.join("\n");
+    }
+
+    function generateKubernetesManifests(parsed) {
+      const plain = [];
+      const secrets = [];
+      for (const [k, rec] of parsed.map.entries()) {
+        if (rec.isSecret) secrets.push(rec);
+        else plain.push(rec);
+      }
+      const out = [];
+      out.push("apiVersion: v1", "kind: ConfigMap", "metadata:", "  name: app-config", "data:");
+      if (!plain.length) out.push("  # No non-secret keys detected");
+      plain.forEach(r => {
+        const esc = r.value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+        out.push(`  ${r.key}: "${esc}"`);
+      });
+      out.push("---", "apiVersion: v1", "kind: Secret", "metadata:", "  name: app-secrets", "type: Opaque", "data:");
+      if (!secrets.length) out.push("  # No secret keys detected");
+      secrets.forEach(r => {
+        out.push(`  ${r.key}: ${utf8ToBase64(r.value)}`);
+      });
+      return out.join("\n");
+    }
+
+    function generateJsonOutput(parsed) {
+      const obj = {};
+      for (const [k, rec] of parsed.map.entries()) {
+        if (rec.value === "true") obj[k] = true;
+        else if (rec.value === "false") obj[k] = false;
+        else if (/^\d+(\.\d+)?$/.test(rec.value) && !rec.quoted) obj[k] = Number(rec.value);
+        else obj[k] = rec.value;
+      }
+      return JSON.stringify(obj, null, 2);
+    }
+
+    function generateShellExports(parsed) {
+      const bash = ["# Bash / Zsh (POSIX)"];
+      const ps = ["", "# Windows PowerShell"];
+      for (const [k, rec] of parsed.map.entries()) {
+        const bashSafe = rec.value.replace(/'/g, "'\"'\"'");
+        const psSafe = rec.value.replace(/`/g, "``").replace(/"/g, '`"').replace(/\$/g, "`$");
+        bash.push(`export ${k}='${bashSafe}'`);
+        ps.push(`$env:${k} = "${psSafe}"`);
+      }
+      return [...bash, ...ps].join("\n");
+    }
+
+    function generateTypeScriptZod(parsed) {
+      const zodLines = ['import { z } from "zod";', "", "export const envSchema = z.object({"];
+      const tsLines = ["", "export type EnvConfig = z.infer<typeof envSchema>;", "", "declare global {", "  namespace NodeJS {", "    interface ProcessEnv {"];
+      for (const [k, rec] of parsed.map.entries()) {
+        let zRule = "z.string().min(1)";
+        if (rec.value === "true" || rec.value === "false") zRule = 'z.enum(["true", "false"]).transform((v) => v === "true")';
+        else if (/^\d+$/.test(rec.value)) zRule = "z.coerce.number().int()";
+        else if (/^\d+\.\d+$/.test(rec.value)) zRule = "z.coerce.number()";
+        else if (/^https?:\/\//i.test(rec.value)) zRule = "z.string().url()";
+        else if (rec.value === "") zRule = "z.string().optional()";
+        zodLines.push(`  ${k}: ${zRule},`);
+        tsLines.push(`      ${k}${rec.value === "" ? "?" : ""}: string;`);
+      }
+      zodLines.push("});", "", "export const env = envSchema.parse(process.env);");
+      tsLines.push("    }", "  }", "}");
+      return [...zodLines, ...tsLines].join("\n");
+    }
+
+    function renderConverter() {
+      const srcKey = document.getElementById("convertSource").value;
+      const parsed = srcKey === "envA" ? latestState.parsedA : latestState.parsedB;
+      if (!parsed) return;
+      let output = "";
+      if (currentConvertFormat === "example") output = generateEnvExample(parsed);
+      else if (currentConvertFormat === "docker") output = generateDockerCompose(parsed);
+      else if (currentConvertFormat === "k8s") output = generateKubernetesManifests(parsed);
+      else if (currentConvertFormat === "json") output = generateJsonOutput(parsed);
+      else if (currentConvertFormat === "shell") output = generateShellExports(parsed);
+      else if (currentConvertFormat === "zod") output = generateTypeScriptZod(parsed);
+      document.getElementById("converterOutput").textContent = output;
+    }
+
+    function switchTab(name) {
+      const map = { diff: ["tabBtnDiff", "tabDiff"], lint: ["tabBtnLint", "tabLint"], convert: ["tabBtnConvert", "tabConvert"], compat: ["tabBtnCompat", "tabCompat"] };
+      Object.values(map).forEach(([b, p]) => {
+        document.getElementById(b).classList.remove("active");
+        document.getElementById(p).classList.remove("active");
+      });
+      document.getElementById(map[name][0]).classList.add("active");
+      document.getElementById(map[name][1]).classList.add("active");
+    }
+
+    function setDiffFilter(filter) {
+      currentDiffFilter = filter;
+      document.querySelectorAll("#tabDiff .pill").forEach(el => {
+        el.classList.toggle("active", el.getAttribute("data-filter") === filter);
+      });
+      renderDiffTable();
+    }
+
+    function setConvertFormat(fmt) {
+      currentConvertFormat = fmt;
+      document.querySelectorAll("#tabConvert .pill").forEach(el => {
+        el.classList.toggle("active", el.getAttribute("data-fmt") === fmt);
+      });
+      renderConverter();
+    }
+
+    function toggleMaskMode() {
+      maskMode = !maskMode;
+      const btn = document.getElementById("maskToggleBtn");
+      btn.innerText = maskMode ? "[MASK: ON]" : "[MASK: OFF]";
+      btn.classList.toggle("btn-mask-on", maskMode);
+      renderDiffTable();
+    }
+
+    function swapEnvs() {
+      const a = document.getElementById("envA");
+      const b = document.getElementById("envB");
+      const tmp = a.value;
+      a.value = b.value;
+      b.value = tmp;
+      runFullAnalysis();
+      showToast("[SWAPPED] Env A and Env B swapped");
+    }
+
+    function exportMissingPatch() {
+      const missing = latestState.diffRows.filter(r => r.status === "MISSING");
+      if (!missing.length) {
+        showToast("[INFO] No missing keys to export");
+        return;
+      }
+      const patch = ["# Missing keys required in Target Env B", ...missing.map(r => `${r.key}=${inferPlaceholder(r.key, r.valA || "")}`)].join("\n");
+      navigator.clipboard.writeText(patch).then(() => showToast(`[COPIED] ${missing.length} missing key(s) patch copied`));
+    }
+
+    function copyConvertedOutput() {
+      const txt = document.getElementById("converterOutput").textContent;
+      navigator.clipboard.writeText(txt).then(() => showToast("[COPIED] Converted config copied"));
+    }
+
+    function downloadConvertedOutput() {
+      const txt = document.getElementById("converterOutput").textContent;
+      const fileNames = { example: ".env.example", docker: "docker-compose.env.yml", k8s: "k8s-env-manifests.yaml", json: "env.config.json", shell: "export-env.sh", zod: "env.schema.ts" };
+      const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileNames[currentConvertFormat] || "env-output.txt";
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("[DOWNLOAD] Exported " + a.download);
+    }
+
+    function loadLocalFile(event, targetId) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById(targetId).value = e.target.result;
+        runFullAnalysis();
+        showToast(`[LOADED] ${file.name} loaded locally`);
+      };
+      reader.readAsText(file);
+    }
+
+    function copyTextArea(id) {
+      navigator.clipboard.writeText(document.getElementById(id).value).then(() => showToast("[COPIED] Editor content copied"));
+    }
+
+    function clearTextArea(id) {
+      document.getElementById(id).value = "";
+      runFullAnalysis();
+    }
+
+    function applyPreset(key) {
+      const p = PRESETS[key] || PRESETS.fullstack;
+      document.getElementById("envA").value = p.envA;
+      document.getElementById("envB").value = p.envB;
+      runFullAnalysis();
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.innerText = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 2200);
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      ["envA", "envB"].forEach(id => {
+        document.getElementById(id).addEventListener("input", () => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(runFullAnalysis, 180);
+        });
+      });
+      applyPreset("fullstack");
+    });
+  </script>
+</body>
+</html>

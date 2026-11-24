@@ -105,7 +105,7 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         """执行自主健康巡检引擎并验证 PASS 状态"""
         report = hub_health_checker.run_health_check()
         self.assertEqual(report["overall_status"], "PASS", f"Health check failed: {report}")
-        self.assertEqual(report["tools_count"], 21)
+        self.assertEqual(report["tools_count"], 22)
         
         for tool in report["tools"]:
             self.assertEqual(tool["status"], "PASS", f"Tool {tool['tool_id']} not passing: {tool}")
@@ -361,6 +361,26 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         self.assertIn("renderSnippet", content)
         self.assertIn("copyResponse", content)
         self.assertIn("PRESETS", content)
+
+    def test_env_config_studio_features(self):
+        """验证 EnvDrift & Config Studio 页面结构、漂移比对、语法诊断与多格式转换核心功能"""
+        tool_file = self.tools_dir / "env-config-studio" / "index.html"
+        self.assertTrue(tool_file.exists())
+        content = tool_file.read_text(encoding="utf-8")
+        self.assertIn("EnvDrift &amp; Config Studio - Offline .env Diff, Linter &amp; K8s/Docker Converter", content)
+        self.assertIn("parseEnvText", content)
+        self.assertIn("computeDiff", content)
+        self.assertIn("DUPLICATE_KEY", content)
+        self.assertIn("INLINE_COMMENT_TRAP", content)
+        self.assertIn("HARDCODED_SECRET", content)
+        self.assertIn("generateEnvExample", content)
+        self.assertIn("generateDockerCompose", content)
+        self.assertIn("generateKubernetesManifests", content)
+        self.assertIn("generateTypeScriptZod", content)
+        self.assertIn("utf8ToBase64", content)
+        self.assertIn("exportMissingPatch", content)
+        self.assertIn("toggleMaskMode", content)
+        self.assertIn("URL.createObjectURL", content)
 
 if __name__ == "__main__":
     unittest.main()

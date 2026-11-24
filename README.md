@@ -56,6 +56,7 @@ flowchart LR
 | **StreamInspector Studio** | [`tools/websocket-inspector-studio`](./tools/websocket-inspector-studio/index.html) | `v1.0.0` | 现代 WebSocket 与 Server-Sent Events (SSE) 流式调试工坊；毫秒级时序帧控制台、实时 JSON 格式化与客户端代码导出 | 纯前端沙盒 | [OK] PASS |
 | **OpenAPI & Swagger Studio** | [`tools/openapi-swagger-studio`](./tools/openapi-swagger-studio/index.html) | `v1.0.0` | OpenAPI 3.0 / Swagger 可视化规范设计工坊；交互式接口文档、Schema 自动 Mock 数据、TypeScript 与 cURL 代码导出 | 纯前端沙盒 | [OK] PASS |
 | **GraphQL Playground Studio** | [`tools/graphql-playground-studio`](./tools/graphql-playground-studio/index.html) | `v1.0.0` | 现代 GraphQL 交互式 IDE 与离线 Schema Mock 工坊；Query/Mutation 语法沙盒、SDL 编辑与纯前端智能 Mock 响应引擎 | 纯前端沙盒 | [OK] PASS |
+| **EnvDrift & Config Studio** | [`tools/env-config-studio`](./tools/env-config-studio/index.html) | `v1.0.0` | 纯前端离线 .env 配置漂移比对、语法与安全诊断及 Docker/K8s/Zod 六格式本地转换工坊 | 纯前端沙盒 | [OK] PASS |
 
 ---
 

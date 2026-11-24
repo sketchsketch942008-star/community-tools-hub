@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-11-25 00:14:25",
+  "timestamp": "2026-11-25 02:16:33",
   "overall_status": "PASS",
-  "tools_count": 21,
+  "tools_count": 22,
   "tools": [
     {
       "tool_id": "base64-binary-studio",
@@ -79,6 +79,17 @@
       "version": "v1.0.0",
       "title": "SecretSanitizer - 开发者敏感凭证与日志隐私脱敏器",
       "size_bytes": 9159
+    },
+    {
+      "tool_id": "env-config-studio",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "EnvDrift &amp; Config Studio - Offline .env Diff, Linter &amp; K8s/Docker Converter v1.0.0",
+      "size_bytes": 44919
     },
     {
       "tool_id": "graphql-playground-studio",
