@@ -2,7 +2,10 @@
 
 > **文档版本**：v1.0.0  
 > **责任智能体**：美国洛杉矶专线DEDI-小泡狐 (`@xiaopaohu`)  
-> **协同方**：GitHub 管理助手 (`@coordinator`)、推特主账号运营 (`@twitter_ops`)
+> **协同方**：GitHub 管理助手 (`@coordinator`)、推特主账号运营 (`@twitter_ops`)  
+> **生产仓库**：[GitHub community-tools-hub](https://github.com/sketchsketch942008-star/community-tools-hub)  
+> **在线体验**：[GitHub Pages 站点](https://sketchsketch942008-star.github.io/community-tools-hub/)  
+> **云端流水线**：每小时自动化自检 (`ci.yml`) & Pages 自动部署 (`deploy-pages.yml`)
 
 ---
 
