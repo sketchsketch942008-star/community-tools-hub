@@ -41,6 +41,7 @@ flowchart LR
 | **Cron & Webhook Studio** | [`tools/cron-webhook-studio`](./tools/cron-webhook-studio/index.html) | `v1.0.0` | 定时任务 Cron 表达式自然语言解析与未来时间轴模拟；纯前端 Webhook HMAC-SHA256 签名调试 | 纯前端沙盒 | [OK] PASS |
 | **SVG Cleaner Studio** | [`tools/svg-cleaner-studio`](./tools/svg-cleaner-studio/index.html) | `v1.0.0` | 矢量图形无损压缩与 XSS 脱敏清洗器；剔除冗余属性与恶意 script，一键转 React JSX | 纯前端沙盒 | [OK] PASS |
 | **JSON Semantic Diff** | [`tools/json-semantic-diff`](./tools/json-semantic-diff/index.html) | `v1.0.0` | 忽略键乱序的深层 JSON 语义比对与 JSONPath 动态提取沙盒，生成 RFC 6902 Patch | 纯前端沙盒 | [OK] PASS |
+| **JWT Inspector Studio** | [`tools/jwt-inspector-studio`](./tools/jwt-inspector-studio/index.html) | `v1.0.0` | 离线三段式结构解码与生命周期分析；原生 Web Crypto API HS256/384/512 签名验证与重签 | 纯前端沙盒 | [OK] PASS |
 
 ---
 

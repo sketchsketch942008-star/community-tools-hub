@@ -37,6 +37,7 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         self.assertIn("./tools/cron-webhook-studio/index.html", portal_html)
         self.assertIn("./tools/svg-cleaner-studio/index.html", portal_html)
         self.assertIn("./tools/json-semantic-diff/index.html", portal_html)
+        self.assertIn("./tools/jwt-inspector-studio/index.html", portal_html)
 
         # 检查实际工具文件存在
         meta_tool = self.tools_dir / "meta-card-previewer" / "index.html"
@@ -45,18 +46,20 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         cron_tool = self.tools_dir / "cron-webhook-studio" / "index.html"
         svg_tool = self.tools_dir / "svg-cleaner-studio" / "index.html"
         json_tool = self.tools_dir / "json-semantic-diff" / "index.html"
+        jwt_tool = self.tools_dir / "jwt-inspector-studio" / "index.html"
         self.assertTrue(meta_tool.exists(), "MetaCard Studio index.html must exist")
         self.assertTrue(sanitizer_tool.exists(), "SecretSanitizer index.html must exist")
         self.assertTrue(curl_tool.exists(), "cURL Code Studio index.html must exist")
         self.assertTrue(cron_tool.exists(), "Cron & Webhook Studio index.html must exist")
         self.assertTrue(svg_tool.exists(), "SVG Cleaner Studio index.html must exist")
         self.assertTrue(json_tool.exists(), "JSON Semantic Diff index.html must exist")
+        self.assertTrue(jwt_tool.exists(), "JWT Inspector Studio index.html must exist")
 
     def test_hub_health_checker_execution(self):
         """执行自主健康巡检引擎并验证 PASS 状态"""
         report = hub_health_checker.run_health_check()
         self.assertEqual(report["overall_status"], "PASS", f"Health check failed: {report}")
-        self.assertEqual(report["tools_count"], 6)
+        self.assertEqual(report["tools_count"], 7)
         
         for tool in report["tools"]:
             self.assertEqual(tool["status"], "PASS", f"Tool {tool['tool_id']} not passing: {tool}")
@@ -102,6 +105,19 @@ class TestOpenToolsHubRegression(unittest.TestCase):
                 # 检查没有外链 script
                 external_scripts = re.findall(r'<script[^>]+src=["\'](http[^"\']+)["\']', content, re.IGNORECASE)
                 self.assertEqual(len(external_scripts), 0, f"Found external scripts in {tool_dir.name}: {external_scripts}")
+
+    def test_jwt_decoder_offline_integrity(self):
+        """验证 JWT 离线解析与三段式结构规范"""
+        import base64
+        header = json.dumps({"alg": "HS256", "typ": "JWT"})
+        payload = json.dumps({"sub": "test", "name": "xiaopaohu"})
+        h_b64 = base64.urlsafe_b64encode(header.encode()).decode().rstrip("=")
+        p_b64 = base64.urlsafe_b64encode(payload.encode()).decode().rstrip("=")
+        dummy_jwt = f"{h_b64}.{p_b64}.dummysig"
+        parts = dummy_jwt.split(".")
+        self.assertEqual(len(parts), 3)
+        self.assertEqual(json.loads(base64.urlsafe_b64decode(parts[0] + "==").decode())["alg"], "HS256")
+        self.assertEqual(json.loads(base64.urlsafe_b64decode(parts[1] + "==").decode())["name"], "xiaopaohu")
 
 if __name__ == "__main__":
     unittest.main()

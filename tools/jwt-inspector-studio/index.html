@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JWT Inspector & Signature Studio - 离线结构解析与签名验证沙箱</title>
+  <style>
+    :root {
+      --bg: #090e17;
+      --card: #111a28;
+      --border: #1e2d42;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --header-color: #f43f5e;
+      --payload-color: #a855f7;
+      --sig-color: #06b6d4;
+      --code-bg: #030712;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px; }
+    header { max-width: 1280px; margin: 0 auto 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 14px; }
+    h1 { font-size: 1.4rem; color: #38bdf8; display: flex; align-items: center; gap: 8px; }
+    .badge { background: #075985; color: #7dd3fc; font-size: 0.75rem; padding: 2px 8px; border-radius: 999px; }
+    .security-notice { font-size: 0.8rem; color: var(--success); background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); padding: 6px 12px; border-radius: 6px; }
+    .container { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 900px) { .container { grid-template-columns: 1fr; } }
+    .panel { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .panel-title { font-size: 1rem; font-weight: 600; color: #fff; }
+    textarea { width: 100%; height: 260px; background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; color: #e2e8f0; font-size: 0.85rem; line-height: 1.5; resize: vertical; }
+    textarea:focus, input:focus, select:focus { outline: none; border-color: var(--accent); }
+    input, select { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--code-bg); color: #fff; font-size: 0.85rem; }
+    .section-block { margin-top: 14px; }
+    .block-title { font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between; }
+    .header-text { color: var(--header-color); }
+    .payload-text { color: var(--payload-color); }
+    .sig-text { color: var(--sig-color); }
+    .editor-box { height: 160px; font-size: 0.85rem; }
+    .time-card { background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-top: 10px; font-size: 0.8rem; }
+    .time-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+    .time-row:last-child { margin-bottom: 0; }
+    .actions-bar { display: flex; gap: 10px; margin-top: 14px; align-items: center; flex-wrap: wrap; }
+    .btn { background: var(--border); color: var(--text); border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 500; }
+    .btn:hover { background: #263852; }
+    .btn-primary { background: var(--accent); color: #000; font-weight: 600; }
+    .btn-primary:hover { background: var(--accent-hover); color: #fff; }
+    .stat-pill { font-size: 0.8rem; padding: 4px 10px; border-radius: 6px; background: #1e293b; color: #94a3b8; }
+    .stat-pill.valid { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+    .stat-pill.invalid { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>JWT Inspector & Signature Studio <span class="badge">v1.0.0</span></h1>
+      <p style="font-size:0.85rem; color:var(--muted); margin-top:4px;">零网络外发 · 纯前端 Web Crypto API 原生离线验签与时间戳生命周期分析</p>
+    </div>
+    <div class="security-notice">
+      [LOCAL] 100% 浏览器内存离线沙箱 · 绝不上传凭据
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Left: Raw JWT Input & Time Analysis -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">编码 Token (Encoded JWT)</span>
+        <button class="btn" onclick="loadSampleJwt()">载入测试用例</button>
+      </div>
+      <textarea id="raw-jwt" placeholder="请在此粘贴三段式 eyJ... Token 进行本地解码与验签..." oninput="decodeJwt()"></textarea>
+
+      <div class="section-block">
+        <div class="block-title">
+          <span>生命周期时间戳分析 (Claims Timing)</span>
+          <span id="exp-status" class="stat-pill">未检测</span>
+        </div>
+        <div class="time-card" id="time-analysis-box">
+          <div class="time-row"><span>签发时间 (iat):</span><span id="time-iat" style="color:#94a3b8;">--</span></div>
+          <div class="time-row"><span>生效时间 (nbf):</span><span id="time-nbf" style="color:#94a3b8;">--</span></div>
+          <div class="time-row"><span>过期时间 (exp):</span><span id="time-exp" style="color:#94a3b8;">--</span></div>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <div class="block-title">离线签名验证 (Web Crypto HMAC)</div>
+        <div style="display:grid; grid-template-columns: 1fr 2fr; gap:10px; margin-bottom:8px;">
+          <select id="sig-alg">
+            <option value="HS256">HMAC-SHA256 (HS256)</option>
+            <option value="HS384">HMAC-SHA384 (HS384)</option>
+            <option value="HS512">HMAC-SHA512 (HS512)</option>
+          </select>
+          <input type="text" id="sig-secret" value="your-256-bit-secret" placeholder="输入对称密钥进行验签" oninput="verifySignature()">
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+          <button class="btn btn-primary" onclick="verifySignature()">验证签名合法性</button>
+          <span id="verify-result" class="stat-pill">待校验</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Decoded Header, Payload & Resign -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">解密数据结构与动态编辑</span>
+        <button class="btn" onclick="rebuildAndSign()">基于修改实时重签</button>
+      </div>
+
+      <div class="section-block" style="margin-top:0;">
+        <div class="block-title header-text">头部 (Header)</div>
+        <textarea id="jwt-header" class="editor-box" style="height:100px; color:#fda4af;"></textarea>
+      </div>
+
+      <div class="section-block">
+        <div class="block-title payload-text">有效载荷 (Payload - 可编辑)</div>
+        <textarea id="jwt-payload" class="editor-box" style="height:210px; color:#d8b4fe;"></textarea>
+      </div>
+
+      <div class="section-block">
+        <div class="block-title sig-text">签名数据 (Signature)</div>
+        <input type="text" id="jwt-sig" readonly style="color:#67e8f9; font-size:0.8rem;">
+      </div>
+
+      <div class="actions-bar">
+        <button class="btn" onclick="copyDecodedPayload()">复制 Payload</button>
+        <button class="btn" onclick="copyRawJwt()">复制完整 JWT</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function base64UrlDecode(str) {
+      str = str.replace(/-/g, '+').replace(/_/g, '/');
+      while (str.length % 4) str += '=';
+      const binary = atob(str);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      return new TextDecoder().decode(bytes);
+    }
+
+    function base64UrlEncode(buffer) {
+      let binary = '';
+      const bytes = new Uint8Array(buffer);
+      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+      return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    function strToBase64Url(str) {
+      const bytes = new TextEncoder().encode(str);
+      return base64UrlEncode(bytes.buffer);
+    }
+
+    function formatTimestamp(ts) {
+      if (!ts) return '--';
+      const d = new Date(ts * 1000);
+      return `${d.toLocaleString()} (${ts})`;
+    }
+
+    function decodeJwt() {
+      const raw = document.getElementById('raw-jwt').value.trim();
+      if (!raw) return;
+
+      const parts = raw.split('.');
+      if (parts.length !== 3) {
+        document.getElementById('verify-result').textContent = '[FAIL] 格式需为三段结构';
+        document.getElementById('verify-result').className = 'stat-pill invalid';
+        return;
+      }
+
+      try {
+        const header = JSON.parse(base64UrlDecode(parts[0]));
+        const payload = JSON.parse(base64UrlDecode(parts[1]));
+
+        document.getElementById('jwt-header').value = JSON.stringify(header, null, 2);
+        document.getElementById('jwt-payload').value = JSON.stringify(payload, null, 2);
+        document.getElementById('jwt-sig').value = parts[2];
+
+        // 识别算法
+        if (header.alg && ['HS256', 'HS384', 'HS512'].includes(header.alg)) {
+          document.getElementById('sig-alg').value = header.alg;
+        }
+
+        // 时间分析
+        document.getElementById('time-iat').textContent = formatTimestamp(payload.iat);
+        document.getElementById('time-nbf').textContent = formatTimestamp(payload.nbf);
+        document.getElementById('time-exp').textContent = formatTimestamp(payload.exp);
+
+        const expPill = document.getElementById('exp-status');
+        if (payload.exp) {
+          const nowSec = Math.floor(Date.now() / 1000);
+          if (nowSec > payload.exp) {
+            const diff = nowSec - payload.exp;
+            expPill.textContent = `[EXPIRED] 已过期 ${diff} 秒`;
+            expPill.className = 'stat-pill invalid';
+          } else {
+            const left = payload.exp - nowSec;
+            expPill.textContent = `[VALID] 剩余 ${Math.floor(left / 60)} 分钟`;
+            expPill.className = 'stat-pill valid';
+          }
+        } else {
+          expPill.textContent = '[INFO] 无过期时间声明';
+          expPill.className = 'stat-pill';
+        }
+
+        verifySignature();
+      } catch (e) {
+        document.getElementById('verify-result').textContent = '[FAIL] Base64 解码异常';
+        document.getElementById('verify-result').className = 'stat-pill invalid';
+      }
+    }
+
+    async function verifySignature() {
+      const raw = document.getElementById('raw-jwt').value.trim();
+      const secret = document.getElementById('sig-secret').value;
+      const alg = document.getElementById('sig-alg').value;
+      const resPill = document.getElementById('verify-result');
+
+      const parts = raw.split('.');
+      if (parts.length !== 3) return;
+
+      const hashMap = { 'HS256': 'SHA-256', 'HS384': 'SHA-384', 'HS512': 'SHA-512' };
+      const hashName = hashMap[alg] || 'SHA-256';
+
+      try {
+        const enc = new TextEncoder();
+        const key = await crypto.subtle.importKey(
+          'raw',
+          enc.encode(secret),
+          { name: 'HMAC', hash: hashName },
+          false,
+          ['sign']
+        );
+
+        const data = enc.encode(`${parts[0]}.${parts[1]}`);
+        const computedSig = await crypto.subtle.sign('HMAC', key, data);
+        const computedSigB64 = base64UrlEncode(computedSig);
+
+        if (computedSigB64 === parts[2]) {
+          resPill.textContent = `[PASS] ${alg} 签名合法匹配`;
+          resPill.className = 'stat-pill valid';
+        } else {
+          resPill.textContent = `[FAIL] 签名与密钥不匹配`;
+          resPill.className = 'stat-pill invalid';
+        }
+      } catch (e) {
+        resPill.textContent = '[FAIL] 验签计算失败';
+        resPill.className = 'stat-pill invalid';
+      }
+    }
+
+    async function rebuildAndSign() {
+      try {
+        const header = JSON.parse(document.getElementById('jwt-header').value);
+        const payload = JSON.parse(document.getElementById('jwt-payload').value);
+        const secret = document.getElementById('sig-secret').value;
+        const alg = document.getElementById('sig-alg').value;
+
+        header.alg = alg;
+        document.getElementById('jwt-header').value = JSON.stringify(header, null, 2);
+
+        const hB64 = strToBase64Url(JSON.stringify(header));
+        const pB64 = strToBase64Url(JSON.stringify(payload));
+        const signingInput = `${hB64}.${pB64}`;
+
+        const hashMap = { 'HS256': 'SHA-256', 'HS384': 'SHA-384', 'HS512': 'SHA-512' };
+        const enc = new TextEncoder();
+        const key = await crypto.subtle.importKey(
+          'raw',
+          enc.encode(secret),
+          { name: 'HMAC', hash: hashMap[alg] || 'SHA-256' },
+          false,
+          ['sign']
+        );
+
+        const sig = await crypto.subtle.sign('HMAC', key, enc.encode(signingInput));
+        const sigB64 = base64UrlEncode(sig);
+
+        const newJwt = `${signingInput}.${sigB64}`;
+        document.getElementById('raw-jwt').value = newJwt;
+        document.getElementById('jwt-sig').value = sigB64;
+
+        decodeJwt();
+      } catch (e) {
+        alert('格式错误，无法重签: ' + e.message);
+      }
+    }
+
+    function loadSampleJwt() {
+      // 预设一个有效 HS256 Token，Secret 为: your-256-bit-secret
+      const nowSec = Math.floor(Date.now() / 1000);
+      const h = { alg: "HS256", typ: "JWT" };
+      const p = {
+        sub: "user-10029",
+        name: "xiaopaohu",
+        role: "admin",
+        iat: nowSec - 300,
+        exp: nowSec + 7200
+      };
+      document.getElementById('sig-secret').value = "your-256-bit-secret";
+      document.getElementById('sig-alg').value = "HS256";
+      document.getElementById('jwt-header').value = JSON.stringify(h, null, 2);
+      document.getElementById('jwt-payload').value = JSON.stringify(p, null, 2);
+      rebuildAndSign();
+    }
+
+    function copyDecodedPayload() {
+      navigator.clipboard.writeText(document.getElementById('jwt-payload').value).then(() => alert('已复制 Payload 数据'));
+    }
+
+    function copyRawJwt() {
+      navigator.clipboard.writeText(document.getElementById('raw-jwt').value).then(() => alert('已复制完整 Token'));
+    }
+
+    loadSampleJwt();
+  </script>
+</body>
+</html>

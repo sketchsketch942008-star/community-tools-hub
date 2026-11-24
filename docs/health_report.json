@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-11-24 10:39:27",
+  "timestamp": "2026-11-24 10:44:23",
   "overall_status": "PASS",
-  "tools_count": 6,
+  "tools_count": 7,
   "tools": [
     {
       "tool_id": "cron-webhook-studio",
@@ -46,6 +46,17 @@
       "version": "v1.0.0",
       "title": "JSON Semantic Diff & JSONPath Studio - 语义化 JSON 比对与路径提取神器",
       "size_bytes": 13856
+    },
+    {
+      "tool_id": "jwt-inspector-studio",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "JWT Inspector & Signature Studio - 离线结构解析与签名验证沙箱",
+      "size_bytes": 13945
     },
     {
       "tool_id": "meta-card-previewer",
