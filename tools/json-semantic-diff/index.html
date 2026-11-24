@@ -52,13 +52,13 @@
       <p style="font-size:0.85rem; color:var(--muted); margin-top:4px;">忽略键乱序的深层 JSON 语义比对 · RFC 6902 Patch 生成 · 纯前端安全无泄漏</p>
     </div>
     <div style="font-size:0.8rem; color:var(--success);">
-      🔒 100% 本地内存解析 (零网络传输)
+      [LOCAL] 100% 本地内存解析 (零网络传输)
     </div>
   </header>
 
   <div class="nav-tabs">
-    <button class="nav-btn active" onclick="switchTab('diff')">🔍 JSON 语义差异比对 (Semantic Diff)</button>
-    <button class="nav-btn" onclick="switchTab('jsonpath')">🧭 JSONPath 动态提取与查询</button>
+    <button class="nav-btn active" onclick="switchTab('diff')"> JSON 语义差异比对 (Semantic Diff)</button>
+    <button class="nav-btn" onclick="switchTab('jsonpath')"> JSONPath 动态提取与查询</button>
   </div>
 
   <!-- Tab 1: Semantic Diff -->
@@ -173,7 +173,7 @@
         const status = document.getElementById('diff-status');
 
         if (diffs.length === 0) {
-          out.textContent = '🎉 两个 JSON 语义完全一致（键排列顺序差异已自动忽略）！';
+          out.textContent = ' 两个 JSON 语义完全一致（键排列顺序差异已自动忽略）！';
           status.textContent = '完全一致 (0 差异)';
           status.style.color = '#10b981';
           return;

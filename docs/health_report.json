@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-11-24 10:26:46",
+  "timestamp": "2026-11-24 10:39:27",
   "overall_status": "PASS",
   "tools_count": 6,
   "tools": [
@@ -12,7 +12,7 @@
       "warnings": [],
       "version": "v1.0.0",
       "title": "Cron & Webhook Studio - 定时表达式时间轴与 Webhook 签名调试沙盒",
-      "size_bytes": 11272
+      "size_bytes": 11269
     },
     {
       "tool_id": "curl-code-studio",
@@ -23,7 +23,7 @@
       "warnings": [],
       "version": "v1.0.0",
       "title": "cURL Code Studio - 极速 API 转换与 Mock 生成器",
-      "size_bytes": 9817
+      "size_bytes": 9816
     },
     {
       "tool_id": "dev-secret-sanitizer",
@@ -34,7 +34,7 @@
       "warnings": [],
       "version": "v1.0.0",
       "title": "SecretSanitizer - 开发者敏感凭证与日志隐私脱敏器",
-      "size_bytes": 9135
+      "size_bytes": 9159
     },
     {
       "tool_id": "json-semantic-diff",
@@ -45,7 +45,7 @@
       "warnings": [],
       "version": "v1.0.0",
       "title": "JSON Semantic Diff & JSONPath Studio - 语义化 JSON 比对与路径提取神器",
-      "size_bytes": 13853
+      "size_bytes": 13856
     },
     {
       "tool_id": "meta-card-previewer",
@@ -67,7 +67,7 @@
       "warnings": [],
       "version": "v1.0.0",
       "title": "SVG Cleaner & Security Studio - 矢量图形无损压缩与 XSS 脱敏清洗器",
-      "size_bytes": 9484
+      "size_bytes": 9483
     }
   ]
 }

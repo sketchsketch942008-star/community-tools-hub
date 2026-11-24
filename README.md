@@ -1,4 +1,4 @@
-# OpenTools Hub 智能微工具矩阵 🚀
+# OpenTools Hub 智能微工具矩阵 
 
 [![Health Check](https://img.shields.io/badge/Health_Check-Passing-10b981.svg)](./docs/health_report.json)
 [![Architecture](https://img.shields.io/badge/Architecture-Teamwork_Swarm-6366f1.svg)](#团队与协同分工)
@@ -9,7 +9,7 @@
 
 ---
 
-## 👥 协同分工与自动化管线 (Teamwork Swarm)
+##  协同分工与自动化管线 (Teamwork Swarm)
 
 ```mermaid
 flowchart LR
@@ -31,20 +31,20 @@ flowchart LR
 
 ---
 
-## 🛠 已就绪实用工具矩阵
+##  已就绪实用工具矩阵
 
 | 工具名称 | 目录路径 | 当前版本 | 核心功能 | 运行模式 | 质检状态 |
 | :--- | :--- | :---: | :--- | :---: | :---: |
-| **MetaCard Studio** | [`tools/meta-card-previewer`](./tools/meta-card-previewer/index.html) | `v1.0.0` | Twitter Card (大图/摘要)、Google SERP 实时模拟预览与 HTML 元标签一键生成 | 纯前端沙盒 | ✅ PASS |
-| **SecretSanitizer** | [`tools/dev-secret-sanitizer`](./tools/dev-secret-sanitizer/index.html) | `v1.0.0` | 开发者敏感凭证脱敏（OpenAI/Gemini Key、AWS、GitHub PAT、私钥、邮箱、IP） | 纯前端沙盒 | ✅ PASS |
-| **cURL Code Studio** | [`tools/curl-code-studio`](./tools/curl-code-studio/index.html) | `v1.0.0` | 极速 API 转换器（cURL 转 Python requests、JS Fetch、Axios、Go），支持敏感 Header 脱敏 | 纯前端沙盒 | ✅ PASS |
-| **Cron & Webhook Studio** | [`tools/cron-webhook-studio`](./tools/cron-webhook-studio/index.html) | `v1.0.0` | 定时任务 Cron 表达式自然语言解析与未来时间轴模拟；纯前端 Webhook HMAC-SHA256 签名调试 | 纯前端沙盒 | ✅ PASS |
-| **SVG Cleaner Studio** | [`tools/svg-cleaner-studio`](./tools/svg-cleaner-studio/index.html) | `v1.0.0` | 矢量图形无损压缩与 XSS 脱敏清洗器；剔除冗余属性与恶意 script，一键转 React JSX | 纯前端沙盒 | ✅ PASS |
-| **JSON Semantic Diff** | [`tools/json-semantic-diff`](./tools/json-semantic-diff/index.html) | `v1.0.0` | 忽略键乱序的深层 JSON 语义比对与 JSONPath 动态提取沙盒，生成 RFC 6902 Patch | 纯前端沙盒 | ✅ PASS |
+| **MetaCard Studio** | [`tools/meta-card-previewer`](./tools/meta-card-previewer/index.html) | `v1.0.0` | Twitter Card (大图/摘要)、Google SERP 实时模拟预览与 HTML 元标签一键生成 | 纯前端沙盒 | [OK] PASS |
+| **SecretSanitizer** | [`tools/dev-secret-sanitizer`](./tools/dev-secret-sanitizer/index.html) | `v1.0.0` | 开发者敏感凭证脱敏（OpenAI/Gemini Key、AWS、GitHub PAT、私钥、邮箱、IP） | 纯前端沙盒 | [OK] PASS |
+| **cURL Code Studio** | [`tools/curl-code-studio`](./tools/curl-code-studio/index.html) | `v1.0.0` | 极速 API 转换器（cURL 转 Python requests、JS Fetch、Axios、Go），支持敏感 Header 脱敏 | 纯前端沙盒 | [OK] PASS |
+| **Cron & Webhook Studio** | [`tools/cron-webhook-studio`](./tools/cron-webhook-studio/index.html) | `v1.0.0` | 定时任务 Cron 表达式自然语言解析与未来时间轴模拟；纯前端 Webhook HMAC-SHA256 签名调试 | 纯前端沙盒 | [OK] PASS |
+| **SVG Cleaner Studio** | [`tools/svg-cleaner-studio`](./tools/svg-cleaner-studio/index.html) | `v1.0.0` | 矢量图形无损压缩与 XSS 脱敏清洗器；剔除冗余属性与恶意 script，一键转 React JSX | 纯前端沙盒 | [OK] PASS |
+| **JSON Semantic Diff** | [`tools/json-semantic-diff`](./tools/json-semantic-diff/index.html) | `v1.0.0` | 忽略键乱序的深层 JSON 语义比对与 JSONPath 动态提取沙盒，生成 RFC 6902 Patch | 纯前端沙盒 | [OK] PASS |
 
 ---
 
-## 🔍 自主健康检查与维护升级
+##  自主健康检查与维护升级
 
 本仓库内置全自主健康巡检引擎，由调度智能体定期自动化执行：
 
@@ -54,14 +54,14 @@ python scripts/hub_health_checker.py
 ```
 
 ### 巡检指标：
-- ✅ **HTML5 语法结构与 DOM 完整性**
-- ✅ **零外部不可靠 CDN 依赖（离线可用性保障）**
-- ✅ **页面标题、版本声明与规范 Meta 标签完整性**
-- ✅ **输出标准机读报告**：`docs/health_report.json`
+- [OK] **HTML5 语法结构与 DOM 完整性**
+- [OK] **零外部不可靠 CDN 依赖（离线可用性保障）**
+- [OK] **页面标题、版本声明与规范 Meta 标签完整性**
+- [OK] **输出标准机读报告**：`docs/health_report.json`
 
 ---
 
-## 🛡️ 安全合规承诺
+## ️ 安全合规承诺
 
 1. **100% 浏览器沙盒**：所有工具均为纯前端处理，代码与用户输入绝不上报或中转至任何第三方服务器。
 2. **遵循社区与平台规范**：拒绝任何违规抓取、黑产探测或风控违背类工具，专注开发者与内容创作者效率提升。

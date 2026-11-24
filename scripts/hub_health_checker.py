@@ -118,7 +118,7 @@ def print_summary(report: dict):
     print(f" 工具总数: {report['tools_count']}")
     print("-" * 60)
     for tool in report["tools"]:
-        icon = "✅" if tool["status"] == "PASS" else ("⚠️" if tool["status"] == "WARN" else "❌")
+        icon = "[OK]" if tool["status"] == "PASS" else ("[WARN]" if tool["status"] == "WARN" else "[FAIL]")
         print(f" {icon} {tool['tool_id']:<25} | 版本: {tool['version']:<8} | 状态: {tool['status']}")
         if tool["errors"]:
             for err in tool["errors"]:
