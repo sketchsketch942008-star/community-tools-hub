@@ -70,6 +70,7 @@ flowchart TD
 | `dev-secret-sanitizer` | **SecretSanitizer** | `v1.0.0` | 纯前端正则脱敏敏感 Token、API Key、私钥与 IP | ✅ PASS |
 | `curl-code-studio` | **cURL Code Studio** | `v1.0.0` | cURL 一键转多语言（Python/JS/Axios/Go）与敏感脱敏 | ✅ PASS |
 | `cron-webhook-studio` | **Cron & Webhook Studio** | `v1.0.0` | 5字段双时区时间轴计算与 Web Crypto 原生 HMAC 签名 | ✅ PASS |
+| `svg-cleaner-studio` | **SVG Cleaner & Security Studio** | `v1.0.0` | Figma/Sketch 冗余清理、XSS 脚本剥离与 React JSX 导出 | ✅ PASS |
 
 ---
 
@@ -80,11 +81,8 @@ flowchart TD
 1. **SQLite WASM 查看器 (SQLite Local Explorer)**：
    - 特性：纯前端基于 sql.js 或官方 SQLite WASM 加载本地 `.db/.sqlite` 文件，零后端中转，支持只读 SQL 查询与表格导出。
    - 质检重点：文件拖拽大文件内存溢出防护、SQL 注入（由于纯客户端无后门，保障 UI 渲染安全）、跨浏览器 Worker 支持。
-2. **SVG 极简无损优化器 (SVG Clean & Minifier)**：
-   - 特性：去除无用 XML 命名空间、注释、冗余元数据、浮点数精度截断，即时预览与体积对比。
-   - 质检重点：DOM 渲染对比（无视觉损坏）、XSS 过滤（清除 `<script>` 与 `on*` 属性注入）。
-3. **PromptGuard (AI提示词与日志本地脱敏)**：与现有 `SecretSanitizer` 整合或进阶升级，增加占位还原机制。
-4. **DevSocial Snapshot (代码与技术分享卡片生成器)**：Canvas/SVG 纯前端高亮生成，契合推特发布场景。
+2. **PromptGuard (AI提示词与日志本地脱敏)**：与现有 `SecretSanitizer` 整合或进阶升级，增加占位还原机制。
+3. **DevSocial Snapshot (代码与技术分享卡片生成器)**：Canvas/SVG 纯前端高亮生成，契合推特发布场景。
 
 ---
 

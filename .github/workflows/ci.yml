@@ -1,0 +1,31 @@
+name: Hub Autonomous CI & Hourly Health Check
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+  schedule:
+    # 每小时整点触发自动健康巡检与回归验证
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  health-check-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Hub Health Check Engine
+        run: |
+          python scripts/hub_health_checker.py
+
+      - name: Run Engineering Regression Test Suite
+        run: |
+          python -m unittest tests/test_tools_regression.py -v
