@@ -38,6 +38,7 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         self.assertIn("./tools/svg-cleaner-studio/index.html", portal_html)
         self.assertIn("./tools/json-semantic-diff/index.html", portal_html)
         self.assertIn("./tools/jwt-inspector-studio/index.html", portal_html)
+        self.assertIn("./tools/css-glassmorphism-studio/index.html", portal_html)
 
         # 检查实际工具文件存在
         meta_tool = self.tools_dir / "meta-card-previewer" / "index.html"
@@ -47,6 +48,7 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         svg_tool = self.tools_dir / "svg-cleaner-studio" / "index.html"
         json_tool = self.tools_dir / "json-semantic-diff" / "index.html"
         jwt_tool = self.tools_dir / "jwt-inspector-studio" / "index.html"
+        css_tool = self.tools_dir / "css-glassmorphism-studio" / "index.html"
         self.assertTrue(meta_tool.exists(), "MetaCard Studio index.html must exist")
         self.assertTrue(sanitizer_tool.exists(), "SecretSanitizer index.html must exist")
         self.assertTrue(curl_tool.exists(), "cURL Code Studio index.html must exist")
@@ -54,12 +56,13 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         self.assertTrue(svg_tool.exists(), "SVG Cleaner Studio index.html must exist")
         self.assertTrue(json_tool.exists(), "JSON Semantic Diff index.html must exist")
         self.assertTrue(jwt_tool.exists(), "JWT Inspector Studio index.html must exist")
+        self.assertTrue(css_tool.exists(), "CSS Glassmorphism Studio index.html must exist")
 
     def test_hub_health_checker_execution(self):
         """执行自主健康巡检引擎并验证 PASS 状态"""
         report = hub_health_checker.run_health_check()
         self.assertEqual(report["overall_status"], "PASS", f"Health check failed: {report}")
-        self.assertEqual(report["tools_count"], 7)
+        self.assertEqual(report["tools_count"], 8)
         
         for tool in report["tools"]:
             self.assertEqual(tool["status"], "PASS", f"Tool {tool['tool_id']} not passing: {tool}")
@@ -118,6 +121,19 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         self.assertEqual(len(parts), 3)
         self.assertEqual(json.loads(base64.urlsafe_b64decode(parts[0] + "==").decode())["alg"], "HS256")
         self.assertEqual(json.loads(base64.urlsafe_b64decode(parts[1] + "==").decode())["name"], "xiaopaohu")
+
+    def test_css_glassmorphism_features(self):
+        """验证 CSS Glassmorphism Studio 页面结构与核心功能"""
+        tool_file = self.tools_dir / "css-glassmorphism-studio" / "index.html"
+        self.assertTrue(tool_file.exists())
+        content = tool_file.read_text(encoding="utf-8")
+        self.assertIn("backdrop-filter", content)
+        self.assertIn("-webkit-backdrop-filter", content)
+        self.assertIn("bgPresets", content)
+        self.assertIn("aurora_frost", content)
+        self.assertIn("deep_frosted", content)
+        self.assertIn("dark_obsidian", content)
+        self.assertIn("navigator.clipboard.writeText", content)
 
 if __name__ == "__main__":
     unittest.main()

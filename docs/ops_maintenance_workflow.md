@@ -76,6 +76,7 @@ flowchart TD
 | `svg-cleaner-studio` | **SVG Cleaner & Security Studio** | `v1.0.0` | Figma/Sketch 冗余清理、XSS 脚本剥离与 React JSX 导出 | [OK] PASS |
 | `json-semantic-diff` | **JSON Semantic Diff & JSONPath Studio** | `v1.0.0` | 键无序语义 Diff、RFC 6902 Patch 生成与 JSONPath 提取 | [OK] PASS |
 | `jwt-inspector-studio` | **JWT Inspector & Signature Studio** | `v1.0.0` | 三段式结构离线拆解、过期倒计时与 Web Crypto 本地验签 | [OK] PASS |
+| `css-glassmorphism-studio` | **CSS Modern Glassmorphism & Mesh Gradient Studio** | `v1.0.0` | 现代毛玻璃拟态与多重网格渐变工坊；Vanilla/Tailwind/React 三轨代码极速导出 | [OK] PASS |
 
 ---
 

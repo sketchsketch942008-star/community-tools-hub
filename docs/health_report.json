@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-11-24 10:59:37",
+  "timestamp": "2026-11-24 11:11:01",
   "overall_status": "PASS",
-  "tools_count": 7,
+  "tools_count": 8,
   "tools": [
     {
       "tool_id": "cron-webhook-studio",
@@ -13,6 +13,17 @@
       "version": "v1.0.0",
       "title": "Cron & Webhook Studio - 定时表达式时间轴与 Webhook 签名调试沙盒",
       "size_bytes": 11269
+    },
+    {
+      "tool_id": "css-glassmorphism-studio",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "CSS Glassmorphism & Mesh Gradient Studio - 现代毛玻璃拟态与网格渐变工坊",
+      "size_bytes": 27730
     },
     {
       "tool_id": "curl-code-studio",

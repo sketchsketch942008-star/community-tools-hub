@@ -1,4 +1,4 @@
-# OpenTools Hub 智能微工具矩阵 
+# OpenTools Hub 智能微工具矩阵
 
 [![Health Check](https://img.shields.io/badge/Health_Check-Passing-10b981.svg)](./docs/health_report.json)
 [![Architecture](https://img.shields.io/badge/Architecture-Teamwork_Swarm-6366f1.svg)](#团队与协同分工)
@@ -9,7 +9,7 @@
 
 ---
 
-##  协同分工与自动化管线 (Teamwork Swarm)
+## 协同分工与自动化管线 (Teamwork Swarm)
 
 ```mermaid
 flowchart LR
@@ -31,7 +31,7 @@ flowchart LR
 
 ---
 
-##  已就绪实用工具矩阵
+## 已就绪实用工具矩阵
 
 | 工具名称 | 目录路径 | 当前版本 | 核心功能 | 运行模式 | 质检状态 |
 | :--- | :--- | :---: | :--- | :---: | :---: |
@@ -42,10 +42,11 @@ flowchart LR
 | **SVG Cleaner Studio** | [`tools/svg-cleaner-studio`](./tools/svg-cleaner-studio/index.html) | `v1.0.0` | 矢量图形无损压缩与 XSS 脱敏清洗器；剔除冗余属性与恶意 script，一键转 React JSX | 纯前端沙盒 | [OK] PASS |
 | **JSON Semantic Diff** | [`tools/json-semantic-diff`](./tools/json-semantic-diff/index.html) | `v1.0.0` | 忽略键乱序的深层 JSON 语义比对与 JSONPath 动态提取沙盒，生成 RFC 6902 Patch | 纯前端沙盒 | [OK] PASS |
 | **JWT Inspector Studio** | [`tools/jwt-inspector-studio`](./tools/jwt-inspector-studio/index.html) | `v1.0.0` | 离线三段式结构解码与生命周期分析；原生 Web Crypto API HS256/384/512 签名验证与重签 | 纯前端沙盒 | [OK] PASS |
+| **CSS Glassmorphism Studio** | [`tools/css-glassmorphism-studio`](./tools/css-glassmorphism-studio/index.html) | `v1.0.0` | 现代毛玻璃拟态与多重网格渐变工坊；Vanilla/Tailwind/React 三轨代码极速导出 | 纯前端沙盒 | [OK] PASS |
 
 ---
 
-##  自主健康检查与维护升级
+## 自主健康检查与维护升级
 
 本仓库内置全自主健康巡检引擎，由调度智能体定期自动化执行：
 
@@ -62,7 +63,7 @@ python scripts/hub_health_checker.py
 
 ---
 
-## ️ 安全合规承诺
+## 安全合规承诺
 
 1. **100% 浏览器沙盒**：所有工具均为纯前端处理，代码与用户输入绝不上报或中转至任何第三方服务器。
 2. **遵循社区与平台规范**：拒绝任何违规抓取、黑产探测或风控违背类工具，专注开发者与内容创作者效率提升。

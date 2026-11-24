@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSS Glassmorphism & Mesh Gradient Studio - 现代毛玻璃拟态与网格渐变工坊</title>
+  <meta name="description" content="纯前端零依赖的现代 CSS 毛玻璃拟态与网格渐变生成器。实时拖拽调参，一键导出 Vanilla CSS、Tailwind CSS 及 React 样式。">
+  <style>
+    :root {
+      --bg-primary: #0a0e17;
+      --bg-panel: #111827;
+      --bg-input: #1a2234;
+      --border-color: #243049;
+      --accent-color: #38bdf8;
+      --accent-hover: #0284c7;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --code-bg: #070c14;
+      --badge-bg: #1e293b;
+      --badge-text: #38bdf8;
+      --success-text: #4ade80;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      background: rgba(17, 24, 39, 0.85);
+      border-bottom: 1px solid var(--border-color);
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(12px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+
+    .brand-badges {
+      display: flex;
+      gap: 6px;
+    }
+
+    .badge {
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      font-weight: 600;
+      border: 1px solid var(--border-color);
+      letter-spacing: 0.04em;
+    }
+
+    .badge-pass {
+      color: var(--success-text);
+      border-color: rgba(74, 222, 128, 0.3);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .nav-link {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .nav-link:hover {
+      color: var(--accent-color);
+    }
+
+    /* Main Container */
+    .app-container {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      flex: 1;
+      height: calc(100vh - 61px);
+      overflow: hidden;
+    }
+
+    @media (max-width: 980px) {
+      .app-container {
+        grid-template-columns: 1fr;
+        height: auto;
+        overflow: visible;
+      }
+    }
+
+    /* Sidebar Controls */
+    .controls-panel {
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border-color);
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .panel-section {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    .section-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent-color);
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .preset-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .preset-btn {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s;
+    }
+
+    .preset-btn:hover, .preset-btn.active {
+      color: #fff;
+      border-color: var(--accent-color);
+      background: rgba(56, 189, 248, 0.1);
+    }
+
+    .control-group {
+      margin-bottom: 12px;
+    }
+
+    .control-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .control-label-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .control-val {
+      color: var(--text-main);
+      font-family: monospace;
+      font-weight: 600;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      background: var(--bg-primary);
+      border-radius: 3px;
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent-color);
+      cursor: pointer;
+      border: 2px solid var(--bg-primary);
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+    }
+
+    .color-picker-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    input[type="color"] {
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: none;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .color-hex-text {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 6px 10px;
+      color: var(--text-main);
+      font-family: monospace;
+      font-size: 0.78rem;
+      flex: 1;
+    }
+
+    /* Workspace / Preview */
+    .workspace {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+    }
+
+    .preview-canvas-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+      min-height: 380px;
+    }
+
+    /* Mesh Gradient Canvas Background */
+    .mesh-bg {
+      position: absolute;
+      inset: 0;
+      transition: background 0.3s ease;
+      z-index: 1;
+    }
+
+    /* Decorative Floating Shapes to test blur refraction */
+    .floating-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(2px);
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .blob-1 {
+      width: 220px;
+      height: 220px;
+      top: 15%;
+      left: 20%;
+      background: radial-gradient(circle, #ec4899 0%, transparent 70%);
+      animation: float1 14s infinite ease-in-out alternate;
+    }
+
+    .blob-2 {
+      width: 260px;
+      height: 260px;
+      bottom: 12%;
+      right: 18%;
+      background: radial-gradient(circle, #38bdf8 0%, transparent 70%);
+      animation: float2 18s infinite ease-in-out alternate;
+    }
+
+    .blob-3 {
+      width: 180px;
+      height: 180px;
+      top: 40%;
+      right: 38%;
+      background: radial-gradient(circle, #eab308 0%, transparent 70%);
+      animation: float3 12s infinite ease-in-out alternate;
+    }
+
+    @keyframes float1 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(50px, 40px) scale(1.15); }
+    }
+    @keyframes float2 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(-40px, -60px) scale(1.1); }
+    }
+    @keyframes float3 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(30px, -30px) scale(0.9); }
+    }
+
+    /* The Glass Element */
+    .glass-card {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 440px;
+      padding: 30px 28px;
+      transition: box-shadow 0.15s, border 0.15s, background 0.15s, border-radius 0.15s;
+      color: #fff;
+      user-select: none;
+    }
+
+    .card-badge {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      margin-bottom: 14px;
+    }
+
+    .card-title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 8px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-desc {
+      font-size: 0.85rem;
+      line-height: 1.5;
+      color: rgba(255, 255, 255, 0.85);
+      margin-bottom: 22px;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .meta-stat {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-val {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .stat-lbl {
+      font-size: 0.7rem;
+      color: rgba(255, 255, 255, 0.7);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .card-action-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      color: #fff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .card-action-btn:hover {
+      background: rgba(255, 255, 255, 0.35);
+      transform: translateY(-1px);
+    }
+
+    /* Output Code Panel */
+    .code-export-panel {
+      background: var(--bg-panel);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      max-height: 280px;
+      min-height: 200px;
+    }
+
+    .code-tabs-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+      padding: 0 16px;
+      background: rgba(0, 0, 0, 0.25);
+    }
+
+    .tab-btn-group {
+      display: flex;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 10px 14px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+    }
+
+    .tab-btn.active {
+      color: var(--accent-color);
+      border-bottom-color: var(--accent-color);
+    }
+
+    .action-btn-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .copy-btn {
+      padding: 5px 12px;
+      background: var(--accent-color);
+      border: 1px solid var(--accent-hover);
+      color: #000;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .copy-btn:hover {
+      background: var(--accent-hover);
+      color: #fff;
+    }
+
+    .code-display {
+      flex: 1;
+      padding: 14px 18px;
+      background: var(--code-bg);
+      color: #38bdf8;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-title">CSS Glassmorphism & Mesh Gradient Studio</div>
+      <div class="brand-badges">
+        <span class="badge">[v1.0.0]</span>
+        <span class="badge">[CSS3/Tailwind]</span>
+        <span class="badge badge-pass">[OFFLINE SAFE]</span>
+      </div>
+    </div>
+    <div class="nav-links">
+      <a href="../../index.html" class="nav-link">[OpenTools Hub]</a>
+      <a href="https://github.com/sketchsketch942008-star/community-tools-hub" target="_blank" rel="noopener noreferrer" class="nav-link">[GitHub Repo]</a>
+    </div>
+  </header>
+
+  <!-- App Body -->
+  <div class="app-container">
+    
+    <!-- Left Controls Panel -->
+    <div class="controls-panel">
+
+      <!-- Style Presets -->
+      <div class="panel-section">
+        <div class="section-title">
+          <span>STYLE PRESETS / 预设风格</span>
+          <span class="badge">[5 TEMPLATES]</span>
+        </div>
+        <div class="preset-grid">
+          <button class="preset-btn active" onclick="applyPreset('aurora_frost')">[Subtle Frost]</button>
+          <button class="preset-btn" onclick="applyPreset('deep_frosted')">[Deep Glass]</button>
+          <button class="preset-btn" onclick="applyPreset('dark_obsidian')">[Dark Obsidian]</button>
+          <button class="preset-btn" onclick="applyPreset('liquid_gloss')">[Liquid Gloss]</button>
+          <button class="preset-btn" onclick="applyPreset('cyber_neon')">[Cyber Neon]</button>
+          <button class="preset-btn" onclick="resetDefaults()">[Reset Base]</button>
+        </div>
+      </div>
+
+      <!-- Glass Parameters -->
+      <div class="panel-section">
+        <div class="section-title">
+          <span>GLASSMORPHISM PARAMETERS / 拟态参数</span>
+        </div>
+
+        <!-- Blur -->
+        <div class="control-group">
+          <div class="control-label-row">
+            <span>Backdrop Blur (模糊度)</span>
+            <span class="control-val" id="valBlur">16px</span>
+          </div>
+          <input type="range" id="inputBlur" min="0" max="50" value="16" oninput="updateStyles()">
+        </div>
+
+        <!-- Transparency / Opacity -->
+        <div class="control-group">
+          <div class="control-label-row">
+            <span>Surface Opacity (表面不透明度)</span>
+            <span class="control-val" id="valOpacity">0.15</span>
+          </div>
+          <input type="range" id="inputOpacity" min="0" max="1" step="0.01" value="0.15" oninput="updateStyles()">
+        </div>
+
+        <!-- Surface Color -->
+        <div class="control-group">
+          <div class="control-label-row">
+            <span>Surface Tint (底色基调)</span>
+            <span class="control-val" id="valTint">#ffffff</span>
+          </div>
+          <div class="color-picker-row">
+            <input type="color" id="inputColor" value="#ffffff" oninput="updateStyles()">
+            <input type="text" class="color-hex-text" id="inputColorText" value="#ffffff" readonly>
+          </div>
+        </div>
+
+        <!-- Border Width & Opacity -->
+        <div class="control-group">
+          <div class="control-label-row">
+            <span>Border Width (边框粗细)</span>
+            <span class="control-val" id="valBorderWidth">1px</span>
+          </div>
+          <input type="range" id="inputBorderWidth" min="0" max="6" value="1" oninput="updateStyles()">
+        </div>
+
+        <div class="control-group">
+          <div class="control-label-row">
+            <span>Border Opacity (边框高光)</span>
+            <span class="control-val" id="valBorderOpacity">0.25</span>
+          </div>
+          <input type="range" id="inputBorderOpacity" min="0" max="1" step="0.01" value="0.25" oninput="updateStyles()">
+        </div>
+
+        <!-- Border Radius -->
+        <div class="control-group">
+          <div class="control-label-row">
+            <span>Border Radius (圆角)</span>
+            <span class="control-val" id="valRadius">16px</span>
+          </div>
+          <input type="range" id="inputRadius" min="0" max="40" value="16" oninput="updateStyles()">
+        </div>
+
+        <!-- Shadow Blur & Opacity -->
+        <div class="control-group">
+          <div class="control-label-row">
+            <span>Shadow Spread & Depth (投影扩散)</span>
+            <span class="control-val" id="valShadow">32px</span>
+          </div>
+          <input type="range" id="inputShadow" min="0" max="60" value="32" oninput="updateStyles()">
+        </div>
+
+        <div class="control-group">
+          <div class="control-label-row">
+            <span>Shadow Opacity (投影浓度)</span>
+            <span class="control-val" id="valShadowOpacity">0.30</span>
+          </div>
+          <input type="range" id="inputShadowOpacity" min="0" max="0.8" step="0.01" value="0.30" oninput="updateStyles()">
+        </div>
+      </div>
+
+      <!-- Background Mesh Presets -->
+      <div class="panel-section">
+        <div class="section-title">
+          <span>CANVAS BACKGROUND / 底层渐变</span>
+        </div>
+        <div class="preset-grid">
+          <button class="preset-btn active" onclick="setMeshBg('aurora')">[Aurora Teal]</button>
+          <button class="preset-btn" onclick="setMeshBg('sunset')">[Sunset Violet]</button>
+          <button class="preset-btn" onclick="setMeshBg('cyber')">[Cyberpunk]</button>
+          <button class="preset-btn" onclick="setMeshBg('titanium')">[Dark Titanium]</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Workspace Area -->
+    <div class="workspace">
+      
+      <!-- Interactive Preview Area -->
+      <div class="preview-canvas-container">
+        
+        <!-- Background Layer -->
+        <div class="mesh-bg" id="meshCanvas"></div>
+
+        <!-- Floating Refraction Test Blobs -->
+        <div class="floating-blob blob-1"></div>
+        <div class="floating-blob blob-2"></div>
+        <div class="floating-blob blob-3"></div>
+
+        <!-- Main Glass Card Preview -->
+        <div class="glass-card" id="glassCard">
+          <span class="card-badge">[GLASSMORPHISM CORE]</span>
+          <h2 class="card-title">GlassCard Pro Studio</h2>
+          <p class="card-desc">纯本地高精度 CSS 计算。通过多重径向网格渐变与多层浮动测试体，精准模拟实时光学模糊与毛玻璃折射反射效果。</p>
+          <div class="card-meta-row">
+            <div class="meta-stat">
+              <span class="stat-val" id="cardBlurStat">16px</span>
+              <span class="stat-lbl">BACKDROP BLUR</span>
+            </div>
+            <div class="meta-stat">
+              <span class="stat-val" id="cardAlphaStat">15%</span>
+              <span class="stat-lbl">SURFACE ALPHA</span>
+            </div>
+            <button class="card-action-btn" onclick="triggerEffect()">[SAMPLE ACTION]</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Code Output Area -->
+      <div class="code-export-panel">
+        <div class="code-tabs-header">
+          <div class="tab-btn-group">
+            <button class="tab-btn active" id="tabCss" onclick="switchTab('css')">[Vanilla CSS]</button>
+            <button class="tab-btn" id="tabTailwind" onclick="switchTab('tailwind')">[Tailwind CSS]</button>
+            <button class="tab-btn" id="tabReact" onclick="switchTab('react')">[React Inline Style]</button>
+          </div>
+          <div class="action-btn-row">
+            <button class="copy-btn" id="copyBtn" onclick="copyCode()">[COPY CODE]</button>
+          </div>
+        </div>
+        <pre class="code-display" id="codeDisplay"></pre>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    // State
+    let currentTab = 'css';
+    let currentBg = 'aurora';
+
+    const bgPresets = {
+      aurora: 'radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%), radial-gradient(at 0% 100%, hsla(180,100%,20%,1) 0, transparent 50%), radial-gradient(at 100% 100%, hsla(240,100%,15%,1) 0, transparent 50%), #050811',
+      sunset: 'radial-gradient(at 10% 10%, #7c2d12 0px, transparent 50%), radial-gradient(at 90% 10%, #831843 0px, transparent 50%), radial-gradient(at 50% 90%, #312e81 0px, transparent 50%), #0f172a',
+      cyber: 'radial-gradient(at 0% 100%, #064e3b 0px, transparent 50%), radial-gradient(at 100% 0%, #4c0519 0px, transparent 50%), radial-gradient(at 50% 50%, #1e1b4b 0px, transparent 50%), #030712',
+      titanium: 'radial-gradient(at 30% 30%, #334155 0px, transparent 60%), radial-gradient(at 80% 80%, #1e293b 0px, transparent 60%), #020617'
+    };
+
+    function hexToRgb(hex) {
+      let c = hex.replace('#', '');
+      if (c.length === 3) c = c.split('').map(x => x + x).join('');
+      const num = parseInt(c, 16);
+      return {
+        r: (num >> 16) & 255,
+        g: (num >> 8) & 255,
+        b: num & 255
+      };
+    }
+
+    function updateStyles() {
+      const blur = document.getElementById('inputBlur').value;
+      const opacity = document.getElementById('inputOpacity').value;
+      const hexColor = document.getElementById('inputColor').value;
+      const borderWidth = document.getElementById('inputBorderWidth').value;
+      const borderOpacity = document.getElementById('inputBorderOpacity').value;
+      const radius = document.getElementById('inputRadius').value;
+      const shadowBlur = document.getElementById('inputShadow').value;
+      const shadowOpacity = document.getElementById('inputShadowOpacity').value;
+
+      // Update text values
+      document.getElementById('valBlur').textContent = blur + 'px';
+      document.getElementById('valOpacity').textContent = opacity;
+      document.getElementById('valTint').textContent = hexColor;
+      document.getElementById('inputColorText').value = hexColor;
+      document.getElementById('valBorderWidth').textContent = borderWidth + 'px';
+      document.getElementById('valBorderOpacity').textContent = borderOpacity;
+      document.getElementById('valRadius').textContent = radius + 'px';
+      document.getElementById('valShadow').textContent = shadowBlur + 'px';
+      document.getElementById('valShadowOpacity').textContent = shadowOpacity;
+
+      document.getElementById('cardBlurStat').textContent = blur + 'px';
+      document.getElementById('cardAlphaStat').textContent = Math.round(opacity * 100) + '%';
+
+      const rgb = hexToRgb(hexColor);
+      const bgRgba = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`;
+      const borderRgba = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${borderOpacity})`;
+      const shadowRgba = `rgba(0, 0, 0, ${shadowOpacity})`;
+
+      // Apply to Glass Card
+      const card = document.getElementById('glassCard');
+      card.style.background = bgRgba;
+      card.style.backdropFilter = `blur(${blur}px)`;
+      card.style.webkitBackdropFilter = `blur(${blur}px)`;
+      card.style.borderRadius = `${radius}px`;
+      card.style.border = `${borderWidth}px solid ${borderRgba}`;
+      card.style.boxShadow = `0 8px ${shadowBlur}px 0 ${shadowRgba}`;
+
+      renderCode(blur, bgRgba, borderWidth, borderRgba, radius, shadowBlur, shadowRgba, rgb, opacity, borderOpacity);
+    }
+
+    function renderCode(blur, bgRgba, borderWidth, borderRgba, radius, shadowBlur, shadowRgba, rgb, opacity, borderOpacity) {
+      const display = document.getElementById('codeDisplay');
+
+      if (currentTab === 'css') {
+        display.textContent = `/* Glassmorphism CSS */
+background: ${bgRgba};
+border-radius: ${radius}px;
+box-shadow: 0 8px ${shadowBlur}px 0 ${shadowRgba};
+backdrop-filter: blur(${blur}px);
+-webkit-backdrop-filter: blur(${blur}px);
+border: ${borderWidth}px solid ${borderRgba};`;
+      } else if (currentTab === 'tailwind') {
+        const hex = document.getElementById('inputColor').value;
+        display.textContent = `<!-- Tailwind CSS Classes -->
+<div class="backdrop-blur-[${blur}px] bg-[${bgRgba}] border-[${borderWidth}px] border-[${borderRgba}] rounded-[${radius}px] shadow-[0_8px_${shadowBlur}px_0_${shadowRgba}] p-6">
+  <!-- Content -->
+</div>`;
+      } else if (currentTab === 'react') {
+        display.textContent = `// React Inline Style Object
+const glassStyle = {
+  background: "${bgRgba}",
+  borderRadius: "${radius}px",
+  boxShadow: "0 8px ${shadowBlur}px 0 ${shadowRgba}",
+  backdropFilter: "blur(${blur}px)",
+  WebkitBackdropFilter: "blur(${blur}px)",
+  border: "${borderWidth}px solid ${borderRgba}"
+};`;
+      }
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      if (tab === 'css') document.getElementById('tabCss').classList.add('active');
+      if (tab === 'tailwind') document.getElementById('tabTailwind').classList.add('active');
+      if (tab === 'react') document.getElementById('tabReact').classList.add('active');
+      updateStyles();
+    }
+
+    function setMeshBg(preset) {
+      currentBg = preset;
+      document.getElementById('meshCanvas').style.background = bgPresets[preset] || bgPresets.aurora;
+    }
+
+    function applyPreset(type) {
+      if (type === 'aurora_frost') {
+        document.getElementById('inputBlur').value = 16;
+        document.getElementById('inputOpacity').value = 0.15;
+        document.getElementById('inputColor').value = '#ffffff';
+        document.getElementById('inputBorderWidth').value = 1;
+        document.getElementById('inputBorderOpacity').value = 0.25;
+        document.getElementById('inputRadius').value = 16;
+        document.getElementById('inputShadow').value = 32;
+        document.getElementById('inputShadowOpacity').value = 0.3;
+        setMeshBg('aurora');
+      } else if (type === 'deep_frosted') {
+        document.getElementById('inputBlur').value = 32;
+        document.getElementById('inputOpacity').value = 0.28;
+        document.getElementById('inputColor').value = '#ffffff';
+        document.getElementById('inputBorderWidth').value = 2;
+        document.getElementById('inputBorderOpacity').value = 0.40;
+        document.getElementById('inputRadius').value = 24;
+        document.getElementById('inputShadow').value = 45;
+        document.getElementById('inputShadowOpacity').value = 0.45;
+        setMeshBg('sunset');
+      } else if (type === 'dark_obsidian') {
+        document.getElementById('inputBlur').value = 20;
+        document.getElementById('inputOpacity').value = 0.55;
+        document.getElementById('inputColor').value = '#0f172a';
+        document.getElementById('inputBorderWidth').value = 1;
+        document.getElementById('inputBorderOpacity').value = 0.30;
+        document.getElementById('inputRadius').value = 14;
+        document.getElementById('inputShadow').value = 40;
+        document.getElementById('inputShadowOpacity').value = 0.65;
+        setMeshBg('titanium');
+      } else if (type === 'liquid_gloss') {
+        document.getElementById('inputBlur').value = 10;
+        document.getElementById('inputOpacity').value = 0.10;
+        document.getElementById('inputColor').value = '#ffffff';
+        document.getElementById('inputBorderWidth').value = 2;
+        document.getElementById('inputBorderOpacity').value = 0.60;
+        document.getElementById('inputRadius').value = 20;
+        document.getElementById('inputShadow').value = 25;
+        document.getElementById('inputShadowOpacity').value = 0.20;
+        setMeshBg('cyber');
+      } else if (type === 'cyber_neon') {
+        document.getElementById('inputBlur').value = 18;
+        document.getElementById('inputOpacity').value = 0.20;
+        document.getElementById('inputColor').value = '#38bdf8';
+        document.getElementById('inputBorderWidth').value = 1;
+        document.getElementById('inputBorderOpacity').value = 0.50;
+        document.getElementById('inputRadius').value = 12;
+        document.getElementById('inputShadow').value = 35;
+        document.getElementById('inputShadowOpacity').value = 0.50;
+        setMeshBg('cyber');
+      }
+      updateStyles();
+    }
+
+    function resetDefaults() {
+      applyPreset('aurora_frost');
+    }
+
+    function triggerEffect() {
+      const card = document.getElementById('glassCard');
+      card.style.transform = 'scale(0.98)';
+      setTimeout(() => {
+        card.style.transform = 'scale(1)';
+      }, 150);
+    }
+
+    function copyCode() {
+      const text = document.getElementById('codeDisplay').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyBtn');
+        const orig = btn.textContent;
+        btn.textContent = '[COPIED!]';
+        btn.style.background = '#4ade80';
+        setTimeout(() => {
+          btn.textContent = orig;
+          btn.style.background = '';
+        }, 1800);
+      }).catch(() => {
+        alert('无法复制，请手动选择复制');
+      });
+    }
+
+    // Initialize
+    setMeshBg('aurora');
+    updateStyles();
+  </script>
+</body>
+</html>
