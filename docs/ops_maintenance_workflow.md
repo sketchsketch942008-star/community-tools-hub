@@ -89,6 +89,7 @@ flowchart TD
 | `prompt-guard-studio` | **PromptGuard Studio** | `v1.0.0` | AI 提示词隐私脱敏与双向可逆还原工坊；PII/凭据安全占位符替换、AI 回复一键反向还原、注入攻击静态筛查 | [OK] PASS |
 | `websocket-inspector-studio` | **StreamInspector Studio** | `v1.0.0` | 现代 WebSocket 与 Server-Sent Events (SSE) 流式调试工坊；毫秒级时序帧控制台、实时 JSON 格式化与客户端代码导出 | [OK] PASS |
 | `openapi-swagger-studio` | **OpenAPI & Swagger Studio** | `v1.0.0` | OpenAPI 3.0 / Swagger 可视化规范设计工坊；交互式接口文档、Schema 自动 Mock 数据与 TypeScript/cURL 导出 | [OK] PASS |
+| `graphql-playground-studio` | **GraphQL Playground Studio** | `v1.0.0` | 现代 GraphQL 交互式 IDE 与离线 Schema Mock 工坊；Query/Mutation 语法沙盒、SDL 规范编辑与纯前端智能 Mock 响应引擎 | [OK] PASS |
 
 ---
 

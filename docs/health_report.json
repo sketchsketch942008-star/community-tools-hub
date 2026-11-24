@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-11-24 23:22:19",
+  "timestamp": "2026-11-25 00:11:40",
   "overall_status": "PASS",
-  "tools_count": 20,
+  "tools_count": 21,
   "tools": [
     {
       "tool_id": "base64-binary-studio",
@@ -79,6 +79,17 @@
       "version": "v1.0.0",
       "title": "SecretSanitizer - 开发者敏感凭证与日志隐私脱敏器",
       "size_bytes": 9159
+    },
+    {
+      "tool_id": "graphql-playground-studio",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "GraphQL Playground &amp; Mock Schema Studio - Interactive GraphQL IDE &amp; Mock Engine v1.0.0",
+      "size_bytes": 32980
     },
     {
       "tool_id": "hash-checksum-studio",

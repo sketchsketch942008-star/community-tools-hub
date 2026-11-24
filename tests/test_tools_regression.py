@@ -105,7 +105,7 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         """执行自主健康巡检引擎并验证 PASS 状态"""
         report = hub_health_checker.run_health_check()
         self.assertEqual(report["overall_status"], "PASS", f"Health check failed: {report}")
-        self.assertEqual(report["tools_count"], 20)
+        self.assertEqual(report["tools_count"], 21)
         
         for tool in report["tools"]:
             self.assertEqual(tool["status"], "PASS", f"Tool {tool['tool_id']} not passing: {tool}")
@@ -346,6 +346,21 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         self.assertIn("testMockEndpoint", content)
         self.assertIn("downloadSpecJson", content)
         self.assertIn("formatSpecJson", content)
+
+    def test_graphql_playground_studio_features(self):
+        """验证 GraphQL Playground & Mock Studio 页面结构与核心功能"""
+        tool_file = self.tools_dir / "graphql-playground-studio" / "index.html"
+        self.assertTrue(tool_file.exists())
+        content = tool_file.read_text(encoding="utf-8")
+        self.assertIn("GraphQL Playground &amp; Mock Schema Studio", content)
+        self.assertIn("loadPreset", content)
+        self.assertIn("switchLeftTab", content)
+        self.assertIn("setMode", content)
+        self.assertIn("executeGraphQL", content)
+        self.assertIn("parseGraphQLFields", content)
+        self.assertIn("renderSnippet", content)
+        self.assertIn("copyResponse", content)
+        self.assertIn("PRESETS", content)
 
 if __name__ == "__main__":
     unittest.main()

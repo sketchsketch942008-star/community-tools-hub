@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GraphQL Playground &amp; Mock Schema Studio - Interactive GraphQL IDE &amp; Mock Engine v1.0.0</title>
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --bg-panel: #1e293b;
+      --bg-editor: #090d16;
+      --border-color: #334155;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --accent-purple: #c084fc;
+      --accent-pink: #f472b6;
+      --accent-green: #34d399;
+      --accent-amber: #fbbf24;
+      --accent-rose: #f43f5e;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .back-btn {
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 13px;
+      font-family: var(--font-mono);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      transition: all 0.2s;
+    }
+    .back-btn:hover {
+      background: rgba(56, 189, 248, 0.2);
+    }
+    .title-area h1 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .version-tag {
+      font-size: 11px;
+      background: rgba(192, 132, 252, 0.15);
+      color: var(--accent-purple);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(192, 132, 252, 0.3);
+      font-family: var(--font-mono);
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    select, button, input {
+      font-family: inherit;
+    }
+    .custom-select {
+      background: var(--bg-dark);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+    }
+    .btn {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn:hover {
+      background: #334155;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: #0f172a;
+      border-color: var(--primary);
+    }
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      border-color: var(--primary-hover);
+    }
+    .btn-run {
+      background: #10b981;
+      color: #0f172a;
+      border-color: #10b981;
+      font-weight: 700;
+    }
+    .btn-run:hover {
+      background: #059669;
+    }
+    .endpoint-bar {
+      background: #162032;
+      border-bottom: 1px solid var(--border-color);
+      padding: 8px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+    }
+    .mode-switch {
+      display: flex;
+      background: var(--bg-dark);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 2px;
+    }
+    .mode-btn {
+      padding: 4px 10px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .mode-btn.active {
+      background: var(--primary);
+      color: #0f172a;
+    }
+    .endpoint-input {
+      flex: 1;
+      background: var(--bg-dark);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: var(--font-mono);
+      outline: none;
+    }
+    .endpoint-input:focus {
+      border-color: var(--primary);
+    }
+    .main-workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      overflow: hidden;
+      min-height: 580px;
+    }
+    @media (max-width: 900px) {
+      .main-workspace {
+        grid-template-columns: 1fr;
+      }
+    }
+    .pane {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+    .pane:last-child {
+      border-right: none;
+    }
+    .pane-header {
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border-color);
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .tabs {
+      display: flex;
+      gap: 4px;
+    }
+    .tab {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab:hover {
+      color: var(--text-main);
+    }
+    .tab.active {
+      background: var(--bg-editor);
+      border-color: var(--border-color);
+      color: var(--primary);
+    }
+    .editor-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background: var(--bg-editor);
+    }
+    textarea.code-editor {
+      flex: 1;
+      width: 100%;
+      background: transparent;
+      color: #e2e8f0;
+      border: none;
+      outline: none;
+      padding: 16px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.5;
+      resize: none;
+      tab-size: 2;
+    }
+    .variables-drawer {
+      height: 180px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      background: #0b1120;
+    }
+    .drawer-header {
+      padding: 6px 16px;
+      background: #111827;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .response-pane {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-editor);
+    }
+    .response-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+    }
+    .badge {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .badge-mock {
+      background: rgba(192, 132, 252, 0.2);
+      color: var(--accent-purple);
+      border: 1px solid rgba(192, 132, 252, 0.4);
+    }
+    .badge-live {
+      background: rgba(52, 211, 153, 0.2);
+      color: var(--accent-green);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+    }
+    .badge-time {
+      color: var(--text-muted);
+    }
+    pre.response-viewer {
+      flex: 1;
+      padding: 16px;
+      margin: 0;
+      overflow: auto;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.5;
+      color: #a5f3fc;
+      background: var(--bg-editor);
+    }
+    .status-bar {
+      background: var(--bg-panel);
+      border-top: 1px solid var(--border-color);
+      padding: 8px 24px;
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .status-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .status-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+    .modal.active {
+      display: flex;
+    }
+    .modal-box {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      width: 100%;
+      max-width: 650px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+    .modal-header {
+      padding: 12px 20px;
+      background: #162032;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-body {
+      padding: 20px;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+    .modal-footer {
+      padding: 12px 20px;
+      background: #162032;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #10b981;
+      color: #0f172a;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      z-index: 200;
+    }
+    .toast.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="header-left">
+      <a href="../../index.html" class="back-btn">[BACK] Hub Portal</a>
+      <div class="title-area">
+        <h1>
+          GraphQL Playground &amp; Mock Studio
+          <span class="version-tag">v1.0.0</span>
+        </h1>
+      </div>
+    </div>
+    <div class="header-actions">
+      <select id="presetSelect" class="custom-select" onchange="loadPreset(this.value)">
+        <option value="ecommerce">[PRESET] E-Commerce Store &amp; Cart</option>
+        <option value="auth">[PRESET] User Profile &amp; Auth Tokens</option>
+        <option value="blog">[PRESET] Blog Articles &amp; Comment Tree</option>
+        <option value="agent">[PRESET] AI Agent Execution &amp; Tools</option>
+      </select>
+      <button class="btn" onclick="openCodeModal()">[CODE] Export Client</button>
+      <button class="btn btn-run" onclick="executeGraphQL()">[EXEC] Execute Query</button>
+    </div>
+  </header>
+
+  <!-- Endpoint Configuration Bar -->
+  <div class="endpoint-bar">
+    <div class="mode-switch">
+      <button id="modeMock" class="mode-btn active" onclick="setMode('mock')">[MOCK ENGINE]</button>
+      <button id="modeLive" class="mode-btn" onclick="setMode('live')">[LIVE ENDPOINT]</button>
+    </div>
+    <span style="color: var(--text-muted); font-size: 12px;">Endpoint:</span>
+    <input type="text" id="endpointUrl" class="endpoint-input" value="https://api.spacex.land/graphql" placeholder="Enter GraphQL HTTP Endpoint URL..." disabled>
+    <button class="btn" style="padding: 4px 10px; font-size: 12px;" onclick="openHeadersModal()">[HEADERS] Config</button>
+  </div>
+
+  <!-- Main Multi-Pane Workspace -->
+  <div class="main-workspace">
+    <!-- Left Pane: Query & Variables or Schema SDL -->
+    <div class="pane">
+      <div class="pane-header">
+        <div class="tabs">
+          <button id="tabQueryBtn" class="tab active" onclick="switchLeftTab('query')">[QUERY &amp; MUTATION]</button>
+          <button id="tabSchemaBtn" class="tab" onclick="switchLeftTab('schema')">[SCHEMA SDL]</button>
+        </div>
+        <div style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">
+          <span id="operationIndicator">[OPERATION] Query</span>
+        </div>
+      </div>
+
+      <!-- Query Tab Content -->
+      <div id="queryView" class="editor-container">
+        <textarea id="queryEditor" class="code-editor" spellcheck="false" placeholder="Write GraphQL Query or Mutation here..."></textarea>
+        
+        <!-- Variables Drawer -->
+        <div class="variables-drawer">
+          <div class="drawer-header">
+            <span>[QUERY VARIABLES] (JSON)</span>
+            <button class="btn" style="padding: 2px 8px; font-size: 11px;" onclick="formatVariables()">Format</button>
+          </div>
+          <textarea id="variablesEditor" class="code-editor" spellcheck="false" style="padding: 8px 16px;" placeholder="{}"></textarea>
+        </div>
+      </div>
+
+      <!-- Schema SDL Tab Content -->
+      <div id="schemaView" class="editor-container" style="display: none;">
+        <textarea id="schemaEditor" class="code-editor" spellcheck="false" placeholder="Define GraphQL Schema SDL here..."></textarea>
+      </div>
+    </div>
+
+    <!-- Right Pane: Response Viewer -->
+    <div class="pane response-pane">
+      <div class="pane-header">
+        <span style="font-size: 12px; font-weight: 600; color: var(--text-muted);">[RESPONSE] Output Inspector</span>
+        <div class="response-meta">
+          <span id="responseBadge" class="badge badge-mock">[MODE: OFFLINE MOCK]</span>
+          <span id="responseTime" class="badge-time">0 ms</span>
+          <button class="btn" style="padding: 2px 8px; font-size: 11px;" onclick="copyResponse()">[COPY]</button>
+        </div>
+      </div>
+      <pre id="responseViewer" class="response-viewer">{
+  "data": null,
+  "meta": {
+    "status": "[READY] Press 'Execute Query' to evaluate"
+  }
+}</pre>
+    </div>
+  </div>
+
+  <!-- Status Bar -->
+  <footer class="status-bar">
+    <div class="status-left">
+      <span><span class="status-indicator"></span> 100% Client-Side Engine (Zero Telemetry &amp; Offline Safe)</span>
+      <span>Schema AST: <strong id="schemaTypeCount">6 Types</strong></span>
+      <span>Engine: <strong id="engineStatus">[OFFLINE MOCK]</strong></span>
+    </div>
+    <div>OpenTools Hub · Community Micro-Tool Matrix #21</div>
+  </footer>
+
+  <!-- Code Export Modal -->
+  <div id="codeModal" class="modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 style="font-size: 14px;">[CODE EXPORT] Multi-Language Client Snippets</h3>
+        <button class="btn" style="padding: 2px 6px;" onclick="closeCodeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <button class="btn" onclick="renderSnippet('fetch')">JavaScript (Fetch)</button>
+          <button class="btn" onclick="renderSnippet('ts')">TypeScript</button>
+          <button class="btn" onclick="renderSnippet('python')">Python (HTTPX)</button>
+          <button class="btn" onclick="renderSnippet('curl')">cURL</button>
+        </div>
+        <textarea id="exportCodeArea" class="code-editor" style="height: 240px; background: #090d16; border: 1px solid var(--border-color); border-radius: 4px;" readonly></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="copyExportCode()">[COPY CODE]</button>
+        <button class="btn" onclick="closeCodeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Headers Modal -->
+  <div id="headersModal" class="modal">
+    <div class="modal-box" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 style="font-size: 14px;">[HTTP HEADERS] Live Endpoint Configuration</h3>
+        <button class="btn" style="padding: 2px 6px;" onclick="closeHeadersModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+          Define HTTP Headers in JSON format (e.g. Authorization Bearer Token):
+        </p>
+        <textarea id="headersInput" class="code-editor" style="height: 140px; background: #090d16; border: 1px solid var(--border-color); border-radius: 4px;" spellcheck="false">{\n  \"Content-Type\": \"application/json\",\n  \"Authorization\": \"Bearer dev_sandbox_token_sample\"\n}</textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="closeHeadersModal()">[SAVE HEADERS]</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">[COPIED] Content copied to clipboard!</div>
+
+  <!-- Core Playground Logic -->
+  <script>
+    // Presets Definition
+    const PRESETS = {
+      ecommerce: {
+        query: `query GetStorefront($categoryId: ID, $limit: Int = 5) {\n  category(id: $categoryId) {\n    id\n    name\n    slug\n  }\n  products(categoryId: $categoryId, limit: $limit) {\n    id\n    title\n    price\n    inStock\n    sku\n    rating\n    tags\n    vendor {\n      name\n      verified\n    }\n  }\n  cartSummary {\n    itemCount\n    totalPrice\n    currency\n  }\n}`,
+        variables: `{\n  "categoryId": "cat_electronics_99",\n  "limit": 3\n}`,
+        schema: `type Query {\n  category(id: ID): Category\n  products(categoryId: ID, limit: Int): [Product!]!\n  cartSummary: CartSummary!\n}\n\ntype Mutation {\n  addToCart(productId: ID!, quantity: Int!): CartSummary!\n  checkout(paymentMethodId: String!): OrderReceipt!\n}\n\ntype Category {\n  id: ID!\n  name: String!\n  slug: String!\n}\n\ntype Product {\n  id: ID!\n  title: String!\n  price: Float!\n  inStock: Boolean!\n  sku: String!\n  rating: Float!\n  tags: [String!]!\n  vendor: Vendor!\n}\n\ntype Vendor {\n  name: String!\n  verified: Boolean!\n}\n\ntype CartSummary {\n  itemCount: Int!\n  totalPrice: Float!\n  currency: String!\n}\n\ntype OrderReceipt {\n  orderId: ID!\n  status: String!\n  placedAt: String!\n}`
+      },
+      auth: {
+        query: `mutation AuthenticateUser($credentials: LoginInput!) {\n  login(input: $credentials) {\n    accessToken\n    refreshToken\n    expiresIn\n    user {\n      id\n      username\n      email\n      role\n      lastLoginAt\n      mfaEnabled\n    }\n  }\n}`,
+        variables: `{\n  "credentials": {\n    "email": "developer@company.org",\n    "password": "SampleStrongPassword123!"\n  }\n}`,
+        schema: `type Query {\n  me: UserProfile\n  validateToken(token: String!): TokenStatus!\n}\n\ntype Mutation {\n  login(input: LoginInput!): AuthPayload!\n  logout: Boolean!\n}\n\ninput LoginInput {\n  email: String!\n  password: String!\n}\n\ntype AuthPayload {\n  accessToken: String!\n  refreshToken: String!\n  expiresIn: Int!\n  user: UserProfile!\n}\n\ntype UserProfile {\n  id: ID!\n  username: String!\n  email: String!\n  role: String!\n  lastLoginAt: String!\n  mfaEnabled: Boolean!\n}\n\ntype TokenStatus {\n  valid: Boolean!\n  userId: ID\n}`
+      },
+      blog: {
+        query: `query FetchArticles($tag: String, $publishedOnly: Boolean = true) {\n  articles(tag: $tag, published: $publishedOnly) {\n    id\n    title\n    slug\n    readTimeMinutes\n    publishedAt\n    author {\n      displayName\n      avatarUrl\n      reputationScore\n    }\n    comments(limit: 3) {\n      id\n      content\n      authorName\n      createdAt\n    }\n  }\n}`,
+        variables: `{\n  "tag": "web-security",\n  "publishedOnly": true\n}`,
+        schema: `type Query {\n  articles(tag: String, published: Boolean): [Article!]!\n  articleBySlug(slug: String!): Article\n}\n\ntype Mutation {\n  postArticle(title: String!, content: String!): Article!\n  addComment(articleId: ID!, content: String!): Comment!\n}\n\ntype Article {\n  id: ID!\n  title: String!\n  slug: String!\n  readTimeMinutes: Int!\n  publishedAt: String!\n  author: Author!\n  comments(limit: Int): [Comment!]!\n}\n\ntype Author {\n  displayName: String!\n  avatarUrl: String!\n  reputationScore: Int!\n}\n\ntype Comment {\n  id: ID!\n  content: String!\n  authorName: String!\n  createdAt: String!\n}`
+      },
+      agent: {
+        query: `query InspectAgentTask($taskId: ID!) {\n  task(id: $taskId) {\n    id\n    taskName\n    status\n    currentStep\n    totalSteps\n    startTime\n    toolsInvoked {\n      toolName\n      latencyMs\n      status\n    }\n    metrics {\n      tokensConsumed\n      accuracyScore\n    }\n  }\n}`,
+        variables: `{\n  "taskId": "task_runner_alpha_8820"\n}`,
+        schema: `type Query {\n  task(id: ID!): AgentTask\n  activeTasks: [AgentTask!]!\n}\n\ntype Mutation {\n  dispatchAgentTask(prompt: String!, model: String!): AgentTask!\n  terminateTask(id: ID!): Boolean!\n}\n\ntype AgentTask {\n  id: ID!\n  taskName: String!\n  status: String!\n  currentStep: Int!\n  totalSteps: Int!\n  startTime: String!\n  toolsInvoked: [ToolCallLog!]!\n  metrics: ExecutionMetrics!\n}\n\ntype ToolCallLog {\n  toolName: String!\n  latencyMs: Int!\n  status: String!\n}\n\ntype ExecutionMetrics {\n  tokensConsumed: Int!\n  accuracyScore: Float!\n}`
+      }
+    };
+
+    let currentMode = 'mock'; // 'mock' or 'live'
+    let customHeaders = {
+      "Content-Type": "application/json"
+    };
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      loadPreset('ecommerce');
+    });
+
+    function loadPreset(key) {
+      const p = PRESETS[key] || PRESETS.ecommerce;
+      document.getElementById('queryEditor').value = p.query;
+      document.getElementById('variablesEditor').value = p.variables;
+      document.getElementById('schemaEditor').value = p.schema;
+      updateTypeCount();
+    }
+
+    function switchLeftTab(tab) {
+      const qView = document.getElementById('queryView');
+      const sView = document.getElementById('schemaView');
+      const qBtn = document.getElementById('tabQueryBtn');
+      const sBtn = document.getElementById('tabSchemaBtn');
+
+      if (tab === 'query') {
+        qView.style.display = 'flex';
+        sView.style.display = 'none';
+        qBtn.classList.add('active');
+        sBtn.classList.remove('active');
+      } else {
+        qView.style.display = 'none';
+        sView.style.display = 'flex';
+        qBtn.classList.remove('active');
+        sBtn.classList.add('active');
+        updateTypeCount();
+      }
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+      const bMock = document.getElementById('modeMock');
+      const bLive = document.getElementById('modeLive');
+      const input = document.getElementById('endpointUrl');
+      const badge = document.getElementById('responseBadge');
+      const engine = document.getElementById('engineStatus');
+
+      if (mode === 'mock') {
+        bMock.classList.add('active');
+        bLive.classList.remove('active');
+        input.disabled = true;
+        badge.className = 'badge badge-mock';
+        badge.innerText = '[MODE: OFFLINE MOCK]';
+        engine.innerText = '[OFFLINE MOCK]';
+      } else {
+        bLive.classList.add('active');
+        bMock.classList.remove('active');
+        input.disabled = false;
+        badge.className = 'badge badge-live';
+        badge.innerText = '[MODE: LIVE ENDPOINT]';
+        engine.innerText = '[LIVE HTTP]';
+      }
+    }
+
+    function formatVariables() {
+      const area = document.getElementById('variablesEditor');
+      try {
+        const parsed = JSON.parse(area.value || '{}');
+        area.value = JSON.stringify(parsed, null, 2);
+        showToast('[FORMATTED] JSON variables formatted');
+      } catch (e) {
+        showToast('[ERROR] Invalid JSON in variables: ' + e.message);
+      }
+    }
+
+    function updateTypeCount() {
+      const schema = document.getElementById('schemaEditor').value;
+      const matches = schema.match(/(?:type|input|interface|enum)\s+([A-Za-z0-9_]+)/g) || [];
+      document.getElementById('schemaTypeCount').innerText = matches.length + ' Types';
+    }
+
+    // AST / Field Mock Generator
+    function generateMockValue(fieldName, typeHint = 'string', depth = 0) {
+      const lower = fieldName.toLowerCase();
+      if (lower.includes('id') || lower === 'sku') return `${fieldName}_mock_${Math.floor(Math.random() * 9000 + 1000)}`;
+      if (lower.includes('email')) return 'developer.sandbox@company.org';
+      if (lower.includes('token')) return 'eyJhGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.sandbox_payload_sig';
+      if (lower.includes('price') || lower.includes('cost') || lower.includes('rating') || lower.includes('score')) return Math.round((Math.random() * 80 + 10) * 10) / 10;
+      if (lower.includes('count') || lower.includes('limit') || lower.includes('total') || lower.includes('expires') || lower.includes('minutes') || lower.includes('steps') || lower.includes('latency')) return Math.floor(Math.random() * 50 + 1);
+      if (lower.includes('time') || lower.includes('at') || lower.includes('date')) return new Date().toISOString();
+      if (lower.includes('status')) return 'ACTIVE_RUNNING';
+      if (lower.includes('title') || lower.includes('name')) return `${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} Sample`;
+      if (lower.includes('instock') || lower.includes('verified') || lower.includes('enabled') || lower.includes('valid') || lower.includes('published')) return true;
+      if (lower.includes('tags')) return ['production', 'developer-tool', 'security'];
+      return `${fieldName}_val`;
+    }
+
+    function parseGraphQLFields(queryString) {
+      // Lightweight recursive field extractor
+      const clean = queryString.replace(/#.*$/gm, '').replace(/\([^\)]*\)/g, '');
+      const tokens = clean.match(/[A-Za-z0-9_]+|[{}]/g) || [];
+      
+      let cursor = 0;
+      function parseBlock() {
+        const obj = {};
+        while (cursor < tokens.length) {
+          const token = tokens[cursor++];
+          if (token === '}') return obj;
+          if (token === '{') continue;
+          if (['query', 'mutation', 'subscription', 'fragment'].includes(token)) {
+            continue;
+          }
+          if (cursor < tokens.length && tokens[cursor] === '{') {
+            cursor++;
+            const sub = parseBlock();
+            if (token.endsWith('s') || ['products', 'articles', 'comments', 'toolsInvoked', 'activeTasks'].includes(token)) {
+              obj[token] = [sub, JSON.parse(JSON.stringify(sub))];
+            } else {
+              obj[token] = sub;
+            }
+          } else {
+            obj[token] = generateMockValue(token);
+          }
+        }
+        return obj;
+      }
+      return parseBlock();
+    }
+
+    async function executeGraphQL() {
+      const query = document.getElementById('queryEditor').value.trim();
+      const varsText = document.getElementById('variablesEditor').value.trim() || '{}';
+      const viewer = document.getElementById('responseViewer');
+      const timeElem = document.getElementById('responseTime');
+      
+      let variables = {};
+      try {
+        variables = JSON.parse(varsText);
+      } catch (e) {
+        viewer.textContent = JSON.stringify({
+          errors: [
+            {
+              message: "Invalid Variables JSON: " + e.message,
+              extensions: { code: "BAD_USER_INPUT" }
+            }
+          ]
+        }, null, 2);
+        return;
+      }
+
+      if (!query) {
+        viewer.textContent = JSON.stringify({
+          errors: [{ message: "Query string cannot be empty" }]
+        }, null, 2);
+        return;
+      }
+
+      const tStart = performance.now();
+
+      if (currentMode === 'mock') {
+        // Execute Offline Mock Engine
+        try {
+          const mockData = parseGraphQLFields(query);
+          const tDuration = Math.round(performance.now() - tStart);
+          timeElem.innerText = `${tDuration} ms`;
+          viewer.textContent = JSON.stringify({
+            data: mockData,
+            extensions: {
+              engine: "OpenTools Hub Client Mock Sandbox v1.0.0",
+              mode: "100% Offline Synthesized",
+              latency: `${tDuration}ms`
+            }
+          }, null, 2);
+        } catch (err) {
+          viewer.textContent = JSON.stringify({
+            errors: [
+              {
+                message: "Mock Engine Parsing Error: " + err.message,
+                extensions: { code: "GRAPHQL_PARSE_FAILED" }
+              }
+            ]
+          }, null, 2);
+        }
+      } else {
+        // Live Endpoint Mode
+        const endpoint = document.getElementById('endpointUrl').value.trim();
+        if (!endpoint) {
+          alert('Please specify a valid GraphQL endpoint URL.');
+          return;
+        }
+
+        viewer.textContent = '// Connecting to live endpoint: ' + endpoint + ' ...';
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: customHeaders,
+            body: JSON.stringify({
+              query,
+              variables
+            })
+          });
+          const result = await res.json();
+          const tDuration = Math.round(performance.now() - tStart);
+          timeElem.innerText = `${tDuration} ms`;
+          viewer.textContent = JSON.stringify(result, null, 2);
+        } catch (fetchErr) {
+          const tDuration = Math.round(performance.now() - tStart);
+          timeElem.innerText = `${tDuration} ms`;
+          viewer.textContent = JSON.stringify({
+            errors: [
+              {
+                message: "Live Request Failed: " + fetchErr.message,
+                extensions: {
+                  endpoint: endpoint,
+                  hint: "Ensure remote endpoint supports CORS or check network connection."
+                }
+              }
+            ]
+          }, null, 2);
+        }
+      }
+    }
+
+    function copyResponse() {
+      const text = document.getElementById('responseViewer').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('[COPIED] Response JSON copied to clipboard!');
+      });
+    }
+
+    // Code Export
+    function openCodeModal() {
+      document.getElementById('codeModal').classList.add('active');
+      renderSnippet('fetch');
+    }
+    function closeCodeModal() {
+      document.getElementById('codeModal').classList.remove('active');
+    }
+
+    function renderSnippet(lang) {
+      const query = document.getElementById('queryEditor').value;
+      const vars = document.getElementById('variablesEditor').value || '{}';
+      const endpoint = currentMode === 'live' ? document.getElementById('endpointUrl').value : 'https://api.yourdomain.com/graphql';
+      const area = document.getElementById('exportCodeArea');
+
+      if (lang === 'fetch') {
+        area.value = `// JavaScript / TypeScript Fetch Example\nconst response = await fetch("${endpoint}", {\n  method: "POST",\n  headers: {\n    "Content-Type": "application/json",\n    "Authorization": "Bearer YOUR_ACCESS_TOKEN"\n  },\n  body: JSON.stringify({\n    query: \`${query}\`,\n    variables: ${vars}\n  })\n});\n\nconst { data, errors } = await response.json();\nconsole.log(data);`;
+      } else if (lang === 'ts') {
+        area.value = `// TypeScript Client Interface\ninterface GraphQLResponse<T = any> {\n  data?: T;\n  errors?: Array<{ message: string; locations?: any[] }>;\n}\n\nexport async function executeQuery<T>(): Promise<GraphQLResponse<T>> {\n  const res = await fetch("${endpoint}", {\n    method: "POST",\n    headers: { "Content-Type": "application/json" },\n    body: JSON.stringify({\n      query: \`${query}\`,\n      variables: ${vars}\n    })\n  });\n  return res.json();\n}`;
+      } else if (lang === 'python') {
+        area.value = `# Python HTTPX Client Example\nimport httpx\n\nendpoint = "${endpoint}"\npayload = {\n    "query": \"\"\"${query}\"\"\",\n    "variables": ${vars}\n}\n\nresponse = httpx.post(endpoint, json=payload, headers={"Content-Type": "application/json"})\ndata = response.json()\nprint(data)`;
+      } else if (lang === 'curl') {
+        area.value = `curl -X POST "${endpoint}" \\\n  -H "Content-Type: application/json" \\\n  -H "Authorization: Bearer YOUR_TOKEN" \\\n  -d '{\n    "query": ${JSON.stringify(query)},\n    "variables": ${vars}\n  }'`;
+      }
+    }
+
+    function copyExportCode() {
+      const code = document.getElementById('exportCodeArea').value;
+      navigator.clipboard.writeText(code).then(() => {
+        showToast('[COPIED] Code snippet copied to clipboard!');
+      });
+    }
+
+    // Headers Modal
+    function openHeadersModal() {
+      document.getElementById('headersModal').classList.add('active');
+    }
+    function closeHeadersModal() {
+      try {
+        const val = document.getElementById('headersInput').value;
+        customHeaders = JSON.parse(val);
+        showToast('[SAVED] Headers configuration updated!');
+      } catch (e) {
+        showToast('[WARN] Headers JSON syntax invalid, kept default');
+      }
+      document.getElementById('headersModal').classList.remove('active');
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+  </script>
+</body>
+</html>
