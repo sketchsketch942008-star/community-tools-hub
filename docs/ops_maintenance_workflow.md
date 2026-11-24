@@ -62,14 +62,23 @@ flowchart TD
 
 ---
 
-## 4. 后续排期与候选工具池 (Next-Wave Intake)
+## 4. 已纳入运维管理的在线工具矩阵 (Active Inventory)
+
+| 工具 ID | 工具名称 | 当前版本 | 核心特性 | 质检状态 |
+| :--- | :--- | :---: | :--- | :---: |
+| `meta-card-previewer` | **MetaCard Studio** | `v1.0.0` | 实时模拟 Twitter Card / Google SERP 卡片与标签生成 | ✅ PASS |
+| `dev-secret-sanitizer` | **SecretSanitizer** | `v1.0.0` | 纯前端正则脱敏敏感 Token、API Key、私钥与 IP | ✅ PASS |
+| `curl-code-studio` | **cURL Code Studio** | `v1.0.0` | cURL 一键转多语言（Python/JS/Axios/Go）与敏感脱敏 | ✅ PASS |
+
+---
+
+## 5. 后续排期与候选工具池 (Next-Wave Intake)
 
 根据推特主账号运营于 `#4` 发布的调研提案，下一阶段拟接入工具池：
 
 1. **PromptGuard (AI提示词与日志本地脱敏)**：与现有 `SecretSanitizer` 整合或进阶升级，增加占位还原机制。
 2. **DevSocial Snapshot (代码与技术分享卡片生成器)**：Canvas/SVG 纯前端高亮生成，契合推特发布场景。
-3. **cURL to Clean Code & Mock Studio**：API 调试转代码神器。
-4. **Cron & Webhook Visualizer**：定时任务可视化解析与时间轴。
+3. **Cron & Webhook Visualizer**：定时任务可视化解析与时间轴。
 
 ---
 
