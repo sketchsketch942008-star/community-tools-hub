@@ -1,8 +1,19 @@
 {
-  "timestamp": "2026-11-24 09:22:50",
+  "timestamp": "2026-11-24 09:26:13",
   "overall_status": "PASS",
-  "tools_count": 2,
+  "tools_count": 3,
   "tools": [
+    {
+      "tool_id": "curl-code-studio",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "cURL Code Studio - 极速 API 转换与 Mock 生成器",
+      "size_bytes": 9817
+    },
     {
       "tool_id": "dev-secret-sanitizer",
       "entry_point": "index.html",

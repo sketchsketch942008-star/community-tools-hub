@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cURL Code Studio - 极速 API 转换与 Mock 生成器</title>
+  <style>
+    :root {
+      --bg: #090e17;
+      --card: #111a28;
+      --border: #1e2d42;
+      --accent: #0284c7;
+      --accent-hover: #0369a1;
+      --code-bg: #030712;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --success: #10b981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px; }
+    header { max-width: 1280px; margin: 0 auto 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 14px; }
+    h1 { font-size: 1.4rem; color: #38bdf8; display: flex; align-items: center; gap: 8px; }
+    .badge { background: #075985; color: #7dd3fc; font-size: 0.75rem; padding: 2px 8px; border-radius: 999px; }
+    .container { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 900px) { .container { grid-template-columns: 1fr; } }
+    .panel { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .panel-title { font-size: 1rem; font-weight: 600; color: var(--text); }
+    textarea { width: 100%; height: 360px; background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; color: #e2e8f0; font-size: 0.85rem; line-height: 1.5; resize: vertical; }
+    textarea:focus { outline: none; border-color: var(--accent); }
+    .lang-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tab-btn { background: #030712; border: 1px solid var(--border); color: var(--muted); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+    .tab-btn.active { background: #0284c7; color: #fff; border-color: #0284c7; font-weight: 600; }
+    .actions-bar { display: flex; gap: 10px; margin-top: 12px; align-items: center; }
+    .btn { background: var(--border); color: var(--text); border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 500; }
+    .btn:hover { background: #263852; }
+    .btn-primary { background: #0284c7; color: #fff; font-weight: 600; }
+    .btn-primary:hover { background: #0369a1; }
+    .mask-checkbox { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--muted); cursor: pointer; }
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; font-size: 0.85rem; color: #7dd3fc; height: 360px; overflow: auto; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>cURL Code Studio <span class="badge">v1.0.0</span></h1>
+      <p style="font-size:0.85rem; color:var(--muted); margin-top:4px;">一键将 cURL 命令转换为 Python / JavaScript Fetch / Axios / Go 代码，并自动支持敏感头脱敏</p>
+    </div>
+    <div style="font-size:0.8rem; color:var(--success);">
+      ⚡ 零安装 · 离线全量解析
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">输入 cURL 命令</span>
+        <button class="btn" onclick="loadSampleCurl()">加载示例</button>
+      </div>
+      <textarea id="curl-input" placeholder="curl -X POST 'https://api.example.com/v1/chat' \
+  -H 'Authorization: Bearer sk-test123456' \
+  -H 'Content-Type: application/json' \
+  -d '{&quot;model&quot;: &quot;gpt-4&quot;, &quot;stream&quot;: false}'"></textarea>
+      <div class="actions-bar">
+        <button class="btn btn-primary" onclick="convertCurl()">立即转换</button>
+        <label class="mask-checkbox">
+          <input type="checkbox" id="mask-auth" checked onchange="convertCurl()"> 自动脱敏 Authorization / 敏感 Token
+        </label>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <div class="lang-tabs">
+          <button class="tab-btn active" onclick="setLang('python')">Python (requests)</button>
+          <button class="tab-btn" onclick="setLang('fetch')">JavaScript (Fetch)</button>
+          <button class="tab-btn" onclick="setLang('axios')">Node.js (Axios)</button>
+          <button class="tab-btn" onclick="setLang('go')">Go (net/http)</button>
+        </div>
+        <button class="btn btn-primary" id="copy-btn" onclick="copyOutput()">复制代码</button>
+      </div>
+      <pre><code id="code-output">// 请在左侧输入 cURL 并点击“立即转换”</code></pre>
+    </div>
+  </div>
+
+  <script>
+    let currentLang = 'python';
+
+    function parseCurl(curlText) {
+      const clean = curlText.replace(/\\\n/g, ' ').replace(/[\r\n]+/g, ' ').trim();
+      let method = 'GET';
+      let url = '';
+      const headers = {};
+      let data = null;
+
+      const urlMatch = clean.match(/(?:curl\s+)?(?:-X\s+[A-Z]+\s+)?['"]?(https?:\/\/[^\s'"]+)['"]?/i);
+      if (urlMatch) { url = urlMatch[1]; }
+
+      const methodMatch = clean.match(/-X\s+([A-Z]+)/i);
+      if (methodMatch) { method = methodMatch[1].toUpperCase(); }
+
+      const headerMatches = [...clean.matchAll(/-H\s+['"]([^'"]+)['"]/gi)];
+      headerMatches.forEach(m => {
+        const parts = m[1].split(':');
+        if (parts.length >= 2) {
+          const key = parts[0].trim();
+          const val = parts.slice(1).join(':').trim();
+          headers[key] = val;
+        }
+      });
+
+      const dataMatch = clean.match(/(?:-d|--data|--data-raw)\s+['"]([\s\S]*?)['"](?:\s+-|$)/i);
+      if (dataMatch) {
+        data = dataMatch[1];
+        if (method === 'GET') method = 'POST';
+      }
+
+      if (document.getElementById('mask-auth').checked) {
+        for (let k in headers) {
+          if (k.toLowerCase() === 'authorization') {
+            headers[k] = 'Bearer [REDACTED_TOKEN]';
+          }
+        }
+      }
+
+      return { method, url, headers, data };
+    }
+
+    function generateCode(parsed, lang) {
+      const { method, url, headers, data } = parsed;
+      if (!url) return '// 请输入有效的 cURL 命令 (包含 http/https URL)';
+
+      if (lang === 'python') {
+        let code = `import requests\n\nurl = "${url}"\n`;
+        code += `headers = ${JSON.stringify(headers, null, 4)}\n`;
+        if (data) {
+          try {
+            const parsedJson = JSON.parse(data);
+            code += `payload = ${JSON.stringify(parsedJson, null, 4)}\n\n`;
+            code += `response = requests.${method.toLowerCase()}(url, headers=headers, json=payload)\n`;
+          } catch(e) {
+            code += `data = """${data}"""\n\n`;
+            code += `response = requests.${method.toLowerCase()}(url, headers=headers, data=data)\n`;
+          }
+        } else {
+          code += `\nresponse = requests.${method.toLowerCase()}(url, headers=headers)\n`;
+        }
+        code += `print(response.status_code)\nprint(response.text)\n`;
+        return code;
+      }
+
+      if (lang === 'fetch') {
+        let opts = { method, headers };
+        if (data) {
+          try { opts.body = JSON.stringify(JSON.parse(data)); } catch(e) { opts.body = data; }
+        }
+        return `fetch("${url}", ${JSON.stringify(opts, null, 2)})\n  .then(res => res.json())\n  .then(data => console.log(data))\n  .catch(err => console.error(err));`;
+      }
+
+      if (lang === 'axios') {
+        let code = `const axios = require('axios');\n\naxios({\n  method: '${method.toLowerCase()}',\n  url: '${url}',\n  headers: ${JSON.stringify(headers, null, 4)},\n`;
+        if (data) {
+          try {
+            code += `  data: ${JSON.stringify(JSON.parse(data), null, 4)}\n`;
+          } catch(e) {
+            code += `  data: '${data}'\n`;
+          }
+        }
+        code += `})\n.then(response => console.log(response.data))\n.catch(error => console.error(error));`;
+        return code;
+      }
+
+      if (lang === 'go') {
+        return `package main\n\nimport (\n\t"fmt"\n\t"net/http"\n\t"io"\n)\n\nfunc main() {\n\tclient := &http.Client{}\n\treq, _ := http.NewRequest("${method}", "${url}", nil)\n` +
+          Object.entries(headers).map(([k, v]) => `\treq.Header.Set("${k}", "${v}")`).join('\n') +
+          `\n\tres, err := client.Do(req)\n\tif err != nil { panic(err) }\n\tdefer res.Body.Close()\n\tbody, _ := io.ReadAll(res.Body)\n\tfmt.Println(string(body))\n}`;
+      }
+      return '';
+    }
+
+    function convertCurl() {
+      const input = document.getElementById('curl-input').value;
+      const parsed = parseCurl(input);
+      const code = generateCode(parsed, currentLang);
+      document.getElementById('code-output').textContent = code;
+    }
+
+    function setLang(lang) {
+      currentLang = lang;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      convertCurl();
+    }
+
+    function loadSampleCurl() {
+      document.getElementById('curl-input').value = `curl -X POST "https://api.github.com/repos/sketch/repo/issues" \\
+  -H "Authorization: Bearer ghp_999999999999999999999999999999999999" \\
+  -H "Accept: application/vnd.github.v3+json" \\
+  -H "Content-Type: application/json" \\
+  -d '{"title": "Bug in API sync", "body": "Need urgent investigation"}'`;
+      convertCurl();
+    }
+
+    function copyOutput() {
+      const code = document.getElementById('code-output').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        const btn = document.getElementById('copy-btn');
+        btn.textContent = '已复制！';
+        setTimeout(() => { btn.textContent = '复制代码'; }, 2000);
+      });
+    }
+
+    document.getElementById('curl-input').addEventListener('input', convertCurl);
+  </script>
+</body>
+</html>
