@@ -82,6 +82,7 @@ flowchart TD
 | `markdown-table-studio` | **Markdown Table & ASCII Matrix Studio** | `v1.0.0` | GFM Markdown/ASCII 网格/Unicode 框线与 CSV/JSON 多维互转工坊；矩阵编辑与导出 | [OK] PASS |
 | `hash-checksum-studio` | **Hash & Checksum Studio** | `v1.0.0` | 现代离线多重哈希计算与完整性校验沙盒；SHA-256/512/MD5/CRC32 并发计算与自动比对 | [OK] PASS |
 | `schema-codegen-studio` | **SchemaForge Studio** | `v1.0.0` | 纯前端 JSON 转 TypeScript Interface、Zod Schema、Go Struct 与 Python Pydantic | [OK] PASS |
+| `color-palette-studio` | **Color Palette & Design Token Studio** | `v1.0.0` | 单品牌色扩展 Tailwind 50~950 线性色阶、WCAG 2.1 对比度评级与五格设计令牌导出 | [OK] PASS |
 
 ---
 
