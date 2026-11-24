@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RegexLab Studio - 现代离线安全正则表达式工坊与测试矩阵沙盒</title>
+  <meta name="description" content="纯前端零依赖的现代正则表达式测试沙盒。实时高亮、捕获组分解、单元测试用例矩阵与跨语言代码生成，100% 客户端本地计算零隐私外发。">
+  <style>
+    :root {
+      --bg-primary: #0a0e17;
+      --bg-panel: #111827;
+      --bg-input: #1a2234;
+      --border-color: #243049;
+      --accent-color: #38bdf8;
+      --accent-hover: #0284c7;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --code-bg: #070c14;
+      --badge-bg: #1e293b;
+      --badge-text: #38bdf8;
+      --success-text: #4ade80;
+      --fail-text: #f87171;
+      --match-highlight: rgba(56, 189, 248, 0.35);
+      --match-border: rgba(56, 189, 248, 0.8);
+      --group-1: rgba(244, 114, 182, 0.3);
+      --group-2: rgba(251, 146, 60, 0.3);
+      --group-3: rgba(167, 139, 250, 0.3);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: rgba(17, 24, 39, 0.85);
+      border-bottom: 1px solid var(--border-color);
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(12px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+
+    .brand-badges {
+      display: flex;
+      gap: 6px;
+    }
+
+    .badge {
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      font-weight: 600;
+      border: 1px solid var(--border-color);
+      letter-spacing: 0.04em;
+    }
+
+    .badge-pass {
+      color: var(--success-text);
+      border-color: rgba(74, 222, 128, 0.3);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .nav-link {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .nav-link:hover {
+      color: var(--accent-color);
+    }
+
+    .app-main {
+      flex: 1;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Regex Input Toolbar */
+    .pattern-toolbar {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .pattern-bar {
+      display: flex;
+      align-items: center;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 6px 12px;
+      transition: border-color 0.2s;
+    }
+
+    .pattern-bar:focus-within {
+      border-color: var(--accent-color);
+    }
+
+    .slash {
+      font-family: monospace;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent-color);
+      padding: 0 4px;
+      user-select: none;
+    }
+
+    .pattern-input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 1rem;
+      color: #fff;
+      padding: 6px 8px;
+    }
+
+    .flags-box {
+      display: flex;
+      gap: 4px;
+      padding-left: 8px;
+      border-left: 1px solid var(--border-color);
+    }
+
+    .flag-btn {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-family: monospace;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .flag-btn.active {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+    }
+
+    .preset-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .preset-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-right: 4px;
+    }
+
+    .preset-pill {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .preset-pill:hover {
+      border-color: var(--accent-color);
+      color: #fff;
+    }
+
+    /* Content Layout */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 18px;
+      flex: 1;
+    }
+
+    @media (max-width: 1024px) {
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      background: rgba(0, 0, 0, 0.25);
+      border-bottom: 1px solid var(--border-color);
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent-color);
+      letter-spacing: 0.05em;
+    }
+
+    .panel-body {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+    }
+
+    /* Text Editor & Visual Matches */
+    .editor-wrapper {
+      position: relative;
+      min-height: 220px;
+      flex: 1;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--code-bg);
+      overflow: hidden;
+      display: flex;
+    }
+
+    .editor-textarea, .editor-backdrop {
+      width: 100%;
+      height: 100%;
+      min-height: 220px;
+      padding: 14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      border: none;
+      outline: none;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .editor-textarea {
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: transparent;
+      color: var(--text-main);
+      z-index: 2;
+      resize: vertical;
+    }
+
+    .editor-backdrop {
+      position: relative;
+      color: transparent;
+      z-index: 1;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .match-highlight {
+      background: var(--match-highlight);
+      border-bottom: 2px solid var(--match-border);
+      border-radius: 2px;
+    }
+
+    /* Matches Breakdown */
+    .matches-stats {
+      display: flex;
+      gap: 14px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      padding-top: 4px;
+    }
+
+    .stat-strong {
+      color: #fff;
+      font-weight: 700;
+      font-family: monospace;
+    }
+
+    .groups-container {
+      max-height: 240px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .match-card {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 0.78rem;
+    }
+
+    .match-card-header {
+      display: flex;
+      justify-content: space-between;
+      color: var(--accent-color);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .group-item {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+      font-family: monospace;
+      line-height: 1.4;
+    }
+
+    .group-label {
+      color: var(--text-muted);
+      min-width: 65px;
+    }
+
+    .group-val {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 1px 6px;
+      border-radius: 3px;
+      word-break: break-all;
+    }
+
+    /* Test Cases Matrix */
+    .test-cases-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+    }
+
+    .test-cases-table th {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .test-cases-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(36, 48, 73, 0.4);
+    }
+
+    .test-input-cell {
+      font-family: monospace;
+      color: #fff;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.7rem;
+      letter-spacing: 0.03em;
+    }
+
+    .status-badge.pass {
+      background: rgba(74, 222, 128, 0.15);
+      color: var(--success-text);
+      border: 1px solid rgba(74, 222, 128, 0.3);
+    }
+
+    .status-badge.fail {
+      background: rgba(248, 113, 113, 0.15);
+      color: var(--fail-text);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+    }
+
+    .add-test-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .add-test-input {
+      flex: 1;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-family: monospace;
+      font-size: 0.78rem;
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 6px 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+    }
+
+    /* Code Export */
+    .tab-btn-group {
+      display: flex;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 6px 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+
+    .tab-btn.active {
+      color: var(--accent-color);
+      border-bottom-color: var(--accent-color);
+    }
+
+    .copy-btn {
+      padding: 4px 10px;
+      background: var(--accent-color);
+      border: none;
+      color: #000;
+      font-size: 0.72rem;
+      font-weight: 700;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .copy-btn:hover {
+      background: var(--accent-hover);
+      color: #fff;
+    }
+
+    .code-box {
+      background: var(--code-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.8rem;
+      color: #38bdf8;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-title">RegexLab Studio</div>
+      <div class="brand-badges">
+        <span class="badge">[v1.0.0]</span>
+        <span class="badge">[PCRE/JS ENGINE]</span>
+        <span class="badge badge-pass">[OFFLINE SAFE]</span>
+      </div>
+    </div>
+    <div class="nav-links">
+      <a href="../../index.html" class="nav-link">[OpenTools Hub]</a>
+      <a href="https://github.com/sketchsketch942008-star/community-tools-hub" target="_blank" rel="noopener noreferrer" class="nav-link">[GitHub Repo]</a>
+    </div>
+  </header>
+
+  <div class="app-main">
+
+    <!-- Regex Pattern Toolbar -->
+    <div class="pattern-toolbar">
+      <div class="pattern-bar">
+        <span class="slash">/</span>
+        <input type="text" id="patternInput" class="pattern-input" value="([a-zA-Z0-9._%+-]+)@([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})" placeholder="输入正则表达式..." oninput="runEvaluation()">
+        <span class="slash">/</span>
+        <div class="flags-box">
+          <button class="flag-btn active" id="flagG" onclick="toggleFlag('g')">g</button>
+          <button class="flag-btn active" id="flagI" onclick="toggleFlag('i')">i</button>
+          <button class="flag-btn" id="flagM" onclick="toggleFlag('m')">m</button>
+          <button class="flag-btn" id="flagS" onclick="toggleFlag('s')">s</button>
+          <button class="flag-btn" id="flagU" onclick="toggleFlag('u')">u</button>
+        </div>
+      </div>
+
+      <!-- Quick Presets -->
+      <div class="preset-row">
+        <span class="preset-label">PRESETS / 经典预设:</span>
+        <button class="preset-pill" onclick="loadPreset('email')">[Email 邮箱]</button>
+        <button class="preset-pill" onclick="loadPreset('ipv4')">[IPv4 地址]</button>
+        <button class="preset-pill" onclick="loadPreset('semver')">[SemVer 语义版本]</button>
+        <button class="preset-pill" onclick="loadPreset('iso_date')">[ISO8601 时间戳]</button>
+        <button class="preset-pill" onclick="loadPreset('url')">[HTTP/HTTPS URL]</button>
+        <button class="preset-pill" onclick="loadPreset('hex')">[Hex 颜色代码]</button>
+        <button class="preset-pill" onclick="loadPreset('slug')">[URL Slug]</button>
+      </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="content-grid">
+
+      <!-- Left Column: Test String & Realtime Highlight -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">TEST STRING & VISUAL MATCHES / 测试文本与高亮</span>
+          <span class="badge" id="evalTime">[0.1 ms]</span>
+        </div>
+        <div class="panel-body">
+          <div class="editor-wrapper">
+            <div class="editor-backdrop" id="editorBackdrop"></div>
+            <textarea class="editor-textarea" id="editorTextarea" oninput="syncEditor()" onscroll="syncScroll()">Hello! Please reach out to dev.ops@company.org or support-team@sub.domain.io for queries.
+Invalid test: bad.email@com, user@.org.
+Another valid one: test_user.99+tag@gmail.com!</textarea>
+          </div>
+          <div class="matches-stats">
+            <span>总匹配项: <span class="stat-strong" id="statMatchCount">0</span></span>
+            <span>捕获组数: <span class="stat-strong" id="statGroupCount">0</span></span>
+            <span>语法状态: <span class="stat-strong" id="statSyntaxStatus" style="color:var(--success-text);">[VALID]</span></span>
+          </div>
+
+          <!-- Capture Groups Explorer -->
+          <div style="font-size:0.75rem; font-weight:700; color:var(--accent-color); margin-top:8px;">
+            MATCHES & CAPTURE GROUPS BREAKDOWN / 捕获组明细:
+          </div>
+          <div class="groups-container" id="groupsContainer"></div>
+        </div>
+      </div>
+
+      <!-- Right Column: Unit Test Matrix & Code Export -->
+      <div style="display:flex; flex-direction:column; gap:18px;">
+
+        <!-- Test Cases Matrix Panel -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">TEST CASES MATRIX / 单元用例断言</span>
+            <span class="badge" id="testMatrixSummary">[0 PASS / 0 FAIL]</span>
+          </div>
+          <div class="panel-body">
+            <table class="test-cases-table">
+              <thead>
+                <tr>
+                  <th>测试字符串</th>
+                  <th>期望断言</th>
+                  <th>当前判定</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="testCasesBody"></tbody>
+            </table>
+
+            <div class="add-test-row">
+              <input type="text" class="add-test-input" id="newTestInput" placeholder="输入新的测试用例...">
+              <select class="btn-secondary" id="newTestExpect" style="outline:none;">
+                <option value="true">[MUST MATCH]</option>
+                <option value="false">[MUST NOT MATCH]</option>
+              </select>
+              <button class="btn-secondary" onclick="addTestCase()">[添加断言]</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Code Export Panel -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="tab-btn-group">
+              <button class="tab-btn active" id="tabPython" onclick="switchCodeTab('python')">[Python (re)]</button>
+              <button class="tab-btn" id="tabJs" onclick="switchCodeTab('javascript')">[JavaScript]</button>
+              <button class="tab-btn" id="tabGo" onclick="switchCodeTab('go')">[Go (regexp)]</button>
+              <button class="tab-btn" id="tabPhp" onclick="switchCodeTab('php')">[PHP]</button>
+            </div>
+            <button class="copy-btn" id="codeCopyBtn" onclick="copyExportCode()">[COPY CODE]</button>
+          </div>
+          <div class="panel-body">
+            <pre class="code-box" id="codeOutput"></pre>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    // State
+    const flags = { g: true, i: true, m: false, s: false, u: false };
+    let currentCodeTab = 'python';
+
+    let testCases = [
+      { input: "developer@company.org", expected: true },
+      { input: "support-team@sub.domain.io", expected: true },
+      { input: "invalid-email@", expected: false },
+      { input: "@missing-user.com", expected: false },
+      { input: "user@domain..com", expected: false }
+    ];
+
+    const presets = {
+      email: {
+        pattern: "([a-zA-Z0-9._%+-]+)@([a-zA-Z0-9.-]+\\.[a-zA-Z]{2,})",
+        flags: { g: true, i: true, m: false, s: false, u: false },
+        sample: "Hello! Please reach out to dev.ops@company.org or support-team@sub.domain.io for queries.\nInvalid test: bad.email@com, user@.org.\nAnother valid one: test_user.99+tag@gmail.com!",
+        tests: [
+          { input: "developer@company.org", expected: true },
+          { input: "support-team@sub.domain.io", expected: true },
+          { input: "invalid-email@", expected: false },
+          { input: "@missing-user.com", expected: false }
+        ]
+      },
+      ipv4: {
+        pattern: "\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b",
+        flags: { g: true, i: false, m: false, s: false, u: false },
+        sample: "Gateway IP: 192.168.1.1, Cloudflare DNS: 1.1.1.1 and 1.0.0.1.\nInvalid IPs: 999.999.999.999, 123.456.78.90.",
+        tests: [
+          { input: "192.168.1.1", expected: true },
+          { input: "8.8.8.8", expected: true },
+          { input: "256.1.1.1", expected: false },
+          { input: "192.168.1", expected: false }
+        ]
+      },
+      semver: {
+        pattern: "\\bv?(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?\\b",
+        flags: { g: true, i: false, m: false, s: false, u: false },
+        sample: "Release versions: v1.0.0, 2.14.3-alpha.1, 3.0.0-beta+exp.sha.5114f85.\nInvalid: 01.2.3, 1.2",
+        tests: [
+          { input: "1.0.0", expected: true },
+          { input: "v2.1.0-alpha.1", expected: true },
+          { input: "01.0.0", expected: false }
+        ]
+      },
+      iso_date: {
+        pattern: "\\b(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])T([01]\\d|2[0-3]):([0-5]\\d):([0-5]\\d)(?:\\.\\d+)?(Z|[+-](?:[01]\\d|2[0-3]):[0-5]\\d)?\\b",
+        flags: { g: true, i: false, m: false, s: false, u: false },
+        sample: "Events timestamp: 2026-11-24T03:15:30Z and 2026-12-01T12:00:00+08:00 in UTC format.",
+        tests: [
+          { input: "2026-11-24T03:15:30Z", expected: true },
+          { input: "2026-11-24T12:00:00+08:00", expected: true },
+          { input: "2026-13-01T00:00:00Z", expected: false }
+        ]
+      },
+      url: {
+        pattern: "https?:\\/\\/(?:www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b(?:[-a-zA-Z0-9()@:%_\\+.~#?&\\/=]*)",
+        flags: { g: true, i: true, m: false, s: false, u: false },
+        sample: "Check https://github.com/sketchsketch942008-star/community-tools-hub and https://sketchsketch942008-star.github.io/community-tools-hub/",
+        tests: [
+          { input: "https://github.com", expected: true },
+          { input: "http://example.org/path?k=v#anchor", expected: true },
+          { input: "ftp://files.example.com", expected: false }
+        ]
+      },
+      hex: {
+        pattern: "#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})\\b",
+        flags: { g: true, i: true, m: false, s: false, u: false },
+        sample: "Color palette: #fff, #38bdf8, #0a0e17ee and invalid #gggggg.",
+        tests: [
+          { input: "#fff", expected: true },
+          { input: "#38bdf8", expected: true },
+          { input: "#12345678", expected: true },
+          { input: "#12345", expected: false }
+        ]
+      },
+      slug: {
+        pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+        flags: { g: false, i: false, m: false, s: false, u: false },
+        sample: "valid-slug-name-123",
+        tests: [
+          { input: "valid-slug-123", expected: true },
+          { input: "Invalid_Slug", expected: false },
+          { input: "-leading-dash", expected: false }
+        ]
+      }
+    };
+
+    function getFlagsString() {
+      return Object.keys(flags).filter(k => flags[k]).join('');
+    }
+
+    function toggleFlag(f) {
+      flags[f] = !flags[f];
+      const btn = document.getElementById('flag' + f.toUpperCase());
+      if (flags[f]) btn.classList.add('active');
+      else btn.classList.remove('active');
+      runEvaluation();
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function syncEditor() {
+      runEvaluation();
+    }
+
+    function syncScroll() {
+      const ta = document.getElementById('editorTextarea');
+      const bd = document.getElementById('editorBackdrop');
+      bd.scrollTop = ta.scrollTop;
+      bd.scrollLeft = ta.scrollLeft;
+    }
+
+    function runEvaluation() {
+      const patternText = document.getElementById('patternInput').value;
+      const text = document.getElementById('editorTextarea').value;
+      const flagsStr = getFlagsString();
+      const statusEl = document.getElementById('statSyntaxStatus');
+      const t0 = performance.now();
+
+      let regex;
+      try {
+        regex = new RegExp(patternText, flagsStr);
+        statusEl.textContent = '[VALID]';
+        statusEl.style.color = 'var(--success-text)';
+      } catch (err) {
+        statusEl.textContent = '[INVALID: ' + err.message + ']';
+        statusEl.style.color = 'var(--fail-text)';
+        document.getElementById('editorBackdrop').innerHTML = escapeHtml(text);
+        document.getElementById('statMatchCount').textContent = '0';
+        document.getElementById('groupsContainer').innerHTML = '<div style="color:var(--fail-text); font-size:0.75rem;">正则表达式语法错误: ' + escapeHtml(err.message) + '</div>';
+        return;
+      }
+
+      // Perform Matching
+      let matchCount = 0;
+      let totalGroups = 0;
+      let matches = [];
+
+      if (patternText.trim().length > 0) {
+        if (flags.g) {
+          let m;
+          let safeLoop = 0;
+          while ((m = regex.exec(text)) !== null && safeLoop < 2000) {
+            safeLoop++;
+            matches.push(m);
+            if (m.index === regex.lastIndex) regex.lastIndex++;
+          }
+        } else {
+          const m = regex.exec(text);
+          if (m) matches.push(m);
+        }
+      }
+
+      matchCount = matches.length;
+
+      // Build Highlighted Backdrop
+      let highlighted = '';
+      let lastIndex = 0;
+      matches.forEach(m => {
+        const start = m.index;
+        const end = m.index + m[0].length;
+        highlighted += escapeHtml(text.substring(lastIndex, start));
+        highlighted += `<span class="match-highlight">${escapeHtml(m[0])}</span>`;
+        lastIndex = end;
+      });
+      highlighted += escapeHtml(text.substring(lastIndex));
+      document.getElementById('editorBackdrop').innerHTML = highlighted;
+      syncScroll();
+
+      // Render Groups Details
+      const container = document.getElementById('groupsContainer');
+      container.innerHTML = '';
+
+      if (matches.length === 0) {
+        container.innerHTML = '<div style="color:var(--text-muted); font-size:0.75rem;">无匹配项</div>';
+      } else {
+        matches.slice(0, 30).forEach((m, idx) => {
+          const card = document.createElement('div');
+          card.className = 'match-card';
+          
+          let groupsHtml = `
+            <div class="group-item">
+              <span class="group-label">Match #${idx + 1}:</span>
+              <span class="group-val">${escapeHtml(m[0])}</span>
+            </div>
+            <div class="group-item" style="font-size:0.7rem; color:var(--text-muted);">
+              <span>Index: [${m.index} .. ${m.index + m[0].length}]</span>
+            </div>
+          `;
+
+          if (m.length > 1) {
+            totalGroups += (m.length - 1);
+            for (let g = 1; g < m.length; g++) {
+              groupsHtml += `
+                <div class="group-item">
+                  <span class="group-label">Group #${g}:</span>
+                  <span class="group-val">${escapeHtml(m[g] !== undefined ? m[g] : '<undefined>')}</span>
+                </div>
+              `;
+            }
+          }
+          card.innerHTML = groupsHtml;
+          container.appendChild(card);
+        });
+      }
+
+      const t1 = performance.now();
+      document.getElementById('evalTime').textContent = `[${(t1 - t0).toFixed(2)} ms]`;
+      document.getElementById('statMatchCount').textContent = matchCount;
+      document.getElementById('statGroupCount').textContent = totalGroups;
+
+      evaluateTestCases(patternText, flagsStr);
+      renderCodeExport(patternText, flagsStr);
+    }
+
+    function evaluateTestCases(pattern, flagsStr) {
+      const tbody = document.getElementById('testCasesBody');
+      tbody.innerHTML = '';
+      let passCount = 0;
+      let failCount = 0;
+
+      let r;
+      try {
+        r = new RegExp(pattern, flagsStr.replace('g', ''));
+      } catch (e) {
+        return;
+      }
+
+      testCases.forEach((tc, idx) => {
+        const isMatch = r.test(tc.input);
+        const isPass = (isMatch === tc.expected);
+        if (isPass) passCount++;
+        else failCount++;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="test-input-cell">${escapeHtml(tc.input)}</td>
+          <td>${tc.expected ? '<span style="color:var(--accent-color);">[MATCH]</span>' : '<span style="color:var(--text-muted);">[NO MATCH]</span>'}</td>
+          <td><span class="status-badge ${isPass ? 'pass' : 'fail'}">${isPass ? '[PASS]' : '[FAIL]'}</span></td>
+          <td><button class="btn-secondary" style="padding:2px 6px; font-size:0.7rem;" onclick="removeTestCase(${idx})">[Del]</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('testMatrixSummary').textContent = `[${passCount} PASS / ${failCount} FAIL]`;
+      if (failCount > 0) {
+        document.getElementById('testMatrixSummary').style.color = 'var(--fail-text)';
+      } else {
+        document.getElementById('testMatrixSummary').style.color = 'var(--success-text)';
+      }
+    }
+
+    function addTestCase() {
+      const input = document.getElementById('newTestInput').value.trim();
+      const expected = document.getElementById('newTestExpect').value === 'true';
+      if (!input) return;
+      testCases.push({ input, expected });
+      document.getElementById('newTestInput').value = '';
+      runEvaluation();
+    }
+
+    function removeTestCase(idx) {
+      testCases.splice(idx, 1);
+      runEvaluation();
+    }
+
+    function loadPreset(key) {
+      const p = presets[key];
+      if (!p) return;
+      document.getElementById('patternInput').value = p.pattern;
+      document.getElementById('editorTextarea').value = p.sample;
+
+      Object.keys(flags).forEach(f => {
+        flags[f] = !!p.flags[f];
+        const btn = document.getElementById('flag' + f.toUpperCase());
+        if (flags[f]) btn.classList.add('active');
+        else btn.classList.remove('active');
+      });
+
+      if (p.tests) {
+        testCases = JSON.parse(JSON.stringify(p.tests));
+      }
+
+      runEvaluation();
+    }
+
+    function renderCodeExport(pattern, flagsStr) {
+      const box = document.getElementById('codeOutput');
+      if (currentCodeTab === 'python') {
+        let pyFlags = [];
+        if (flags.i) pyFlags.push('re.IGNORECASE');
+        if (flags.m) pyFlags.push('re.MULTILINE');
+        if (flags.s) pyFlags.push('re.DOTALL');
+        const flagArg = pyFlags.length > 0 ? ', ' + pyFlags.join(' | ') : '';
+        box.textContent = `# Python 3 (re)
+import re
+
+pattern = r"${pattern}"
+text = """...your text here..."""
+
+# 查找全部匹配
+matches = re.findall(pattern, text${flagArg})
+for m in matches:
+    print("Match:", m)
+
+# 迭代捕获组
+for match in re.finditer(pattern, text${flagArg}):
+    print(f"Full: {match.group(0)}, Groups: {match.groups()}")`;
+      } else if (currentCodeTab === 'javascript') {
+        box.textContent = `// JavaScript (ES6+)
+const regex = /${pattern}/${flagsStr};
+const text = "...your text here...";
+
+// 校验是否匹配
+const isValid = regex.test(text);
+
+// 提取全部捕获组
+const matches = [...text.matchAll(regex)];
+matches.forEach((m, idx) => {
+  console.log(\`Match #\${idx + 1}: \${m[0]}\`);
+  console.log("Groups:", m.slice(1));
+});`;
+      } else if (currentCodeTab === 'go') {
+        box.textContent = `// Go (regexp)
+package main
+
+import (
+\t"fmt"
+\t"regexp"
+)
+
+func main() {
+\tpattern := \`${pattern}\`
+\tre := regexp.MustCompile(pattern)
+\ttext := "...your text here..."
+
+\t// 查找全部匹配
+\tmatches := re.FindAllString(text, -1)
+\tfmt.Printf("Matches: %v\\n", matches)
+
+\t// 提取子匹配组
+\tsubmatches := re.FindAllStringSubmatch(text, -1)
+\tfor idx, sm := range submatches {
+\t\tfmt.Printf("Match #%d: %v\\n", idx+1, sm)
+\t}
+}`;
+      } else if (currentCodeTab === 'php') {
+        box.textContent = `<?php
+// PHP preg_match_all
+$pattern = '/${pattern}/${flagsStr}';
+$text = "...your text here...";
+
+if (preg_match_all($pattern, $text, $matches, PREG_SET_ORDER)) {
+    foreach ($matches as $idx => $match) {
+        echo "Match #" . ($idx + 1) . ": " . $match[0] . "\\n";
+    }
+}
+?>`;
+      }
+    }
+
+    function switchCodeTab(tab) {
+      currentCodeTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      const idMap = { python: 'tabPython', javascript: 'tabJs', go: 'tabGo', php: 'tabPhp' };
+      if (idMap[tab]) document.getElementById(idMap[tab]).classList.add('active');
+      const patternText = document.getElementById('patternInput').value;
+      renderCodeExport(patternText, getFlagsString());
+    }
+
+    function copyExportCode() {
+      const code = document.getElementById('codeOutput').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        const btn = document.getElementById('codeCopyBtn');
+        const orig = btn.textContent;
+        btn.textContent = '[COPIED!]';
+        btn.style.background = '#4ade80';
+        setTimeout(() => {
+          btn.textContent = orig;
+          btn.style.background = '';
+        }, 1800);
+      });
+    }
+
+    // Initial Run
+    runEvaluation();
+  </script>
+</body>
+</html>

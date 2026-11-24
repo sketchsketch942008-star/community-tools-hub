@@ -43,6 +43,7 @@ flowchart LR
 | **JSON Semantic Diff** | [`tools/json-semantic-diff`](./tools/json-semantic-diff/index.html) | `v1.0.0` | 忽略键乱序的深层 JSON 语义比对与 JSONPath 动态提取沙盒，生成 RFC 6902 Patch | 纯前端沙盒 | [OK] PASS |
 | **JWT Inspector Studio** | [`tools/jwt-inspector-studio`](./tools/jwt-inspector-studio/index.html) | `v1.0.0` | 离线三段式结构解码与生命周期分析；原生 Web Crypto API HS256/384/512 签名验证与重签 | 纯前端沙盒 | [OK] PASS |
 | **CSS Glassmorphism Studio** | [`tools/css-glassmorphism-studio`](./tools/css-glassmorphism-studio/index.html) | `v1.0.0` | 现代毛玻璃拟态与多重网格渐变工坊；Vanilla/Tailwind/React 三轨代码极速导出 | 纯前端沙盒 | [OK] PASS |
+| **RegexLab Studio** | [`tools/regex-lab-studio`](./tools/regex-lab-studio/index.html) | `v1.0.0` | 现代离线安全正则表达式工坊与测试矩阵沙盒；多色捕获组、断言矩阵与多语言导出 | 纯前端沙盒 | [OK] PASS |
 
 ---
 

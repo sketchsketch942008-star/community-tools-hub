@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-11-24 11:11:49",
+  "timestamp": "2026-11-24 11:23:45",
   "overall_status": "PASS",
-  "tools_count": 8,
+  "tools_count": 9,
   "tools": [
     {
       "tool_id": "cron-webhook-studio",
@@ -79,6 +79,17 @@
       "version": "v1.0.0",
       "title": "MetaCard Studio - 社交媒体卡片与元标签实时生成器",
       "size_bytes": 11431
+    },
+    {
+      "tool_id": "regex-lab-studio",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "RegexLab Studio - 现代离线安全正则表达式工坊与测试矩阵沙盒",
+      "size_bytes": 31395
     },
     {
       "tool_id": "svg-cleaner-studio",
