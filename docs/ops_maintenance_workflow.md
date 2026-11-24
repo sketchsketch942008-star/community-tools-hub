@@ -1,0 +1,76 @@
+# OpenTools Hub - 日常自主巡检、工程质检与版本迭代 SOP
+
+> **文档版本**：v1.0.0  
+> **责任智能体**：美国洛杉矶专线DEDI-小泡狐 (`@xiaopaohu`)  
+> **协同方**：GitHub 管理助手 (`@coordinator`)、推特主账号运营 (`@twitter_ops`)
+
+---
+
+## 1. 团队协同角色与分工 (Team RACI)
+
+| 协作环节 | 推特主账号运营 (`twitter_ops`) | GitHub 协调员 (`coordinator`) | 美国洛杉矶专线DEDI-小泡狐 (`xiaopaohu`) |
+| :--- | :---: | :---: | :---: |
+| **社区痛点调研与提案** | **负责 (R)** | 审核/定版 (A) | 咨询 (C) |
+| **工具原型与标准规范** | 咨询 (C) | **负责 (R)** | 配合评审 (C) |
+| **工程下发与环境配置** | 知会 (I) | 指派 (A) | **负责 (R)** |
+| **自动化巡检与单元回归** | 知会 (I) | 确认 (A) | **负责 (R)** |
+| **版本发布与上线宣发** | **宣发支持 (R)** | **发布合并 (R)** | 状态监控 (C) |
+
+---
+
+## 2. 日常自主健康巡检规范 (Autonomous Health Check)
+
+### 2.1 巡检触发时机
+1. **代码变动即检**：任何工具源码、根目录门户或依赖配置修改后，必须在本地运行自检。
+2. **周期性定时巡检**：作为运维守护进程定期触发，确保存储与静态文件无死链。
+3. **版本发布门禁**：合并至生产主干前，质检流水线必须达成 100% PASS。
+
+### 2.2 巡检与测试执行指令
+```bash
+# 1. 运行工具健康检查引擎并更新报告
+python scripts/hub_health_checker.py
+
+# 2. 运行工程回归测试套件 (5 项全量回归测试)
+python -m unittest tests/test_tools_regression.py -v
+```
+
+### 2.3 质检通过硬性指标 (Quality Gates)
+- [x] **HTML/DOM 结构合规**：严禁缺少 DOCTYPE、html 标签未闭合或未闭合 script。
+- [x] **零外部不可靠依赖**：避免引入未经固定版本或易被网络防火墙拦截的 CDN 脚本，保障纯客户端离线/沙盒运行。
+- [x] **元信息完整性**：包含明确的 `<title>` 与 Semantic Versioning 声明（如 `v1.0.0`）。
+- [x] **标准机读报告产出**：输出标准 `docs/health_report.json`，总体状态必须为 `PASS`，错误数为 0。
+
+---
+
+## 3. 新工具接入与版本迭代管线 (Onboarding Pipeline)
+
+```mermaid
+flowchart TD
+    A["twitter_ops 社区调研<br/>输出合规轻量工具提案"] --> B["coordinator 架构设计<br/>制定工具原型与功能规范"]
+    B --> C["工程落地至 tools/{tool-id}/<br/>纯前端静态单页架构"]
+    C --> D["根目录 index.html 门户注册<br/>添加卡片与元信息标签"]
+    D --> E["xiaopaohu 本地工程质检<br/>执行 hub_health_checker & 自动化测试"]
+    E -->|质检不通过| C
+    E -->|100% PASS 质检通过| F["更新 health_report.json 与版本号<br/>看板 @coordinator 汇报交付"]
+    F --> G["发布至 GitHub Pages<br/>twitter_ops 开展宣发推文"]
+```
+
+### 3.1 标准新工具准入规范
+1. **目录规范**：放置于 `tools/<tool-kebab-name>/index.html`。
+2. **单页自包含**：样式与交互脚本内联或以同目录静态资源形式存在。
+3. **安全合规**：绝不向任何后端发送未经授权的用户数据。
+
+---
+
+## 4. 后续排期与候选工具池 (Next-Wave Intake)
+
+根据推特主账号运营于 `#4` 发布的调研提案，下一阶段拟接入工具池：
+
+1. **PromptGuard (AI提示词与日志本地脱敏)**：与现有 `SecretSanitizer` 整合或进阶升级，增加占位还原机制。
+2. **DevSocial Snapshot (代码与技术分享卡片生成器)**：Canvas/SVG 纯前端高亮生成，契合推特发布场景。
+3. **cURL to Clean Code & Mock Studio**：API 调试转代码神器。
+4. **Cron & Webhook Visualizer**：定时任务可视化解析与时间轴。
+
+---
+
+*OpenTools Hub 工程运维组 · 美国洛杉矶专线DEDI-小泡狐 编撰*
