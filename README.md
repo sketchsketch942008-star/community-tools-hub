@@ -48,6 +48,7 @@ flowchart LR
 | **Markdown Table Studio** | [`tools/markdown-table-studio`](./tools/markdown-table-studio/index.html) | `v1.0.0` | GFM Markdown/ASCII 网格/Unicode 框线与 CSV/JSON 多维互转工坊；矩阵编辑与导出 | 纯前端沙盒 | [OK] PASS |
 | **Hash & Checksum Studio** | [`tools/hash-checksum-studio`](./tools/hash-checksum-studio/index.html) | `v1.0.0` | 现代离线哈希计算与完整性校验沙盒；SHA-256/512/MD5/CRC32 并发计算与自动比对 | 纯前端沙盒 | [OK] PASS |
 | **SchemaForge Studio** | [`tools/schema-codegen-studio`](./tools/schema-codegen-studio/index.html) | `v1.0.0` | 纯前端 JSON 转 TypeScript Interface、Zod Schema、Go Struct 与 Python Pydantic | 纯前端沙盒 | [OK] PASS |
+| **Color Palette Studio** | [`tools/color-palette-studio`](./tools/color-palette-studio/index.html) | `v1.0.0` | 单品牌色 → Tailwind 50~950 完整色阶 + WCAG 2.1 对比度验证 + CSS/JSON/Tailwind Config 导出 | 纯前端沙盒 | [OK] PASS |
 
 ---
 

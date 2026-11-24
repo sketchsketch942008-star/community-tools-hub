@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-11-24 14:17:12",
+  "timestamp": "2026-11-24 17:23:52",
   "overall_status": "PASS",
-  "tools_count": 13,
+  "tools_count": 14,
   "tools": [
     {
       "tool_id": "base64-binary-studio",
@@ -13,6 +13,17 @@
       "version": "v1.0.0",
       "title": "Base64, Hex & Data URI Binary Inspector Studio - 离线二进制沙盒工坊",
       "size_bytes": 24809
+    },
+    {
+      "tool_id": "color-palette-studio",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "Color Palette &amp; Design Token Studio - Tailwind Scale Generator",
+      "size_bytes": 27584
     },
     {
       "tool_id": "cron-webhook-studio",

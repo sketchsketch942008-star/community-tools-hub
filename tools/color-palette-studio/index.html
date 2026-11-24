@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Color Palette &amp; Design Token Studio - Tailwind Scale Generator</title>
+  <meta name="description" content="纯前端颜色调色板与设计令牌生成工坊。输入单个品牌色，自动生成 Tailwind 50-950 完整色阶、WCAG 对比度验证与 CSS/JSON/Tailwind Config 多格式代码导出。100% 离线沙盒。">
+  <style>
+    :root {
+      --bg-primary: #0a0e17;
+      --bg-panel: #111827;
+      --bg-input: #1a2234;
+      --border-color: #243049;
+      --accent-color: #a78bfa;
+      --accent-hover: #7c3aed;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --code-bg: #070c14;
+      --badge-bg: #1e293b;
+      --badge-text: #a78bfa;
+      --success-text: #4ade80;
+      --fail-text: #f87171;
+      --warn-text: #fbbf24;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: rgba(17, 24, 39, 0.9);
+      border-bottom: 1px solid var(--border-color);
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(12px);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-title { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; color: #fff; }
+    .brand-badges { display: flex; gap: 6px; }
+    .badge {
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      font-weight: 600;
+      border: 1px solid var(--border-color);
+      letter-spacing: 0.04em;
+    }
+    .badge-pass { color: var(--success-text); border-color: rgba(74, 222, 128, 0.3); }
+    .nav-links { display: flex; gap: 14px; align-items: center; }
+    .nav-link { font-size: 0.82rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .nav-link:hover { color: var(--accent-color); }
+
+    .app-main {
+      flex: 1;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Input Section */
+    .input-section {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px 24px;
+    }
+    .input-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: flex-end;
+    }
+    .field-group { display: flex; flex-direction: column; gap: 6px; }
+    .field-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; }
+    .color-input-wrap { display: flex; align-items: center; gap: 10px; }
+    input[type="color"] {
+      width: 44px;
+      height: 36px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--bg-input);
+      cursor: pointer;
+      padding: 2px;
+    }
+    .hex-input {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: var(--text-main);
+      font-family: ui-monospace, monospace;
+      font-size: 0.9rem;
+      padding: 7px 12px;
+      width: 110px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .hex-input:focus { border-color: var(--accent-color); }
+    .name-input {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: var(--text-main);
+      font-size: 0.88rem;
+      padding: 7px 12px;
+      width: 160px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .name-input:focus { border-color: var(--accent-color); }
+
+    .btn {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-weight: 500;
+    }
+    .btn:hover { background: #243049; border-color: var(--accent-color); color: var(--accent-color); }
+    .btn-primary {
+      background: var(--accent-color);
+      border-color: var(--accent-color);
+      color: #fff;
+    }
+    .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: #fff; }
+
+    /* Swatches Grid */
+    .palette-section {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px 24px;
+    }
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .section-title { font-size: 0.85rem; font-weight: 700; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; }
+    .swatches-grid {
+      display: grid;
+      grid-template-columns: repeat(11, 1fr);
+      gap: 6px;
+    }
+    .swatch {
+      aspect-ratio: 1;
+      border-radius: 8px;
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 6px 5px;
+      overflow: hidden;
+    }
+    .swatch:hover { transform: scale(1.05); box-shadow: 0 4px 16px rgba(0,0,0,0.4); z-index: 2; }
+    .swatch.anchor { box-shadow: 0 0 0 3px var(--accent-color); }
+    .swatch-label {
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-align: center;
+      line-height: 1.2;
+    }
+    .swatch-step { font-size: 0.6rem; text-align: center; opacity: 0.8; }
+    .wcag-badge {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      font-size: 0.5rem;
+      font-weight: 800;
+      padding: 1px 3px;
+      border-radius: 3px;
+      letter-spacing: 0.04em;
+    }
+
+    /* WCAG Table */
+    .wcag-section {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px 24px;
+    }
+    .wcag-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .wcag-table th {
+      background: #0f172a;
+      color: var(--text-muted);
+      text-align: left;
+      padding: 8px 12px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .wcag-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid rgba(36,48,73,0.5);
+      font-family: ui-monospace, monospace;
+    }
+    .wcag-table tr:hover td { background: rgba(36,48,73,0.4); }
+    .pass-aa { color: #4ade80; font-weight: 700; }
+    .pass-aaa { color: #34d399; font-weight: 700; }
+    .fail-wcag { color: #f87171; font-weight: 700; }
+
+    /* Code Output */
+    .output-section {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .tab-bar {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border-color);
+      background: #0f172a;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: 10px 16px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.04em;
+    }
+    .tab-btn.active { color: var(--accent-color); border-bottom-color: var(--accent-color); }
+    .tab-btn:hover:not(.active) { color: var(--text-main); }
+    .code-output {
+      background: var(--code-bg);
+      color: #c9d1d9;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.8rem;
+      line-height: 1.6;
+      padding: 16px 20px;
+      min-height: 240px;
+      overflow-x: auto;
+      white-space: pre;
+      tab-size: 2;
+    }
+    .output-actions {
+      padding: 10px 16px;
+      background: #0f172a;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      gap: 8px;
+    }
+
+    /* Preset Chips */
+    .presets-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .preset-chip {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: var(--text-muted);
+    }
+    .preset-chip:hover { border-color: var(--accent-color); color: var(--accent-color); }
+    .preset-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    @media (max-width: 700px) {
+      .swatches-grid { grid-template-columns: repeat(6, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-title">Color Palette Studio</div>
+      <div class="brand-badges">
+        <span class="badge">[v1.0.0]</span>
+        <span class="badge">[TAILWIND/CSS/JSON]</span>
+        <span class="badge badge-pass">[OFFLINE SAFE]</span>
+      </div>
+    </div>
+    <div class="nav-links">
+      <a href="../../index.html" class="nav-link">[OpenTools Hub]</a>
+      <a href="https://github.com/sketchsketch942008-star/community-tools-hub" target="_blank" rel="noopener noreferrer" class="nav-link">[GitHub Repo]</a>
+    </div>
+  </header>
+
+  <div class="app-main">
+
+    <!-- Input Section -->
+    <div class="input-section">
+      <div class="input-row">
+        <div class="field-group">
+          <span class="field-label">BRAND COLOR</span>
+          <div class="color-input-wrap">
+            <input type="color" id="colorPicker" value="#6366f1" oninput="onColorPickerChange(this.value)">
+            <input type="text" id="hexInput" class="hex-input" value="#6366f1" placeholder="#RRGGBB" oninput="onHexInputChange(this.value)">
+          </div>
+        </div>
+        <div class="field-group">
+          <span class="field-label">COLOR NAME</span>
+          <input type="text" id="colorNameInput" class="name-input" value="brand" placeholder="e.g. primary, brand" oninput="generateAll()">
+        </div>
+        <div class="field-group">
+          <span class="field-label">ANCHOR STEP</span>
+          <select id="anchorStep" class="name-input" style="cursor:pointer;" onchange="generateAll()">
+            <option value="400">400</option>
+            <option value="500" selected>500</option>
+            <option value="600">600</option>
+          </select>
+        </div>
+        <div class="field-group" style="justify-content:flex-end;">
+          <button class="btn btn-primary" id="copyBtn" onclick="copyCurrentCode()">[Copy Code]</button>
+        </div>
+      </div>
+
+      <!-- Presets -->
+      <div class="presets-row" id="presetsRow"></div>
+    </div>
+
+    <!-- Palette Swatches -->
+    <div class="palette-section">
+      <div class="section-header">
+        <span class="section-title">COLOR SCALE (50 - 950)</span>
+        <span class="badge" id="paletteStatus" style="color:var(--success-text);">[VALID HEX]</span>
+      </div>
+      <div class="swatches-grid" id="swatchesGrid"></div>
+    </div>
+
+    <!-- WCAG Contrast Table -->
+    <div class="wcag-section">
+      <div class="section-header">
+        <span class="section-title">WCAG 2.1 CONTRAST TABLE (vs #fff / #000)</span>
+        <span class="badge">[AA = 4.5:1 | AAA = 7:1]</span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="wcag-table">
+          <thead>
+            <tr>
+              <th>STEP</th>
+              <th>HEX</th>
+              <th>RATIO vs WHITE</th>
+              <th>WHITE TEXT</th>
+              <th>RATIO vs BLACK</th>
+              <th>BLACK TEXT</th>
+            </tr>
+          </thead>
+          <tbody id="wcagTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Code Output -->
+    <div class="output-section">
+      <div class="tab-bar">
+        <button class="tab-btn active" id="tabCss" onclick="switchTab('css')">[CSS VARIABLES]</button>
+        <button class="tab-btn" id="tabTailwind" onclick="switchTab('tailwind')">[TAILWIND CONFIG]</button>
+        <button class="tab-btn" id="tabTailwindV4" onclick="switchTab('tailwindv4')">[TAILWIND v4 @theme]</button>
+        <button class="tab-btn" id="tabScss" onclick="switchTab('scss')">[SCSS VARIABLES]</button>
+        <button class="tab-btn" id="tabJson" onclick="switchTab('json')">[JSON TOKENS]</button>
+      </div>
+      <pre class="code-output" id="codeOutput"></pre>
+      <div class="output-actions">
+        <button class="btn btn-primary" id="copyBtn2" onclick="copyCurrentCode()">[Copy Code]</button>
+        <span style="font-size:0.75rem;color:var(--text-muted);line-height:2;">100% offline - no data leaves your browser</span>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // =============================================
+    // COLOR MATH ENGINE (pure JS, no dependencies)
+    // =============================================
+
+    const STEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
+
+    // Lightness targets for each step (perceptually balanced)
+    const LIGHTNESS_MAP = {
+      50:  0.97,
+      100: 0.94,
+      200: 0.88,
+      300: 0.78,
+      400: 0.63,
+      500: 0.50,
+      600: 0.40,
+      700: 0.32,
+      800: 0.22,
+      900: 0.14,
+      950: 0.09
+    };
+
+    function hexToRgb(hex) {
+      const h = hex.replace('#', '');
+      const full = h.length === 3
+        ? h.split('').map(c => c + c).join('')
+        : h;
+      const r = parseInt(full.substring(0,2), 16);
+      const g = parseInt(full.substring(2,4), 16);
+      const b = parseInt(full.substring(4,6), 16);
+      return { r, g, b };
+    }
+
+    function rgbToHsl(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      let h, s, l = (max + min) / 2;
+      if (max === min) { h = s = 0; }
+      else {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+          case g: h = ((b - r) / d + 2) / 6; break;
+          case b: h = ((r - g) / d + 4) / 6; break;
+        }
+      }
+      return { h: h * 360, s: s * 100, l: l * 100 };
+    }
+
+    function hslToRgb(h, s, l) {
+      h /= 360; s /= 100; l /= 100;
+      let r, g, b;
+      if (s === 0) { r = g = b = l; }
+      else {
+        const hue2rgb = (p, q, t) => {
+          if (t < 0) t += 1;
+          if (t > 1) t -= 1;
+          if (t < 1/6) return p + (q - p) * 6 * t;
+          if (t < 1/2) return q;
+          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+          return p;
+        };
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+      }
+      return {
+        r: Math.round(r * 255),
+        g: Math.round(g * 255),
+        b: Math.round(b * 255)
+      };
+    }
+
+    function rgbToHex(r, g, b) {
+      return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+    }
+
+    function generatePalette(baseHex, anchorStep) {
+      const { r, g, b } = hexToRgb(baseHex);
+      const { h, s } = rgbToHsl(r, g, b);
+      const anchorL = LIGHTNESS_MAP[anchorStep];
+      const { l: baseL } = rgbToHsl(r, g, b);
+
+      const palette = {};
+      STEPS.forEach(step => {
+        let targetL = LIGHTNESS_MAP[step] * 100;
+        // Slightly desaturate at extremes for natural look
+        let targetS = s;
+        if (step <= 100) targetS = Math.max(10, s * 0.3);
+        else if (step <= 200) targetS = Math.max(15, s * 0.5);
+        else if (step <= 300) targetS = s * 0.75;
+        else if (step >= 800) targetS = s * 0.85;
+        else if (step >= 900) targetS = s * 0.7;
+        const { r: nr, g: ng, b: nb } = hslToRgb(h, targetS, targetL);
+        palette[step] = rgbToHex(nr, ng, nb);
+      });
+      // Lock anchor step to exact input color
+      palette[anchorStep] = baseHex.toLowerCase();
+      return palette;
+    }
+
+    // =============================================
+    // WCAG CONTRAST
+    // =============================================
+
+    function srgbToLinear(c) {
+      c /= 255;
+      return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    }
+
+    function getLuminance(r, g, b) {
+      return 0.2126 * srgbToLinear(r) + 0.7152 * srgbToLinear(g) + 0.0722 * srgbToLinear(b);
+    }
+
+    function getContrastRatio(lum1, lum2) {
+      const lighter = Math.max(lum1, lum2);
+      const darker = Math.min(lum1, lum2);
+      return (lighter + 0.05) / (darker + 0.05);
+    }
+
+    function getWcagRating(ratio, isLargeText) {
+      if (isLargeText) {
+        if (ratio >= 7) return 'AAA';
+        if (ratio >= 3) return 'AA';
+        return 'FAIL';
+      }
+      if (ratio >= 7) return 'AAA';
+      if (ratio >= 4.5) return 'AA';
+      return 'FAIL';
+    }
+
+    // =============================================
+    // RENDER SWATCHES
+    // =============================================
+
+    function renderSwatches(palette, anchorStep) {
+      const grid = document.getElementById('swatchesGrid');
+      grid.innerHTML = '';
+      STEPS.forEach(step => {
+        const hex = palette[step];
+        const { r, g, b } = hexToRgb(hex);
+        const lum = getLuminance(r, g, b);
+        const whiteLum = 1;
+        const blackLum = 0;
+        const whiteRatio = getContrastRatio(lum, whiteLum);
+        const blackRatio = getContrastRatio(lum, blackLum);
+        const useWhiteText = whiteRatio >= blackRatio;
+        const textColor = useWhiteText ? '#ffffff' : '#000000';
+
+        const div = document.createElement('div');
+        div.className = 'swatch' + (step === anchorStep ? ' anchor' : '');
+        div.style.background = hex;
+        div.title = `Step ${step}: ${hex} | click to copy`;
+        div.onclick = () => {
+          navigator.clipboard.writeText(hex);
+          div.style.outline = '2px solid #fff';
+          setTimeout(() => div.style.outline = '', 1200);
+        };
+
+        const rating = getWcagRating(Math.max(whiteRatio, blackRatio), false);
+        const badgeBg = rating === 'AAA' ? 'rgba(74,222,128,0.85)' : rating === 'AA' ? 'rgba(251,191,36,0.85)' : 'rgba(248,113,113,0.85)';
+        const badgeText = '#000';
+
+        div.innerHTML = `
+          <span class="wcag-badge" style="background:${badgeBg};color:${badgeText};">${rating}</span>
+          <span class="swatch-step" style="color:${textColor};">${step}</span>
+          <span class="swatch-label" style="color:${textColor};">${hex}</span>
+        `;
+        grid.appendChild(div);
+      });
+    }
+
+    // =============================================
+    // RENDER WCAG TABLE
+    // =============================================
+
+    function renderWcagTable(palette) {
+      const tbody = document.getElementById('wcagTableBody');
+      tbody.innerHTML = '';
+      const whiteLum = 1;
+      const blackLum = 0;
+      STEPS.forEach(step => {
+        const hex = palette[step];
+        const { r, g, b } = hexToRgb(hex);
+        const lum = getLuminance(r, g, b);
+        const wr = getContrastRatio(lum, whiteLum);
+        const br = getContrastRatio(lum, blackLum);
+        const wRating = getWcagRating(wr, false);
+        const bRating = getWcagRating(br, false);
+        const wClass = wRating === 'AAA' ? 'pass-aaa' : wRating === 'AA' ? 'pass-aa' : 'fail-wcag';
+        const bClass = bRating === 'AAA' ? 'pass-aaa' : bRating === 'AA' ? 'pass-aa' : 'fail-wcag';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><span style="display:inline-block;width:14px;height:14px;background:${hex};border-radius:3px;vertical-align:middle;margin-right:6px;"></span>${step}</td>
+          <td>${hex}</td>
+          <td>${wr.toFixed(2)}:1</td>
+          <td class="${wClass}">${wRating}</td>
+          <td>${br.toFixed(2)}:1</td>
+          <td class="${bClass}">${bRating}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // =============================================
+    // CODE GENERATORS
+    // =============================================
+
+    function generateCssVars(palette, name) {
+      const lines = [`/* Color Palette: ${name} */`, `:root {`];
+      STEPS.forEach(step => {
+        lines.push(`  --color-${name}-${step}: ${palette[step]};`);
+      });
+      lines.push(`}`);
+      return lines.join('\n');
+    }
+
+    function generateTailwindConfig(palette, name) {
+      const lines = [
+        `// tailwind.config.js`,
+        `/** @type {import('tailwindcss').Config} */`,
+        `module.exports = {`,
+        `  theme: {`,
+        `    extend: {`,
+        `      colors: {`,
+        `        ${name}: {`,
+      ];
+      STEPS.forEach((step, i) => {
+        const comma = i < STEPS.length - 1 ? ',' : '';
+        lines.push(`          ${step}: '${palette[step]}'${comma}`);
+      });
+      lines.push(`        },`);
+      lines.push(`      },`);
+      lines.push(`    },`);
+      lines.push(`  },`);
+      lines.push(`};`);
+      return lines.join('\n');
+    }
+
+    function generateTailwindV4(palette, name) {
+      const lines = [`/* tailwind.css - Tailwind v4 @theme block */`, `@import "tailwindcss";`, ``, `@theme {`];
+      STEPS.forEach(step => {
+        lines.push(`  --color-${name}-${step}: ${palette[step]};`);
+      });
+      lines.push(`}`);
+      return lines.join('\n');
+    }
+
+    function generateScss(palette, name) {
+      const lines = [`// SCSS Color Variables: ${name}`];
+      STEPS.forEach(step => {
+        lines.push(`$color-${name}-${step}: ${palette[step]};`);
+      });
+      lines.push('');
+      lines.push(`// Map for iteration`);
+      lines.push(`$${name}-palette: (`);
+      STEPS.forEach((step, i) => {
+        const comma = i < STEPS.length - 1 ? ',' : '';
+        lines.push(`  ${step}: $color-${name}-${step}${comma}`);
+      });
+      lines.push(`);`);
+      return lines.join('\n');
+    }
+
+    function generateJson(palette, name) {
+      const obj = {};
+      obj[name] = {};
+      STEPS.forEach(step => {
+        obj[name][step] = palette[step];
+      });
+      return JSON.stringify(obj, null, 2);
+    }
+
+    // =============================================
+    // STATE & RENDERING
+    // =============================================
+
+    let currentTab = 'css';
+    let currentPalette = {};
+
+    function switchTab(tab) {
+      currentTab = tab;
+      ['css','tailwind','tailwindv4','scss','json'].forEach(t => {
+        const el = document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}`);
+        if (el) el.classList.toggle('active', t === tab);
+      });
+      // Fix: map tab IDs
+      document.getElementById('tabCss').classList.toggle('active', tab === 'css');
+      document.getElementById('tabTailwind').classList.toggle('active', tab === 'tailwind');
+      document.getElementById('tabTailwindV4').classList.toggle('active', tab === 'tailwindv4');
+      document.getElementById('tabScss').classList.toggle('active', tab === 'scss');
+      document.getElementById('tabJson').classList.toggle('active', tab === 'json');
+      renderCode();
+    }
+
+    function renderCode() {
+      const name = document.getElementById('colorNameInput').value.trim() || 'brand';
+      let code = '';
+      if (currentTab === 'css') code = generateCssVars(currentPalette, name);
+      else if (currentTab === 'tailwind') code = generateTailwindConfig(currentPalette, name);
+      else if (currentTab === 'tailwindv4') code = generateTailwindV4(currentPalette, name);
+      else if (currentTab === 'scss') code = generateScss(currentPalette, name);
+      else if (currentTab === 'json') code = generateJson(currentPalette, name);
+      document.getElementById('codeOutput').textContent = code;
+    }
+
+    function generateAll() {
+      const hex = document.getElementById('hexInput').value.trim();
+      const statusEl = document.getElementById('paletteStatus');
+      if (!/^#[0-9a-fA-F]{6}$/.test(hex)) {
+        statusEl.textContent = '[INVALID HEX]';
+        statusEl.style.color = 'var(--fail-text)';
+        return;
+      }
+      statusEl.textContent = '[VALID HEX]';
+      statusEl.style.color = 'var(--success-text)';
+      const anchorStep = parseInt(document.getElementById('anchorStep').value);
+      currentPalette = generatePalette(hex, anchorStep);
+      renderSwatches(currentPalette, anchorStep);
+      renderWcagTable(currentPalette);
+      renderCode();
+    }
+
+    function onColorPickerChange(val) {
+      document.getElementById('hexInput').value = val;
+      generateAll();
+    }
+
+    function onHexInputChange(val) {
+      const clean = val.trim();
+      if (/^#[0-9a-fA-F]{6}$/.test(clean)) {
+        document.getElementById('colorPicker').value = clean;
+        generateAll();
+      } else {
+        document.getElementById('paletteStatus').textContent = '[INVALID HEX]';
+        document.getElementById('paletteStatus').style.color = 'var(--fail-text)';
+      }
+    }
+
+    function copyCurrentCode() {
+      const text = document.getElementById('codeOutput').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyBtn');
+        const btn2 = document.getElementById('copyBtn2');
+        [btn, btn2].forEach(b => {
+          if (!b) return;
+          const orig = b.textContent;
+          b.textContent = '[COPIED!]';
+          b.style.background = '#4ade80';
+          setTimeout(() => { b.textContent = orig; b.style.background = ''; }, 1800);
+        });
+      });
+    }
+
+    // =============================================
+    // PRESET CHIPS
+    // =============================================
+
+    const PRESETS = [
+      { name: 'Indigo', hex: '#6366f1' },
+      { name: 'Violet', hex: '#8b5cf6' },
+      { name: 'Blue', hex: '#3b82f6' },
+      { name: 'Emerald', hex: '#10b981' },
+      { name: 'Rose', hex: '#f43f5e' },
+      { name: 'Amber', hex: '#f59e0b' },
+      { name: 'Cyan', hex: '#06b6d4' },
+      { name: 'Slate', hex: '#64748b' },
+    ];
+
+    function renderPresets() {
+      const row = document.getElementById('presetsRow');
+      PRESETS.forEach(p => {
+        const chip = document.createElement('button');
+        chip.className = 'preset-chip';
+        chip.innerHTML = `<span class="preset-dot" style="background:${p.hex};"></span>${p.name}`;
+        chip.onclick = () => {
+          document.getElementById('hexInput').value = p.hex;
+          document.getElementById('colorPicker').value = p.hex;
+          document.getElementById('colorNameInput').value = p.name.toLowerCase();
+          generateAll();
+        };
+        row.appendChild(chip);
+      });
+    }
+
+    // =============================================
+    // INIT
+    // =============================================
+
+    // Fix tab activation
+    function initTabBtns() {
+      document.getElementById('tabCss').onclick = () => switchTab('css');
+      document.getElementById('tabTailwind').onclick = () => switchTab('tailwind');
+      document.getElementById('tabTailwindV4').onclick = () => switchTab('tailwindv4');
+      document.getElementById('tabScss').onclick = () => switchTab('scss');
+      document.getElementById('tabJson').onclick = () => switchTab('json');
+    }
+
+    renderPresets();
+    initTabBtns();
+    generateAll();
+  </script>
+
+</body>
+</html>
