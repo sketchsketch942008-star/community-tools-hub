@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JSON Semantic Diff & JSONPath Studio - 语义化 JSON 比对与路径提取神器</title>
+  <style>
+    :root {
+      --bg: #090e17;
+      --card: #111a28;
+      --border: #1e2d42;
+      --accent: #06b6d4;
+      --accent-hover: #0891b2;
+      --code-bg: #030712;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px; }
+    header { max-width: 1280px; margin: 0 auto 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 14px; }
+    h1 { font-size: 1.4rem; color: #22d3ee; display: flex; align-items: center; gap: 8px; }
+    .badge { background: #164e63; color: #a5f3fc; font-size: 0.75rem; padding: 2px 8px; border-radius: 999px; }
+    .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; max-width: 1280px; margin: 0 auto 20px; }
+    .nav-btn { background: var(--card); border: 1px solid var(--border); color: var(--muted); padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600; }
+    .nav-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+    .container { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 900px) { .container { grid-template-columns: 1fr; } }
+    .panel { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .panel-title { font-size: 1rem; font-weight: 600; color: #fff; }
+    textarea { width: 100%; height: 320px; background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; color: #e2e8f0; font-size: 0.85rem; line-height: 1.5; resize: vertical; }
+    textarea:focus, input:focus { outline: none; border-color: var(--accent); }
+    input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--code-bg); color: #fff; font-size: 0.9rem; margin-bottom: 12px; }
+    .actions-bar { display: flex; gap: 10px; margin-top: 12px; align-items: center; flex-wrap: wrap; }
+    .btn { background: var(--border); color: var(--text); border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 500; }
+    .btn:hover { background: #263852; }
+    .btn-primary { background: var(--accent); color: #000; font-weight: 600; }
+    .btn-primary:hover { background: var(--accent-hover); color: #fff; }
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; font-size: 0.85rem; color: #67e8f9; height: 320px; overflow: auto; line-height: 1.5; }
+    .diff-added { color: #34d399; }
+    .diff-removed { color: #f87171; }
+    .diff-modified { color: #fbbf24; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>JSON Semantic Diff & JSONPath Studio <span class="badge">v1.0.0</span></h1>
+      <p style="font-size:0.85rem; color:var(--muted); margin-top:4px;">忽略键乱序的深层 JSON 语义比对 · RFC 6902 Patch 生成 · 纯前端安全无泄漏</p>
+    </div>
+    <div style="font-size:0.8rem; color:var(--success);">
+      🔒 100% 本地内存解析 (零网络传输)
+    </div>
+  </header>
+
+  <div class="nav-tabs">
+    <button class="nav-btn active" onclick="switchTab('diff')">🔍 JSON 语义差异比对 (Semantic Diff)</button>
+    <button class="nav-btn" onclick="switchTab('jsonpath')">🧭 JSONPath 动态提取与查询</button>
+  </div>
+
+  <!-- Tab 1: Semantic Diff -->
+  <div id="section-diff" class="container">
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">基准 JSON (Original / Baseline)</span>
+        <button class="btn" onclick="loadSampleDiff()">加载乱序比对示例</button>
+      </div>
+      <textarea id="json-base" placeholder='{"name": "Alice", "age": 28, "roles": ["admin", "dev"]}'></textarea>
+      <div class="panel-header" style="margin-top:16px;">
+        <span class="panel-title">目标 JSON (Modified / Target)</span>
+      </div>
+      <textarea id="json-target" placeholder='{"roles": ["admin", "owner"], "name": "Alice", "age": 29}'></textarea>
+      <div class="actions-bar">
+        <button class="btn btn-primary" onclick="computeDiff()">执行语义比对</button>
+        <button class="btn" onclick="formatBoth()">一键格式化缩进</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">比对结果与 RFC 6902 变动项</span>
+        <span id="diff-status" style="font-size:0.8rem; color:var(--muted);">就绪</span>
+      </div>
+      <pre id="diff-output">// 点击“执行语义比对”查看按路径归纳的增删改差异</pre>
+      <div class="actions-bar">
+        <button class="btn" onclick="copyDiffOutput()">复制比对报告</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 2: JSONPath Studio -->
+  <div id="section-jsonpath" class="container" style="display:none;">
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">源 JSON 数据</span>
+        <button class="btn" onclick="loadSamplePath()">载入复杂嵌套示例</button>
+      </div>
+      <textarea id="jsonpath-src" style="height:440px;" placeholder='{"store": {"book": [{"title": "Book A", "price": 10}]}}'></textarea>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">JSONPath 表达式查询</span>
+      </div>
+      <input type="text" id="jsonpath-query" value="$.store.books[*].title" placeholder="e.g. $.store.books[*].title 或 $.users[0].name" oninput="evalJsonPath()">
+      <div class="panel-header" style="margin-top:8px;">
+        <span class="panel-title">提取结果</span>
+        <span id="jsonpath-count" style="font-size:0.8rem; color:var(--muted);">0 项匹配</span>
+      </div>
+      <pre id="jsonpath-output">// 查询结果将实时展示在此</pre>
+      <div class="actions-bar">
+        <button class="btn" onclick="copyJsonPathResult()">复制提取结果</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(mode) {
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      if (mode === 'diff') {
+        document.querySelectorAll('.nav-btn')[0].classList.add('active');
+        document.getElementById('section-diff').style.display = 'grid';
+        document.getElementById('section-jsonpath').style.display = 'none';
+      } else {
+        document.querySelectorAll('.nav-btn')[1].classList.add('active');
+        document.getElementById('section-diff').style.display = 'none';
+        document.getElementById('section-jsonpath').style.display = 'grid';
+        evalJsonPath();
+      }
+    }
+
+    function compareJson(a, b, path = '') {
+      let changes = [];
+      if (typeof a !== typeof b || (a === null && b !== null) || (a !== null && b === null)) {
+        changes.push({ type: 'MODIFIED', path: path || '/', from: a, to: b });
+        return changes;
+      }
+      if (typeof a !== 'object' || a === null) {
+        if (a !== b) changes.push({ type: 'MODIFIED', path: path || '/', from: a, to: b });
+        return changes;
+      }
+      if (Array.isArray(a) && Array.isArray(b)) {
+        const maxLen = Math.max(a.length, b.length);
+        for (let i = 0; i < maxLen; i++) {
+          const itemPath = `${path}[${i}]`;
+          if (i >= a.length) changes.push({ type: 'ADDED', path: itemPath, to: b[i] });
+          else if (i >= b.length) changes.push({ type: 'REMOVED', path: itemPath, from: a[i] });
+          else changes.push(...compareJson(a[i], b[i], itemPath));
+        }
+        return changes;
+      }
+      const keysA = Object.keys(a);
+      const keysB = Object.keys(b);
+      const allKeys = new Set([...keysA, ...keysB]);
+      for (const k of allKeys) {
+        const subPath = path ? `${path}.${k}` : k;
+        if (!(k in a)) changes.push({ type: 'ADDED', path: subPath, to: b[k] });
+        else if (!(k in b)) changes.push({ type: 'REMOVED', path: subPath, from: a[k] });
+        else changes.push(...compareJson(a[k], b[k], subPath));
+      }
+      return changes;
+    }
+
+    function computeDiff() {
+      try {
+        const base = JSON.parse(document.getElementById('json-base').value || '{}');
+        const target = JSON.parse(document.getElementById('json-target').value || '{}');
+        const diffs = compareJson(base, target);
+        const out = document.getElementById('diff-output');
+        const status = document.getElementById('diff-status');
+
+        if (diffs.length === 0) {
+          out.textContent = '🎉 两个 JSON 语义完全一致（键排列顺序差异已自动忽略）！';
+          status.textContent = '完全一致 (0 差异)';
+          status.style.color = '#10b981';
+          return;
+        }
+
+        let lines = [`// 检测到 ${diffs.length} 处语义差异 (已忽略字段键值排列顺序):\n`];
+        diffs.forEach(d => {
+          if (d.type === 'ADDED') lines.push(`[+] 新增: ${d.path} => ${JSON.stringify(d.to)}`);
+          else if (d.type === 'REMOVED') lines.push(`[-] 删除: ${d.path} (原值: ${JSON.stringify(d.from)})`);
+          else lines.push(`[*] 修改: ${d.path} : ${JSON.stringify(d.from)} => ${JSON.stringify(d.to)}`);
+        });
+
+        lines.push('\n// RFC 6902 JSON Patch 格式:');
+        const patches = diffs.map(d => {
+          const p = '/' + d.path.replace(/\./g, '/').replace(/\[(\d+)\]/g, '/$1');
+          if (d.type === 'ADDED') return { op: 'add', path: p, value: d.to };
+          if (d.type === 'REMOVED') return { op: 'remove', path: p };
+          return { op: 'replace', path: p, value: d.to };
+        });
+        lines.push(JSON.stringify(patches, null, 2));
+
+        out.textContent = lines.join('\n');
+        status.textContent = `${diffs.length} 处变动`;
+        status.style.color = '#fbbf24';
+      } catch (e) {
+        document.getElementById('diff-output').textContent = 'JSON 解析失败: ' + e.message;
+        document.getElementById('diff-status').textContent = '格式错误';
+        document.getElementById('diff-status').style.color = '#ef4444';
+      }
+    }
+
+    function formatBoth() {
+      try {
+        const b = JSON.parse(document.getElementById('json-base').value || '{}');
+        const t = JSON.parse(document.getElementById('json-target').value || '{}');
+        document.getElementById('json-base').value = JSON.stringify(b, null, 2);
+        document.getElementById('json-target').value = JSON.stringify(t, null, 2);
+      } catch(e){}
+    }
+
+    function loadSampleDiff() {
+      const b = { id: 1001, status: "active", meta: { version: "1.0", tags: ["vip", "global"] }, timeout: 30 };
+      // 故意颠倒键的顺序，并修改版本与新增属性
+      const t = { timeout: 30, meta: { tags: ["vip", "edge"], version: "1.1" }, status: "active", id: 1001, region: "ap-southeast-1" };
+      document.getElementById('json-base').value = JSON.stringify(b, null, 2);
+      document.getElementById('json-target').value = JSON.stringify(t, null, 2);
+      computeDiff();
+    }
+
+    function evalJsonPath() {
+      const srcText = document.getElementById('jsonpath-src').value.trim();
+      const query = document.getElementById('jsonpath-query').value.trim();
+      const out = document.getElementById('jsonpath-output');
+      const count = document.getElementById('jsonpath-count');
+      if (!srcText) return;
+
+      try {
+        const obj = JSON.parse(srcText);
+        // 轻量 JSONPath 简易解析器 (支持 $.a.b, $.a[*].b, $.a[0])
+        const cleanQuery = query.replace(/^\$\.?/, '');
+        const parts = cleanQuery.split(/\.(?![^\[]*\])/);
+        
+        let current = [obj];
+        for (const p of parts) {
+          if (!p) continue;
+          let next = [];
+          const arrayMatch = p.match(/^([^\[]+)\[(.*?)\]$/);
+          if (arrayMatch) {
+            const key = arrayMatch[1];
+            const idx = arrayMatch[2];
+            for (const item of current) {
+              if (item && item[key] !== undefined) {
+                if (idx === '*') {
+                  if (Array.isArray(item[key])) next.push(...item[key]);
+                } else if (!isNaN(idx)) {
+                  next.push(item[key][parseInt(idx)]);
+                }
+              }
+            }
+          } else {
+            for (const item of current) {
+              if (item && item[p] !== undefined) next.push(item[p]);
+            }
+          }
+          current = next;
+        }
+
+        count.textContent = `匹配到 ${current.length} 个节点`;
+        out.textContent = JSON.stringify(current.length === 1 ? current[0] : current, null, 2);
+      } catch (e) {
+        count.textContent = '查询异常';
+        out.textContent = '错误: ' + e.message;
+      }
+    }
+
+    function loadSamplePath() {
+      const sample = {
+        store: {
+          name: "OpenTools Digital Hub",
+          books: [
+            { id: 1, title: "Modern Web Tooling", category: "engineering", price: 39.9 },
+            { id: 2, title: "Clean Architecture in JS", category: "programming", price: 49.0 },
+            { id: 3, title: "Autonomous Multi-Agent Systems", category: "ai", price: 59.9 }
+          ],
+          admins: ["sketch", "xiaopaohu"]
+        }
+      };
+      document.getElementById('jsonpath-src').value = JSON.stringify(sample, null, 2);
+      document.getElementById('jsonpath-query').value = "$.store.books[*].title";
+      evalJsonPath();
+    }
+
+    function copyDiffOutput() {
+      navigator.clipboard.writeText(document.getElementById('diff-output').textContent).then(() => alert('已复制比对报告！'));
+    }
+
+    function copyJsonPathResult() {
+      navigator.clipboard.writeText(document.getElementById('jsonpath-output').textContent).then(() => alert('已复制提取结果！'));
+    }
+
+    loadSampleDiff();
+  </script>
+</body>
+</html>

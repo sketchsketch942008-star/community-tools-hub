@@ -40,6 +40,7 @@ flowchart LR
 | **cURL Code Studio** | [`tools/curl-code-studio`](./tools/curl-code-studio/index.html) | `v1.0.0` | 极速 API 转换器（cURL 转 Python requests、JS Fetch、Axios、Go），支持敏感 Header 脱敏 | 纯前端沙盒 | ✅ PASS |
 | **Cron & Webhook Studio** | [`tools/cron-webhook-studio`](./tools/cron-webhook-studio/index.html) | `v1.0.0` | 定时任务 Cron 表达式自然语言解析与未来时间轴模拟；纯前端 Webhook HMAC-SHA256 签名调试 | 纯前端沙盒 | ✅ PASS |
 | **SVG Cleaner Studio** | [`tools/svg-cleaner-studio`](./tools/svg-cleaner-studio/index.html) | `v1.0.0` | 矢量图形无损压缩与 XSS 脱敏清洗器；剔除冗余属性与恶意 script，一键转 React JSX | 纯前端沙盒 | ✅ PASS |
+| **JSON Semantic Diff** | [`tools/json-semantic-diff`](./tools/json-semantic-diff/index.html) | `v1.0.0` | 忽略键乱序的深层 JSON 语义比对与 JSONPath 动态提取沙盒，生成 RFC 6902 Patch | 纯前端沙盒 | ✅ PASS |
 
 ---
 

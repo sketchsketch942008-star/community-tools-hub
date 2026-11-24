@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-11-24 10:19:29",
+  "timestamp": "2026-11-24 10:25:41",
   "overall_status": "PASS",
-  "tools_count": 5,
+  "tools_count": 6,
   "tools": [
     {
       "tool_id": "cron-webhook-studio",
@@ -35,6 +35,17 @@
       "version": "v1.0.0",
       "title": "SecretSanitizer - 开发者敏感凭证与日志隐私脱敏器",
       "size_bytes": 9135
+    },
+    {
+      "tool_id": "json-semantic-diff",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "JSON Semantic Diff & JSONPath Studio - 语义化 JSON 比对与路径提取神器",
+      "size_bytes": 13853
     },
     {
       "tool_id": "meta-card-previewer",
