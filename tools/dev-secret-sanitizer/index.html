@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SecretSanitizer - 开发者敏感凭证与日志隐私脱敏器</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #111827;
+      --border: #1f2937;
+      --accent: #10b981;
+      --accent-hover: #059669;
+      --text: #f9fafb;
+      --muted: #9ca3af;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; }
+    body { background: var(--bg); color: var(--text); padding: 24px; min-height: 100vh; }
+    header { max-width: 1280px; margin: 0 auto 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 14px; }
+    h1 { font-size: 1.4rem; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+    .badge { background: #064e3b; color: #34d399; font-size: 0.75rem; padding: 2px 8px; border-radius: 999px; }
+    .security-notice { font-size: 0.8rem; color: var(--accent); background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); padding: 6px 12px; border-radius: 6px; }
+    .container { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 900px) { .container { grid-template-columns: 1fr; } }
+    .panel { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .panel-title { font-size: 1rem; font-weight: 600; color: var(--text); }
+    .stat-badge { font-size: 0.8rem; padding: 2px 8px; border-radius: 4px; background: #374151; color: #d1d5db; }
+    .stat-badge.alert { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+    textarea { width: 100%; height: 380px; background: #030712; border: 1px solid var(--border); border-radius: 8px; padding: 12px; color: #e5e7eb; font-size: 0.85rem; line-height: 1.5; resize: vertical; }
+    textarea:focus { outline: none; border-color: var(--accent); }
+    .actions-bar { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+    .btn { background: var(--border); color: var(--text); border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: background 0.2s; }
+    .btn:hover { background: #374151; }
+    .btn-primary { background: var(--accent); color: #064e3b; font-weight: 600; }
+    .btn-primary:hover { background: var(--accent-hover); color: #fff; }
+    .rules-list { margin-top: 14px; background: #030712; border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 0.8rem; }
+    .rule-item { display: inline-flex; align-items: center; gap: 6px; margin: 4px 8px 4px 0; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>SecretSanitizer <span class="badge">v1.0.0</span></h1>
+      <p style="font-size:0.85rem; color:var(--muted); margin-top:4px;">开源日志与代码分享安全脱敏神器 · 自动识别清除 API 密钥、私钥、Token、邮箱与内网 IP</p>
+    </div>
+    <div class="security-notice">
+      🔒 100% 浏览器沙盒纯前端执行 · 数据绝不上传服务器
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">原始文本 / 日志 / 配置</span>
+        <button class="btn" onclick="loadSample()">载入测试样例</button>
+      </div>
+      <textarea id="raw-input" placeholder="请在此粘贴需要分享或提交到 GitHub/推特的原始日志、环境配置或代码片段..."></textarea>
+      <div class="actions-bar">
+        <button class="btn btn-primary" onclick="sanitize()">一键极速脱敏</button>
+        <button class="btn" onclick="clearInput()">清空</button>
+      </div>
+      <div class="rules-list">
+        <span style="font-weight:600; color:#d1d5db; display:block; margin-bottom:4px;">内置脱敏规则库：</span>
+        <span class="rule-item">✅ OpenAI / Gemini Keys</span>
+        <span class="rule-item">✅ GitHub PAT / AWS Keys</span>
+        <span class="rule-item">✅ JWT Tokens</span>
+        <span class="rule-item">✅ Private Keys 证书</span>
+        <span class="rule-item">✅ 邮箱地址 & IP 地址</span>
+        <span class="rule-item">✅ 密码与 Bearer Headers</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">脱敏后安全文本</span>
+        <span id="detected-stats" class="stat-badge">未检测</span>
+      </div>
+      <textarea id="clean-output" readonly placeholder="脱敏后的安全代码将显示在此处，可直接安全分享至公共社区..."></textarea>
+      <div class="actions-bar">
+        <button class="btn btn-primary" id="copy-btn" onclick="copyClean()">复制脱敏文本</button>
+        <button class="btn" onclick="downloadClean()">导出为安全文件</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const PATTERNS = [
+      { name: "OpenAI / Claude API Key", regex: /sk-(?:proj-|live-)?[a-zA-Z0-9_-]{20,}/g, mask: "[REDACTED_API_KEY]" },
+      { name: "Google API Key", regex: /AIza[0-9A-Za-z-_]{35}/g, mask: "[REDACTED_GEMINI_KEY]" },
+      { name: "GitHub Token", regex: /(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9_]{36,}/g, mask: "[REDACTED_GITHUB_TOKEN]" },
+      { name: "AWS Access Key", regex: /(?:A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}/g, mask: "[REDACTED_AWS_KEY]" },
+      { name: "Private Key", regex: /-----BEGIN[ A-Z0-9_-]*PRIVATE KEY-----[\s\S]*?-----END[ A-Z0-9_-]*PRIVATE KEY-----/g, mask: "[REDACTED_PRIVATE_KEY_BLOCK]" },
+      { name: "JWT Token", regex: /eyJ[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*/g, mask: "[REDACTED_JWT_TOKEN]" },
+      { name: "Email Address", regex: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, mask: "user***@masked.com" },
+      { name: "IPv4 Address", regex: /\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/g, mask: "xxx.xxx.xxx.xxx" },
+      { name: "Bearer Token", regex: /Bearer\s+[a-zA-Z0-9_\-\.=:_+/]+/gi, mask: "Bearer [REDACTED_BEARER]" },
+      { name: "Password Parameter", regex: /(?:password|passwd|secret)\s*[:=]\s*["']?[^\s"']+["']?/gi, mask: "password=[REDACTED_PASSWORD]" }
+    ];
+
+    function sanitize() {
+      let content = document.getElementById('raw-input').value;
+      if (!content.trim()) {
+        document.getElementById('clean-output').value = '';
+        document.getElementById('detected-stats').textContent = '请输入内容';
+        document.getElementById('detected-stats').className = 'stat-badge';
+        return;
+      }
+
+      let totalMatches = 0;
+      let matchedRules = [];
+
+      PATTERNS.forEach(rule => {
+        const matches = content.match(rule.regex);
+        if (matches && matches.length > 0) {
+          totalMatches += matches.length;
+          matchedRules.push(`${rule.name} (${matches.length})`);
+          content = content.replace(rule.regex, rule.mask);
+        }
+      });
+
+      document.getElementById('clean-output').value = content;
+      const statsBadge = document.getElementById('detected-stats');
+      if (totalMatches > 0) {
+        statsBadge.textContent = `已清除 ${totalMatches} 处风险: ${matchedRules.slice(0, 2).join(', ')}`;
+        statsBadge.className = 'stat-badge alert';
+      } else {
+        statsBadge.textContent = '未检测到高危凭证 (安全)';
+        statsBadge.className = 'stat-badge';
+      }
+    }
+
+    function loadSample() {
+      const sample = `DEBUG [2026-11-24 08:30:12] Initializing cloud sync for user developer@domain.com
+Connecting to edge node: 192.168.1.105 with header Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.t-aeRecord
+OpenAI Client configured with apiKey: sk-proj-abC982348hsdkjfh238746y28347yrh8324
+AWS Backup S3 Bucket: AccessKey AKIAIOSFODNN7EXAMPLE, Secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+System Error: Authorization failed with GitHub PAT ghp_99abcdefghijklmnopqrstuvwxyz1234567890`;
+      document.getElementById('raw-input').value = sample;
+      sanitize();
+    }
+
+    function clearInput() {
+      document.getElementById('raw-input').value = '';
+      document.getElementById('clean-output').value = '';
+      document.getElementById('detected-stats').textContent = '未检测';
+      document.getElementById('detected-stats').className = 'stat-badge';
+    }
+
+    function copyClean() {
+      const output = document.getElementById('clean-output').value;
+      if (!output) return;
+      navigator.clipboard.writeText(output).then(() => {
+        const btn = document.getElementById('copy-btn');
+        btn.textContent = '已复制安全文本！';
+        setTimeout(() => { btn.textContent = '复制脱敏文本'; }, 2000);
+      });
+    }
+
+    function downloadClean() {
+      const text = document.getElementById('clean-output').value;
+      if (!text) return;
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `sanitized_output_${Date.now()}.txt`;
+      a.click();
+    }
+
+    document.getElementById('raw-input').addEventListener('input', sanitize);
+  </script>
+</body>
+</html>

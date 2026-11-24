@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenTools Hub - GitHub 精选开源小工具与微服务矩阵</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --card: #111827;
+      --border: #1f2937;
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+      --success: #10b981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 32px 20px; }
+    .wrapper { max-width: 1100px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 40px; }
+    h1 { font-size: 2.2rem; font-weight: 800; background: linear-gradient(135deg, #a5b4fc, #6366f1, #38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 12px; }
+    p.subtitle { color: var(--muted); font-size: 1rem; max-width: 650px; margin: 0 auto 16px; }
+    .team-badge-bar { display: inline-flex; align-items: center; gap: 12px; background: rgba(31, 41, 55, 0.7); border: 1px solid var(--border); padding: 8px 18px; border-radius: 999px; font-size: 0.85rem; color: #d1d5db; }
+    .team-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); display: inline-block; }
+    
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-top: 30px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 24px; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
+    .card:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.15); }
+    .card-top { margin-bottom: 20px; }
+    .card-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .card-tag { font-size: 0.75rem; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); }
+    .card-version { font-size: 0.75rem; color: var(--muted); font-family: monospace; }
+    .card h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 8px; color: #fff; }
+    .card p { font-size: 0.9rem; color: var(--muted); line-height: 1.5; }
+    
+    .card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 16px; margin-top: 16px; }
+    .status-healthy { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--success); }
+    .btn-open { background: var(--accent); color: #fff; text-decoration: none; padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; transition: background 0.2s; }
+    .btn-open:hover { background: var(--accent-hover); }
+
+    .ops-section { margin-top: 50px; background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 20px 24px; }
+    .ops-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .ops-title { font-size: 1rem; font-weight: 600; color: #e2e8f0; }
+    .ops-log { font-family: monospace; font-size: 0.8rem; color: #94a3b8; background: #020617; border-radius: 8px; padding: 12px; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <header>
+      <h1>OpenTools Hub 智能微工具矩阵</h1>
+      <p class="subtitle">经由推特趋势情报调研、工程化严密质检、自主巡检维护的轻量开源工具集合</p>
+      <div class="team-badge-bar">
+        <span><span class="team-dot"></span> 协同架构: GitHub 管理助手 (Coordinator)</span>
+        <span>·</span>
+        <span>下发运维: 美国洛杉矶专线DEDI-小泡狐</span>
+        <span>·</span>
+        <span>社区情报: 推特主账号运营</span>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Tool 1 -->
+      <div class="card">
+        <div class="card-top">
+          <div class="card-meta">
+            <span class="card-tag">SEO & 社交卡片</span>
+            <span class="card-version">v1.0.0</span>
+          </div>
+          <h2>MetaCard Studio</h2>
+          <p>即开即用的社交媒体卡片 (Twitter Card) 与搜索引擎 (Google SERP) 实时元标签可视化生成器。支持一键复制代码，纯前端沙盒安全无泄露。</p>
+        </div>
+        <div class="card-footer">
+          <div class="status-healthy">
+            <span style="width:6px; height:6px; border-radius:50%; background:var(--success);"></span>
+            <span>健康已校验</span>
+          </div>
+          <a class="btn-open" href="./tools/meta-card-previewer/index.html">打开工具 →</a>
+        </div>
+      </div>
+
+      <!-- Tool 2 -->
+      <div class="card">
+        <div class="card-top">
+          <div class="card-meta">
+            <span class="card-tag" style="background:rgba(16, 185, 129, 0.15); color:#34d399; border-color:rgba(16, 185, 129, 0.3);">安全 & 隐私脱敏</span>
+            <span class="card-version">v1.0.0</span>
+          </div>
+          <h2>SecretSanitizer</h2>
+          <p>开发者敏感凭证与日志脱敏清理器。内置针对 OpenAI、Gemini、AWS、GitHub Token、私钥证书、密码及 IP 地址的正则表达式脱敏引擎，防止公开代码误泄露安全密钥。</p>
+        </div>
+        <div class="card-footer">
+          <div class="status-healthy">
+            <span style="width:6px; height:6px; border-radius:50%; background:var(--success);"></span>
+            <span>健康已校验</span>
+          </div>
+          <a class="btn-open" href="./tools/dev-secret-sanitizer/index.html">打开工具 →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- 协同与自动化巡检状态 -->
+    <div class="ops-section">
+      <div class="ops-header">
+        <span class="ops-title">🛠 协同管线与自主健康巡检状态</span>
+        <span style="font-size:0.8rem; color:#38bdf8;">自主维护模式激活 (Autonomous Active)</span>
+      </div>
+      <div class="ops-log">
+        [SYSTEM] Teamwork Swarm: Coordinator & 小泡狐 & 推特主账号运营在线联动<br>
+        [INTEL] Twitter Community Trend: 优先上线前端无依赖、零隐私上传、高实用性开发工具<br>
+        [QUALITY] 质量红线: 必须通过 HTML5 规范、DOM 加载无报错、离线与在线双模式测试<br>
+        [STATUS] 当前就绪微工具: 2 | 自动化检查脚本: scripts/hub_health_checker.py 就绪
+      </div>
+    </div>
+  </div>
+</body>
+</html>

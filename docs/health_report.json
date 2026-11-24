@@ -1,0 +1,29 @@
+{
+  "timestamp": "2026-11-24 09:18:20",
+  "overall_status": "PASS",
+  "tools_count": 2,
+  "tools": [
+    {
+      "tool_id": "dev-secret-sanitizer",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "SecretSanitizer - 开发者敏感凭证与日志隐私脱敏器",
+      "size_bytes": 9135
+    },
+    {
+      "tool_id": "meta-card-previewer",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "MetaCard Studio - 社交媒体卡片与元标签实时生成器",
+      "size_bytes": 11431
+    }
+  ]
+}
