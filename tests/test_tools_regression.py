@@ -48,6 +48,7 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         self.assertIn("./tools/code-snapshot-studio/index.html", portal_html)
         self.assertIn("./tools/token-compressor-studio/index.html", portal_html)
         self.assertIn("./tools/security-headers-studio/index.html", portal_html)
+        self.assertIn("./tools/prompt-guard-studio/index.html", portal_html)
 
         # 检查实际工具文件存在
         meta_tool = self.tools_dir / "meta-card-previewer" / "index.html"
@@ -67,9 +68,10 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         shot_tool = self.tools_dir / "code-snapshot-studio" / "index.html"
         compressor_tool = self.tools_dir / "token-compressor-studio" / "index.html"
         security_tool = self.tools_dir / "security-headers-studio" / "index.html"
+        prompt_tool = self.tools_dir / "prompt-guard-studio" / "index.html"
 
         for t in [meta_tool, sanitizer_tool, curl_tool, cron_tool, svg_tool, json_tool, jwt_tool,
-                  css_tool, regex_tool, base64_tool, md_tool, hash_tool, codegen_tool, color_tool, shot_tool, compressor_tool, security_tool]:
+                  css_tool, regex_tool, base64_tool, md_tool, hash_tool, codegen_tool, color_tool, shot_tool, compressor_tool, security_tool, prompt_tool]:
             self.assertTrue(t.exists(), f"Tool {t} must exist")
         base64_tool = self.tools_dir / "base64-binary-studio" / "index.html"
         md_tool = self.tools_dir / "markdown-table-studio" / "index.html"
@@ -99,7 +101,7 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         """执行自主健康巡检引擎并验证 PASS 状态"""
         report = hub_health_checker.run_health_check()
         self.assertEqual(report["overall_status"], "PASS", f"Health check failed: {report}")
-        self.assertEqual(report["tools_count"], 17)
+        self.assertEqual(report["tools_count"], 18)
         
         for tool in report["tools"]:
             self.assertEqual(tool["status"], "PASS", f"Tool {tool['tool_id']} not passing: {tool}")
@@ -296,6 +298,20 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         self.assertIn("copyConfig", content)
         self.assertIn("Access-Control-Allow-Origin", content)
         self.assertIn("Content-Security-Policy", content)
+
+    def test_prompt_guard_studio_features(self):
+        """验证 PromptGuard Studio 页面结构与核心功能"""
+        tool_file = self.tools_dir / "prompt-guard-studio" / "index.html"
+        self.assertTrue(tool_file.exists())
+        content = tool_file.read_text(encoding="utf-8")
+        self.assertIn("PromptGuard Studio - AI Prompt Privacy Sanitizer", content)
+        self.assertIn("sanitizePrompt", content)
+        self.assertIn("restoreResponse", content)
+        self.assertIn("checkInjection", content)
+        self.assertIn("renderMappingTable", content)
+        self.assertIn("downloadMappingJson", content)
+        self.assertIn("applyPreset", content)
+        self.assertIn("mappingTable", content)
 
 if __name__ == "__main__":
     unittest.main()

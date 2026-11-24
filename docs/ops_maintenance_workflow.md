@@ -86,6 +86,7 @@ flowchart TD
 | `code-snapshot-studio` | **CodeShot Studio** | `v1.0.0` | 纯前端代码美化与快照生成工坊；Mac 拟态、语法高亮与多主题，直写剪贴板或导出 PNG/SVG | [OK] PASS |
 | `token-compressor-studio` | **TokenCompressor Studio** | `v1.0.0` | AI 提示词与上下文 Token 压缩瘦身工坊；代码/JSON/日志四模净化、BPE 计量与成本测算 | [OK] PASS |
 | `security-headers-studio` | **SecurityHeaders Studio** | `v1.0.0` | 现代 CORS 与 CSP 安全策略可视化工坊；OWASP 诊断评级与多服务器一键导出 | [OK] PASS |
+| `prompt-guard-studio` | **PromptGuard Studio** | `v1.0.0` | AI 提示词隐私脱敏与双向可逆还原工坊；PII/凭据安全占位符替换、AI 回复一键反向还原、注入攻击静态筛查 | [OK] PASS |
 
 ---
 
@@ -96,8 +97,8 @@ flowchart TD
 1. **SQLite WASM 查看器 (SQLite Local Explorer)**：
    - 特性：纯前端基于 sql.js 或官方 SQLite WASM 加载本地 `.db/.sqlite` 文件，零后端中转，支持只读 SQL 查询与表格导出。
    - 质检重点：文件拖拽大文件内存溢出防护、SQL 注入（由于纯客户端无后门，保障 UI 渲染安全）、跨浏览器 Worker 支持。
-2. **PromptGuard (AI提示词与日志本地脱敏)**：与现有 `SecretSanitizer` 整合或进阶升级，增加占位还原机制。
-3. **DevSocial Snapshot (代码与技术分享卡片生成器)**：Canvas/SVG 纯前端高亮生成，契合推特发布场景。
+2. **DevSocial Studio (社交媒体技术分享高保真卡片与图表生成器)**：Canvas/SVG 纯前端高亮生成，契合推特发布场景。
+3. **WebSocket & SSE Stream Inspector (流式接口本地调试工坊)**：纯前端调试 WebSocket 与 EventSource 响应流。
 
 ---
 

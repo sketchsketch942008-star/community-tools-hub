@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-11-24 20:14:36",
+  "timestamp": "2026-11-24 21:42:46",
   "overall_status": "PASS",
-  "tools_count": 17,
+  "tools_count": 18,
   "tools": [
     {
       "tool_id": "base64-binary-studio",
@@ -134,6 +134,17 @@
       "version": "v1.0.0",
       "title": "MetaCard Studio - 社交媒体卡片与元标签实时生成器",
       "size_bytes": 11431
+    },
+    {
+      "tool_id": "prompt-guard-studio",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "PromptGuard Studio - AI Prompt Privacy Sanitizer &amp; Bidirectional Redaction Studio v1.0.0",
+      "size_bytes": 30955
     },
     {
       "tool_id": "regex-lab-studio",
