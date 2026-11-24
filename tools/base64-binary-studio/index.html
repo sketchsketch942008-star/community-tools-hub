@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Base64, Hex & Data URI Binary Inspector Studio - 离线二进制沙盒工坊</title>
+  <meta name="description" content="纯前端零依赖的 Base64、Hex、Data URI 与二进制文件多维互转分析沙盒。自动嗅探 Magic Bytes 文件头，计算体积膨胀率并支持本地文件安全还原。">
+  <style>
+    :root {
+      --bg-primary: #0a0e17;
+      --bg-panel: #111827;
+      --bg-input: #1a2234;
+      --border-color: #243049;
+      --accent-color: #38bdf8;
+      --accent-hover: #0284c7;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --code-bg: #070c14;
+      --badge-bg: #1e293b;
+      --badge-text: #38bdf8;
+      --success-text: #4ade80;
+      --warn-text: #f59e0b;
+      --fail-text: #f87171;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: rgba(17, 24, 39, 0.85);
+      border-bottom: 1px solid var(--border-color);
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(12px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+
+    .brand-badges {
+      display: flex;
+      gap: 6px;
+    }
+
+    .badge {
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      font-weight: 600;
+      border: 1px solid var(--border-color);
+      letter-spacing: 0.04em;
+    }
+
+    .badge-pass {
+      color: var(--success-text);
+      border-color: rgba(74, 222, 128, 0.3);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .nav-link {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .nav-link:hover {
+      color: var(--accent-color);
+    }
+
+    .app-main {
+      flex: 1;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Top Metrics Ribbon */
+    .metrics-ribbon {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    @media (max-width: 860px) {
+      .metrics-ribbon {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .metric-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .metric-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .metric-value {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+    }
+
+    /* Content Split Grid */
+    .split-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      flex: 1;
+    }
+
+    @media (max-width: 1024px) {
+      .split-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      background: rgba(0, 0, 0, 0.25);
+      border-bottom: 1px solid var(--border-color);
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent-color);
+      letter-spacing: 0.05em;
+    }
+
+    .panel-body {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+    }
+
+    /* Input Toolbar & Drag Drop */
+    .drop-zone {
+      border: 2px dashed var(--border-color);
+      border-radius: 8px;
+      padding: 18px;
+      text-align: center;
+      background: rgba(26, 34, 52, 0.5);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--accent-color);
+      background: rgba(56, 189, 248, 0.08);
+    }
+
+    .drop-text {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .drop-text strong {
+      color: var(--accent-color);
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .input-mode-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 2px;
+    }
+
+    .mode-btn {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .mode-btn.active {
+      border-color: var(--accent-color);
+      color: #fff;
+      background: rgba(56, 189, 248, 0.15);
+    }
+
+    .main-textarea {
+      width: 100%;
+      min-height: 240px;
+      flex: 1;
+      background: var(--code-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: var(--text-main);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      outline: none;
+      resize: vertical;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .main-textarea:focus {
+      border-color: var(--accent-color);
+    }
+
+    /* Right Output Panel */
+    .tab-btn-group {
+      display: flex;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 6px 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+
+    .tab-btn.active {
+      color: var(--accent-color);
+      border-bottom-color: var(--accent-color);
+    }
+
+    .action-btn-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 5px 12px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      border-radius: 4px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s;
+    }
+
+    .btn-primary {
+      background: var(--accent-color);
+      color: #000;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background: var(--bg-input);
+      border-color: var(--border-color);
+      color: var(--text-main);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+    }
+
+    .output-box {
+      background: var(--code-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: #38bdf8;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      flex: 1;
+      min-height: 240px;
+      max-height: 480px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    /* Hex Dump Viewer */
+    .hex-dump-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: monospace;
+      font-size: 0.75rem;
+      line-height: 1.4;
+    }
+
+    .hex-offset {
+      color: var(--text-muted);
+      user-select: none;
+      padding-right: 12px;
+    }
+
+    .hex-bytes {
+      color: #38bdf8;
+      padding-right: 12px;
+    }
+
+    .hex-ascii {
+      color: #94a3b8;
+      border-left: 1px solid var(--border-color);
+      padding-left: 12px;
+    }
+
+    /* Image Preview Container */
+    .preview-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      min-height: 240px;
+    }
+
+    .preview-img {
+      max-width: 100%;
+      max-height: 320px;
+      border-radius: 6px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--border-color);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-title">Base64, Hex & Data URI Binary Inspector Studio</div>
+      <div class="brand-badges">
+        <span class="badge">[v1.0.0]</span>
+        <span class="badge">[MAGIC BYTES DETECT]</span>
+        <span class="badge badge-pass">[OFFLINE SAFE]</span>
+      </div>
+    </div>
+    <div class="nav-links">
+      <a href="../../index.html" class="nav-link">[OpenTools Hub]</a>
+      <a href="https://github.com/sketchsketch942008-star/community-tools-hub" target="_blank" rel="noopener noreferrer" class="nav-link">[GitHub Repo]</a>
+    </div>
+  </header>
+
+  <div class="app-main">
+
+    <!-- Top Metrics Ribbon -->
+    <div class="metrics-ribbon">
+      <div class="metric-card">
+        <span class="metric-label">RAW BYTE SIZE / 原始尺寸</span>
+        <span class="metric-value" id="valRawSize">0 B</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">BASE64 LENGTH / 字符串长度</span>
+        <span class="metric-value" id="valB64Len">0 Chars</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">OVERHEAD / 体积膨胀率</span>
+        <span class="metric-value" id="valOverhead" style="color:var(--accent-color);">0.0%</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">MAGIC TYPE / 嗅探类型</span>
+        <span class="metric-value" id="valMimeType" style="color:var(--success-text);">[PLAIN/UTF-8]</span>
+      </div>
+    </div>
+
+    <!-- Main Workspace Split Grid -->
+    <div class="split-grid">
+
+      <!-- Left Column: Input Source -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">INPUT SOURCE / 输入源</span>
+          <div class="action-btn-row">
+            <button class="btn btn-secondary" onclick="loadSampleText()">[Sample Text]</button>
+            <button class="btn btn-secondary" onclick="loadSamplePng()">[Sample 1px PNG]</button>
+            <button class="btn btn-secondary" onclick="clearInput()">[Clear]</button>
+          </div>
+        </div>
+        <div class="panel-body">
+
+          <!-- Drag and Drop Area -->
+          <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+            <input type="file" id="fileInput" class="file-input" onchange="handleFileSelect(event)">
+            <div class="drop-text">
+              <strong>点击选择文件</strong> 或将任意图片/证书/二进制文件拖拽至此 (纯客户端内存解析)
+            </div>
+          </div>
+
+          <!-- Input Mode Switcher -->
+          <div class="input-mode-tabs">
+            <button class="mode-btn active" id="btnModeAuto" onclick="switchInputMode('auto')">[Auto Detect]</button>
+            <button class="mode-btn" id="btnModeText" onclick="switchInputMode('text')">[UTF-8 Plain Text]</button>
+            <button class="mode-btn" id="btnModeB64" onclick="switchInputMode('b64')">[Base64 / DataURI]</button>
+            <button class="mode-btn" id="btnModeHex" onclick="switchInputMode('hex')">[Hex Dump]</button>
+          </div>
+
+          <!-- Raw Input Textarea -->
+          <textarea id="rawInput" class="main-textarea" placeholder="在此输入 UTF-8 文本、Base64 字符串、Data URI 或十六进制 Hex 字符..." oninput="onInputChanged()"></textarea>
+
+        </div>
+      </div>
+
+      <!-- Right Column: Multi-format Output & Inspector -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="tab-btn-group">
+            <button class="tab-btn active" id="tabB64" onclick="switchOutputTab('b64')">[Base64 String]</button>
+            <button class="tab-btn" id="tabDataUri" onclick="switchOutputTab('datauri')">[Data URI]</button>
+            <button class="tab-btn" id="tabHex" onclick="switchOutputTab('hex')">[Hex Dump]</button>
+            <button class="tab-btn" id="tabText" onclick="switchOutputTab('text')">[UTF-8 Text]</button>
+            <button class="tab-btn" id="tabPreview" onclick="switchOutputTab('preview')">[Visual Preview]</button>
+          </div>
+          <div class="action-btn-row">
+            <button class="btn btn-primary" id="copyBtn" onclick="copyCurrentOutput()">[COPY]</button>
+            <button class="btn btn-secondary" id="dlBtn" onclick="downloadBinary()">[DOWNLOAD BIN]</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <pre class="output-box" id="outputBox"></pre>
+          <div class="preview-container" id="previewContainer" style="display:none;"></div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    // State
+    let currentInputMode = 'auto';
+    let currentOutputTab = 'b64';
+    let currentBytes = new Uint8Array(0);
+    let detectedMime = 'text/plain';
+    let detectedExt = 'txt';
+
+    // Magic Bytes Definitions
+    const magicSignatures = [
+      { mime: 'image/png', ext: 'png', sig: [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A] },
+      { mime: 'image/jpeg', ext: 'jpg', sig: [0xFF, 0xD8, 0xFF] },
+      { mime: 'image/gif', ext: 'gif', sig: [0x47, 0x49, 0x46, 0x38] },
+      { mime: 'image/webp', ext: 'webp', sig: [0x52, 0x49, 0x46, 0x46], offset8: [0x57, 0x45, 0x42, 0x50] },
+      { mime: 'application/pdf', ext: 'pdf', sig: [0x25, 0x50, 0x44, 0x46] },
+      { mime: 'application/zip', ext: 'zip', sig: [0x50, 0x4B, 0x03, 0x04] }
+    ];
+
+    function detectMagicBytes(bytes) {
+      if (bytes.length < 3) return { mime: 'text/plain', ext: 'txt' };
+
+      for (let s of magicSignatures) {
+        let match = true;
+        for (let i = 0; i < s.sig.length; i++) {
+          if (bytes[i] !== s.sig[i]) {
+            match = false;
+            break;
+          }
+        }
+        if (match) {
+          if (s.offset8) {
+            let m8 = true;
+            for (let j = 0; j < s.offset8.length; j++) {
+              if (bytes[8 + j] !== s.offset8[j]) {
+                m8 = false;
+                break;
+              }
+            }
+            if (m8) return { mime: s.mime, ext: s.ext };
+          } else {
+            return { mime: s.mime, ext: s.ext };
+          }
+        }
+      }
+
+      // Check SVG
+      const headStr = new TextDecoder('utf-8', { fatal: false }).decode(bytes.slice(0, 100)).trim().toLowerCase();
+      if (headStr.includes('<svg') || headStr.includes('<?xml')) {
+        if (headStr.includes('<svg')) return { mime: 'image/svg+xml', ext: 'svg' };
+      }
+
+      return { mime: 'text/plain', ext: 'txt' };
+    }
+
+    function bytesToBase64(bytes) {
+      let binary = '';
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return btoa(binary);
+    }
+
+    function base64ToBytes(b64) {
+      const cleanB64 = b64.replace(/\s+/g, '');
+      const binary = atob(cleanB64);
+      const len = binary.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      return bytes;
+    }
+
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function generateHexDump(bytes) {
+      let dump = '';
+      const len = bytes.length;
+      const limit = Math.min(len, 2048); // limit for fast DOM render
+
+      for (let i = 0; i < limit; i += 16) {
+        const offset = i.toString(16).padStart(8, '0');
+        let hexPart = '';
+        let asciiPart = '';
+
+        for (let j = 0; j < 16; j++) {
+          if (i + j < limit) {
+            const b = bytes[i + j];
+            hexPart += b.toString(16).padStart(2, '0') + ' ';
+            asciiPart += (b >= 32 && b <= 126) ? String.fromCharCode(b) : '.';
+          } else {
+            hexPart += '   ';
+          }
+        }
+
+        dump += `${offset}  ${hexPart} |${asciiPart}|\n`;
+      }
+
+      if (len > limit) {
+        dump += `\n... [省略后续 ${len - limit} 字节Hex数据] ...`;
+      }
+      return dump;
+    }
+
+    function onInputChanged() {
+      const text = document.getElementById('rawInput').value.trim();
+      if (!text) {
+        currentBytes = new Uint8Array(0);
+        updateOutputs();
+        return;
+      }
+
+      // Auto or Specific Mode Parsing
+      if (currentInputMode === 'b64' || (currentInputMode === 'auto' && text.startsWith('data:'))) {
+        let b64Str = text;
+        if (text.startsWith('data:')) {
+          const parts = text.split(',');
+          if (parts.length > 1) b64Str = parts[1];
+        }
+        try {
+          currentBytes = base64ToBytes(b64Str);
+        } catch (e) {
+          currentBytes = new TextEncoder().encode(text);
+        }
+      } else if (currentInputMode === 'hex') {
+        const cleanHex = text.replace(/[^0-9a-fA-F]/g, '');
+        const bytes = [];
+        for (let i = 0; i < cleanHex.length; i += 2) {
+          bytes.push(parseInt(cleanHex.substr(i, 2), 16));
+        }
+        currentBytes = new Uint8Array(bytes);
+      } else {
+        // Test if pure valid Base64
+        const isB64Candidate = /^[A-Za-z0-9+/=]+$/.test(text) && text.length % 4 === 0 && text.length > 20;
+        if (currentInputMode === 'auto' && isB64Candidate) {
+          try {
+            currentBytes = base64ToBytes(text);
+          } catch (e) {
+            currentBytes = new TextEncoder().encode(text);
+          }
+        } else {
+          currentBytes = new TextEncoder().encode(text);
+        }
+      }
+
+      updateOutputs();
+    }
+
+    function updateOutputs() {
+      const rawLen = currentBytes.length;
+      const b64 = bytesToBase64(currentBytes);
+      const b64Len = b64.length;
+      const overhead = rawLen > 0 ? (((b64Len - rawLen) / rawLen) * 100).toFixed(1) + '%' : '0.0%';
+
+      const magic = detectMagicBytes(currentBytes);
+      detectedMime = magic.mime;
+      detectedExt = magic.ext;
+
+      // Update Ribbon
+      document.getElementById('valRawSize').textContent = formatBytes(rawLen);
+      document.getElementById('valB64Len').textContent = b64Len.toLocaleString() + ' Chars';
+      document.getElementById('valOverhead').textContent = '+' + overhead;
+      document.getElementById('valMimeType').textContent = `[${detectedMime.toUpperCase()}]`;
+
+      // Update Active Tab Content
+      const outBox = document.getElementById('outputBox');
+      const prevCont = document.getElementById('previewContainer');
+
+      if (currentOutputTab === 'preview') {
+        outBox.style.display = 'none';
+        prevCont.style.display = 'flex';
+        renderPreview();
+      } else {
+        outBox.style.display = 'block';
+        prevCont.style.display = 'none';
+
+        if (currentOutputTab === 'b64') {
+          outBox.textContent = b64 || '<Empty Base64>';
+        } else if (currentOutputTab === 'datauri') {
+          outBox.textContent = `data:${detectedMime};base64,${b64}`;
+        } else if (currentOutputTab === 'hex') {
+          outBox.textContent = generateHexDump(currentBytes) || '<Empty Hex>';
+        } else if (currentOutputTab === 'text') {
+          try {
+            outBox.textContent = new TextDecoder('utf-8').decode(currentBytes) || '<Empty Text>';
+          } catch (e) {
+            outBox.textContent = '<Binary Stream - Not UTF-8 Decodable>';
+          }
+        }
+      }
+    }
+
+    function renderPreview() {
+      const prevCont = document.getElementById('previewContainer');
+      prevCont.innerHTML = '';
+
+      if (currentBytes.length === 0) {
+        prevCont.innerHTML = '<span style="color:var(--text-muted); font-size:0.8rem;">无数据可供预览</span>';
+        return;
+      }
+
+      if (detectedMime.startsWith('image/')) {
+        const b64 = bytesToBase64(currentBytes);
+        const img = document.createElement('img');
+        img.className = 'preview-img';
+        img.src = `data:${detectedMime};base64,${b64}`;
+        prevCont.appendChild(img);
+        const meta = document.createElement('div');
+        meta.style.marginTop = '10px';
+        meta.style.fontSize = '0.75rem';
+        meta.style.color = 'var(--text-muted)';
+        meta.textContent = `图片尺寸: 原图渲染中 | MIME: ${detectedMime}`;
+        prevCont.appendChild(meta);
+      } else {
+        prevCont.innerHTML = `<span style="color:var(--text-muted); font-size:0.8rem;">当前 MIME (${detectedMime}) 不支持图形预览，可切换至 UTF-8 或 Hex Dump 检查。</span>`;
+      }
+    }
+
+    function switchInputMode(mode) {
+      currentInputMode = mode;
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      const idMap = { auto: 'btnModeAuto', text: 'btnModeText', b64: 'btnModeB64', hex: 'btnModeHex' };
+      if (idMap[mode]) document.getElementById(idMap[mode]).classList.add('active');
+      onInputChanged();
+    }
+
+    function switchOutputTab(tab) {
+      currentOutputTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      const idMap = { b64: 'tabB64', datauri: 'tabDataUri', hex: 'tabHex', text: 'tabText', preview: 'tabPreview' };
+      if (idMap[tab]) document.getElementById(idMap[tab]).classList.add('active');
+      updateOutputs();
+    }
+
+    function handleFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        currentBytes = new Uint8Array(evt.target.result);
+        document.getElementById('rawInput').value = `[File: ${file.name} (${formatBytes(file.size)})]`;
+        updateOutputs();
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    // Drag Drop Handlers
+    const dropZone = document.getElementById('dropZone');
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        const file = e.dataTransfer.files[0];
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          currentBytes = new Uint8Array(evt.target.result);
+          document.getElementById('rawInput').value = `[File: ${file.name} (${formatBytes(file.size)})]`;
+          updateOutputs();
+        };
+        reader.readAsArrayBuffer(file);
+      }
+    });
+
+    function loadSampleText() {
+      document.getElementById('rawInput').value = 'OpenTools Hub - Professional Autonomous Micro-Tools Matrix v1.0.0 (100% Offline Client-Side Safety)';
+      switchInputMode('text');
+    }
+
+    function loadSamplePng() {
+      // 1x1 Transparent PNG in Base64
+      document.getElementById('rawInput').value = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+      switchInputMode('b64');
+    }
+
+    function clearInput() {
+      document.getElementById('rawInput').value = '';
+      currentBytes = new Uint8Array(0);
+      updateOutputs();
+    }
+
+    function copyCurrentOutput() {
+      let content = document.getElementById('outputBox').textContent;
+      if (currentOutputTab === 'preview') {
+        content = `data:${detectedMime};base64,${bytesToBase64(currentBytes)}`;
+      }
+      navigator.clipboard.writeText(content).then(() => {
+        const btn = document.getElementById('copyBtn');
+        const orig = btn.textContent;
+        btn.textContent = '[COPIED!]';
+        btn.style.background = '#4ade80';
+        setTimeout(() => {
+          btn.textContent = orig;
+          btn.style.background = '';
+        }, 1800);
+      });
+    }
+
+    function downloadBinary() {
+      if (currentBytes.length === 0) return;
+      const blob = new Blob([currentBytes], { type: detectedMime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `exported_binary.${detectedExt}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // Initialize with Sample
+    loadSampleText();
+  </script>
+</body>
+</html>

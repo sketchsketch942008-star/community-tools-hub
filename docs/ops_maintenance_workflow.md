@@ -78,6 +78,7 @@ flowchart TD
 | `jwt-inspector-studio` | **JWT Inspector & Signature Studio** | `v1.0.0` | 三段式结构离线拆解、过期倒计时与 Web Crypto 本地验签 | [OK] PASS |
 | `css-glassmorphism-studio` | **CSS Modern Glassmorphism & Mesh Gradient Studio** | `v1.0.0` | 现代毛玻璃拟态与多重网格渐变工坊；Vanilla/Tailwind/React 三轨代码极速导出 | [OK] PASS |
 | `regex-lab-studio` | **RegexLab Studio** | `v1.0.0` | 现代离线安全正则表达式工坊；捕获组多色分解、用例矩阵与代码导出 | [OK] PASS |
+| `base64-binary-studio` | **Base64, Hex & Data URI Binary Inspector Studio** | `v1.0.0` | Base64/Hex/DataURI 多维互转沙盒；Magic Bytes 嗅探、体积膨胀率分析与本地文件还原 | [OK] PASS |
 
 ---
 

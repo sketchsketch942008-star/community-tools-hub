@@ -1,8 +1,19 @@
 {
-  "timestamp": "2026-11-24 11:24:33",
+  "timestamp": "2026-11-24 12:10:49",
   "overall_status": "PASS",
-  "tools_count": 9,
+  "tools_count": 10,
   "tools": [
+    {
+      "tool_id": "base64-binary-studio",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "Base64, Hex & Data URI Binary Inspector Studio - 离线二进制沙盒工坊",
+      "size_bytes": 24809
+    },
     {
       "tool_id": "cron-webhook-studio",
       "entry_point": "index.html",

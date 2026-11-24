@@ -40,6 +40,7 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         self.assertIn("./tools/jwt-inspector-studio/index.html", portal_html)
         self.assertIn("./tools/css-glassmorphism-studio/index.html", portal_html)
         self.assertIn("./tools/regex-lab-studio/index.html", portal_html)
+        self.assertIn("./tools/base64-binary-studio/index.html", portal_html)
 
         # 检查实际工具文件存在
         meta_tool = self.tools_dir / "meta-card-previewer" / "index.html"
@@ -51,6 +52,7 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         jwt_tool = self.tools_dir / "jwt-inspector-studio" / "index.html"
         css_tool = self.tools_dir / "css-glassmorphism-studio" / "index.html"
         regex_tool = self.tools_dir / "regex-lab-studio" / "index.html"
+        base64_tool = self.tools_dir / "base64-binary-studio" / "index.html"
         self.assertTrue(meta_tool.exists(), "MetaCard Studio index.html must exist")
         self.assertTrue(sanitizer_tool.exists(), "SecretSanitizer index.html must exist")
         self.assertTrue(curl_tool.exists(), "cURL Code Studio index.html must exist")
@@ -60,12 +62,13 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         self.assertTrue(jwt_tool.exists(), "JWT Inspector Studio index.html must exist")
         self.assertTrue(css_tool.exists(), "CSS Glassmorphism Studio index.html must exist")
         self.assertTrue(regex_tool.exists(), "RegexLab Studio index.html must exist")
+        self.assertTrue(base64_tool.exists(), "Base64 Binary Studio index.html must exist")
 
     def test_hub_health_checker_execution(self):
         """执行自主健康巡检引擎并验证 PASS 状态"""
         report = hub_health_checker.run_health_check()
         self.assertEqual(report["overall_status"], "PASS", f"Health check failed: {report}")
-        self.assertEqual(report["tools_count"], 9)
+        self.assertEqual(report["tools_count"], 10)
         
         for tool in report["tools"]:
             self.assertEqual(tool["status"], "PASS", f"Tool {tool['tool_id']} not passing: {tool}")
@@ -152,6 +155,19 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         self.assertIn("ipv4", content)
         self.assertIn("semver", content)
         self.assertIn("navigator.clipboard.writeText", content)
+
+    def test_base64_binary_studio_features(self):
+        """验证 Base64, Hex & Data URI Binary Inspector Studio 页面结构与核心功能"""
+        tool_file = self.tools_dir / "base64-binary-studio" / "index.html"
+        self.assertTrue(tool_file.exists())
+        content = tool_file.read_text(encoding="utf-8")
+        self.assertIn("Base64, Hex & Data URI Binary Inspector Studio", content)
+        self.assertIn("detectMagicBytes", content)
+        self.assertIn("bytesToBase64", content)
+        self.assertIn("generateHexDump", content)
+        self.assertIn("magicSignatures", content)
+        self.assertIn("navigator.clipboard.writeText", content)
+        self.assertIn("URL.createObjectURL", content)
 
 if __name__ == "__main__":
     unittest.main()
