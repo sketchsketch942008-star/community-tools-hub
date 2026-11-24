@@ -50,6 +50,7 @@ flowchart LR
 | **SchemaForge Studio** | [`tools/schema-codegen-studio`](./tools/schema-codegen-studio/index.html) | `v1.0.0` | 纯前端 JSON 转 TypeScript Interface、Zod Schema、Go Struct 与 Python Pydantic | 纯前端沙盒 | [OK] PASS |
 | **Color Palette Studio** | [`tools/color-palette-studio`](./tools/color-palette-studio/index.html) | `v1.0.0` | 单品牌色 → Tailwind 50~950 完整色阶 + WCAG 2.1 对比度验证 + CSS/JSON/Tailwind Config 导出 | 纯前端沙盒 | [OK] PASS |
 | **CodeShot Studio** | [`tools/code-snapshot-studio`](./tools/code-snapshot-studio/index.html) | `v1.0.0` | 纯前端代码美化与快照生成工坊；Mac 拟态、语法高亮与多主题，直写剪贴板或导出 PNG/SVG | 纯前端沙盒 | [OK] PASS |
+| **TokenCompressor Studio** | [`tools/token-compressor-studio`](./tools/token-compressor-studio/index.html) | `v1.0.0` | AI 提示词与上下文 Token 压缩瘦身工坊；代码/JSON/日志四模净化、BPE 计量与多模型成本测算 | 纯前端沙盒 | [OK] PASS |
 
 ---
 

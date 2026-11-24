@@ -84,6 +84,7 @@ flowchart TD
 | `schema-codegen-studio` | **SchemaForge Studio** | `v1.0.0` | 纯前端 JSON 转 TypeScript Interface、Zod Schema、Go Struct 与 Python Pydantic | [OK] PASS |
 | `color-palette-studio` | **Color Palette & Design Token Studio** | `v1.0.0` | 单品牌色扩展 Tailwind 50~950 线性色阶、WCAG 2.1 对比度评级与五格设计令牌导出 | [OK] PASS |
 | `code-snapshot-studio` | **CodeShot Studio** | `v1.0.0` | 纯前端代码美化与快照生成工坊；Mac 拟态、语法高亮与多主题，直写剪贴板或导出 PNG/SVG | [OK] PASS |
+| `token-compressor-studio` | **TokenCompressor Studio** | `v1.0.0` | AI 提示词与上下文 Token 压缩瘦身工坊；代码/JSON/日志四模净化、BPE 计量与成本测算 | [OK] PASS |
 
 ---
 
@@ -102,7 +103,7 @@ flowchart TD
 ## 6. 常态化巡检守护模式机制 (Daemon Mode Specification)
 
 针对 OpenTools Hub 全矩阵，运维端（小泡狐）激活常态化守护与应急机制：
-1. **守护状态**：`ACTIVE_DAEMON`。监控全站 15 款工具及后续入库工具的静态可访问性、HTML5 合规性与回归测试覆盖。
+1. **守护状态**：`ACTIVE_DAEMON`。监控全站 16 款工具及后续入库工具的静态可访问性、HTML5 合规性与回归测试覆盖。
 2. **零容忍阈值**：一旦任何工具出现语法破坏、外链单点崩溃或测试失败，阻断生产发布并生成自愈工单。
 3. **环境健康度**：目前矩阵健康度评级为 **Grade A+ (100% PASS, 0 Error, 0 Warning)**。
 

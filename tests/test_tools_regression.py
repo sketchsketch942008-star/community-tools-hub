@@ -46,6 +46,7 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         self.assertIn("./tools/schema-codegen-studio/index.html", portal_html)
         self.assertIn("./tools/color-palette-studio/index.html", portal_html)
         self.assertIn("./tools/code-snapshot-studio/index.html", portal_html)
+        self.assertIn("./tools/token-compressor-studio/index.html", portal_html)
 
         # 检查实际工具文件存在
         meta_tool = self.tools_dir / "meta-card-previewer" / "index.html"
@@ -63,6 +64,7 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         schema_tool = self.tools_dir / "schema-codegen-studio" / "index.html"
         color_tool = self.tools_dir / "color-palette-studio" / "index.html"
         code_tool = self.tools_dir / "code-snapshot-studio" / "index.html"
+        token_tool = self.tools_dir / "token-compressor-studio" / "index.html"
         self.assertTrue(meta_tool.exists(), "MetaCard Studio index.html must exist")
         self.assertTrue(sanitizer_tool.exists(), "SecretSanitizer index.html must exist")
         self.assertTrue(curl_tool.exists(), "cURL Code Studio index.html must exist")
@@ -78,12 +80,13 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         self.assertTrue(schema_tool.exists(), "SchemaForge Studio index.html must exist")
         self.assertTrue(color_tool.exists(), "Color Palette Studio index.html must exist")
         self.assertTrue(code_tool.exists(), "CodeShot Studio index.html must exist")
+        self.assertTrue(token_tool.exists(), "TokenCompressor Studio index.html must exist")
 
     def test_hub_health_checker_execution(self):
         """执行自主健康巡检引擎并验证 PASS 状态"""
         report = hub_health_checker.run_health_check()
         self.assertEqual(report["overall_status"], "PASS", f"Health check failed: {report}")
-        self.assertEqual(report["tools_count"], 15)
+        self.assertEqual(report["tools_count"], 16)
         
         for tool in report["tools"]:
             self.assertEqual(tool["status"], "PASS", f"Tool {tool['tool_id']} not passing: {tool}")
@@ -250,6 +253,21 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         self.assertIn("downloadSvg", content)
         self.assertIn("THEMES", content)
         self.assertIn("BACKGROUNDS", content)
+
+    def test_token_compressor_studio_features(self):
+        """验证 TokenCompressor Studio 页面结构与核心功能"""
+        tool_file = self.tools_dir / "token-compressor-studio" / "index.html"
+        self.assertTrue(tool_file.exists())
+        content = tool_file.read_text(encoding="utf-8")
+        self.assertIn("TokenCompressor Studio - AI Prompt &amp; Context Token Optimizer", content)
+        self.assertIn("estimateTokens", content)
+        self.assertIn("compressCode", content)
+        self.assertIn("compressJson", content)
+        self.assertIn("compressLogs", content)
+        self.assertIn("compressPrompt", content)
+        self.assertIn("compressText", content)
+        self.assertIn("copyCompressedText", content)
+        self.assertIn("downloadCompressed", content)
 
 if __name__ == "__main__":
     unittest.main()

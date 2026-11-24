@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-11-24 18:13:02",
+  "timestamp": "2026-11-24 19:12:27",
   "overall_status": "PASS",
-  "tools_count": 15,
+  "tools_count": 16,
   "tools": [
     {
       "tool_id": "base64-binary-studio",
@@ -167,6 +167,17 @@
       "version": "v1.0.0",
       "title": "SVG Cleaner & Security Studio - 矢量图形无损压缩与 XSS 脱敏清洗器",
       "size_bytes": 9483
+    },
+    {
+      "tool_id": "token-compressor-studio",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "TokenCompressor Studio - AI Prompt &amp; Context Token Optimizer",
+      "size_bytes": 27012
     }
   ]
 }

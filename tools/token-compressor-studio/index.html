@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TokenCompressor Studio - AI Prompt &amp; Context Token Optimizer</title>
+  <meta name="description" content="纯前端零依赖的 AI 提示词与上下文 Token 压缩优化工坊。智能剥离代码注释、紧凑 JSON、过滤堆栈日志、精简提示词，内置 BPE Token 实时估算与多模型成本看板。100% 内存安全零数据外发。">
+  <style>
+    :root {
+      --bg-primary: #0a0e17;
+      --bg-panel: #111827;
+      --bg-input: #1a2234;
+      --border-color: #243049;
+      --accent-color: #38bdf8;
+      --accent-hover: #0284c7;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --code-bg: #070c14;
+      --badge-bg: #1e293b;
+      --badge-text: #38bdf8;
+      --success-text: #4ade80;
+      --fail-text: #f87171;
+      --warn-text: #fbbf24;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: rgba(17, 24, 39, 0.9);
+      border-bottom: 1px solid var(--border-color);
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(12px);
+    }
+
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-title { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; color: #fff; }
+    .brand-badges { display: flex; gap: 6px; }
+
+    .badge {
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      font-weight: 600;
+      border: 1px solid var(--border-color);
+      letter-spacing: 0.04em;
+    }
+    .badge-pass { color: var(--success-text); border-color: rgba(74, 222, 128, 0.3); }
+
+    .nav-links { display: flex; gap: 14px; align-items: center; }
+    .nav-link { font-size: 0.82rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .nav-link:hover { color: var(--accent-color); }
+
+    .app-main {
+      flex: 1;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Analytics Bar */
+    .metrics-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    @media (max-width: 900px) {
+      .metrics-bar { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .metric-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 14px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .metric-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .metric-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #fff;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+    }
+
+    .metric-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Controls Panel */
+    .controls-panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 14px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .controls-left {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .control-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .mode-btn-group {
+      display: flex;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 2px;
+    }
+
+    .mode-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      padding: 5px 12px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .mode-btn.active {
+      background: var(--accent-color);
+      color: #04101e;
+    }
+
+    .checkbox-group {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .select-input {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      outline: none;
+    }
+
+    .btn {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:hover { background: #243049; border-color: var(--accent-color); color: var(--accent-color); }
+
+    .btn-primary {
+      background: var(--accent-color);
+      border-color: var(--accent-color);
+      color: #04101e;
+      font-weight: 600;
+    }
+    .btn-primary:hover { background: #7dd3fc; border-color: #7dd3fc; color: #04101e; }
+
+    /* Dual-pane Editor */
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      flex: 1;
+    }
+
+    @media (max-width: 900px) {
+      .workspace-grid { grid-template-columns: 1fr; }
+    }
+
+    .panel-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 10px 16px;
+      background: #0f172a;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .text-area {
+      flex: 1;
+      width: 100%;
+      min-height: 420px;
+      background: var(--code-bg);
+      color: #f8fafc;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      padding: 16px;
+      border: none;
+      outline: none;
+      resize: vertical;
+      white-space: pre;
+    }
+
+    .output-area {
+      background: #040811;
+      color: #7dd3fc;
+    }
+
+    .card-footer {
+      padding: 10px 16px;
+      background: #0f172a;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-title">TokenCompressor Studio</div>
+      <div class="brand-badges">
+        <span class="badge">[v1.0.0]</span>
+        <span class="badge">[BPE ESTIMATOR]</span>
+        <span class="badge badge-pass">[OFFLINE SAFE]</span>
+      </div>
+    </div>
+    <div class="nav-links">
+      <a href="../../index.html" class="nav-link">[OpenTools Hub]</a>
+      <a href="https://github.com/sketchsketch942008-star/community-tools-hub" target="_blank" rel="noopener noreferrer" class="nav-link">[GitHub Repo]</a>
+    </div>
+  </header>
+
+  <div class="app-main">
+
+    <!-- Metrics Header -->
+    <div class="metrics-bar">
+      <div class="metric-card">
+        <span class="metric-label">ORIGINAL TOKENS</span>
+        <span class="metric-value" id="valOrigTokens">0</span>
+        <span class="metric-sub" id="subOrigStats">0 字符 | 0 行</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">COMPRESSED TOKENS</span>
+        <span class="metric-value" id="valCompTokens" style="color:var(--accent-color);">0</span>
+        <span class="metric-sub" id="subCompStats">0 字符 | 0 行</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">TOKENS REDUCTION</span>
+        <span class="metric-value" id="valReduction" style="color:var(--success-text);">0.0%</span>
+        <span class="metric-sub" id="subReduction">-0 Tokens 节省</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">EST. COST SAVINGS (1K REQS)</span>
+        <span class="metric-value" id="valCostSavings" style="color:#fbbf24;">$0.00</span>
+        <span class="metric-sub" id="subCostModel">基于 Claude 3.5 / GPT-4o</span>
+      </div>
+    </div>
+
+    <!-- Controls Bar -->
+    <div class="controls-panel">
+      <div class="controls-left">
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <span class="control-label">OPTIMIZE MODE</span>
+          <div class="mode-btn-group">
+            <button class="mode-btn active" id="modeBtnCode" onclick="setMode('code')">Code / 源码</button>
+            <button class="mode-btn" id="modeBtnJson" onclick="setMode('json')">JSON / 数据</button>
+            <button class="mode-btn" id="modeBtnLogs" onclick="setMode('logs')">Logs / 堆栈</button>
+            <button class="mode-btn" id="modeBtnPrompt" onclick="setMode('prompt')">Prompt / 提示词</button>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <span class="control-label">RULES / 过滤规则</span>
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="chkStripComments" checked onchange="compressText()"> 剔除注释
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="chkCollapseBlanks" checked onchange="compressText()"> 合并空行与多余空格
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="chkDedupLines" onchange="compressText()"> 去除重复行
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="chkTruncateArrays" checked onchange="compressText()"> 截断超大数组
+            </label>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <span class="control-label">MODEL PRICING</span>
+          <select id="pricingSelect" class="select-input" onchange="compressText()">
+            <option value="3.0">Claude 3.5 Sonnet ($3.00/M)</option>
+            <option value="2.5">GPT-4o ($2.50/M)</option>
+            <option value="1.25">Gemini 1.5 Pro ($1.25/M)</option>
+            <option value="10.0">Claude 3 Opus ($15.00/M)</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-primary" id="copyBtn" onclick="copyCompressedText()">[复制压缩结果]</button>
+        <button class="btn" onclick="downloadCompressed()">[下载 .txt]</button>
+      </div>
+    </div>
+
+    <!-- Workspace Grid -->
+    <div class="workspace-grid">
+
+      <!-- Left: Raw Input -->
+      <div class="panel-card">
+        <div class="card-header">
+          <span class="card-title">RAW CONTEXT INPUT / 原始文本</span>
+          <div style="display:flex; gap:6px;">
+            <button class="btn" style="padding:2px 8px; font-size:0.72rem;" onclick="loadSample('code')">代码用例</button>
+            <button class="btn" style="padding:2px 8px; font-size:0.72rem;" onclick="loadSample('json')">JSON用例</button>
+            <button class="btn" style="padding:2px 8px; font-size:0.72rem;" onclick="loadSample('logs')">报错日志用例</button>
+            <button class="btn" style="padding:2px 8px; font-size:0.72rem;" onclick="loadSample('prompt')">长提示词用例</button>
+          </div>
+        </div>
+        <textarea id="rawInput" class="text-area" placeholder="在此粘贴代码、JSON、终端报错堆栈或长 Prompt..." oninput="compressText()"></textarea>
+        <div class="card-footer">
+          <span id="leftCharLabel">0 字符 | 0 行</span>
+          <button class="btn" style="padding:2px 8px; font-size:0.72rem;" onclick="clearInput()">清空</button>
+        </div>
+      </div>
+
+      <!-- Right: Optimized Output -->
+      <div class="panel-card">
+        <div class="card-header">
+          <span class="card-title">OPTIMIZED CONTEXT OUTPUT / 压缩结果</span>
+          <span class="badge" id="savingsBadge" style="color:var(--success-text);">[0% REDUCED]</span>
+        </div>
+        <textarea id="optimizedOutput" class="text-area output-area" readonly placeholder="压缩结果将即时呈现在此..."></textarea>
+        <div class="card-footer">
+          <span id="rightCharLabel">0 字符 | 0 行</span>
+          <span style="color:var(--accent-color);" id="statusIndicator">实时就绪 (100% 离线计算)</span>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    // =============================================
+    // BPE TOKEN ESTIMATOR (Pure JS)
+    // =============================================
+
+    function estimateTokens(text) {
+      if (!text || text.length === 0) return 0;
+
+      // Approximate BPE (byte pair encoding) calculation:
+      // - English word boundaries & spaces
+      // - Numbers and symbols are often 1 token each
+      // - CJK (Chinese, Japanese, Korean) characters are roughly 1 to 2 tokens each
+      let tokens = 0;
+      let i = 0;
+
+      while (i < text.length) {
+        const char = text[i];
+        const code = text.charCodeAt(i);
+
+        // CJK range
+        if (code >= 0x4e00 && code <= 0x9fff) {
+          tokens += 1.4;
+          i++;
+        }
+        // Whitespace block
+        else if (/\s/.test(char)) {
+          let wsLen = 0;
+          while (i < text.length && /\s/.test(text[i])) {
+            wsLen++;
+            i++;
+          }
+          tokens += Math.ceil(wsLen / 4);
+        }
+        // Word / alphanumeric
+        else if (/[a-zA-Z0-9_]/.test(char)) {
+          let wordLen = 0;
+          while (i < text.length && /[a-zA-Z0-9_]/.test(text[i])) {
+            wordLen++;
+            i++;
+          }
+          tokens += Math.ceil(wordLen / 3.8);
+        }
+        // Punctuation / symbols
+        else {
+          tokens += 1;
+          i++;
+        }
+      }
+
+      return Math.round(tokens);
+    }
+
+    // =============================================
+    // COMPRESSION ENGINES
+    // =============================================
+
+    let currentMode = 'code';
+
+    function setMode(mode) {
+      currentMode = mode;
+      ['code', 'json', 'logs', 'prompt'].forEach(m => {
+        const btn = document.getElementById('modeBtn' + m.charAt(0).toUpperCase() + m.slice(1));
+        if (btn) btn.classList.toggle('active', m === mode);
+      });
+      compressText();
+    }
+
+    function compressCode(text, opts) {
+      let lines = text.split('\n');
+
+      // 1. Strip Comments if enabled
+      if (opts.stripComments) {
+        let inBlockComment = false;
+        lines = lines.map(line => {
+          let out = '';
+          let i = 0;
+          while (i < line.length) {
+            if (inBlockComment) {
+              if (line.slice(i, i + 2) === '*/') {
+                inBlockComment = false;
+                i += 2;
+              } else {
+                i++;
+              }
+            } else {
+              if (line.slice(i, i + 2) === '/*') {
+                inBlockComment = true;
+                i += 2;
+              } else if (line.slice(i, i + 2) === '//') {
+                break; // Skip rest of line
+              } else if (line[i] === '#' && (i === 0 || /\s/.test(line[i - 1]))) {
+                break; // Skip Python/Bash comment
+              } else {
+                out += line[i];
+                i++;
+              }
+            }
+          }
+          return out;
+        });
+      }
+
+      // 2. Collapse Blank Lines and trim trailing spaces
+      if (opts.collapseBlanks) {
+        lines = lines
+          .map(l => l.trimEnd())
+          .filter((l, idx, arr) => {
+            if (l.trim().length === 0) {
+              return idx > 0 && arr[idx - 1].trim().length > 0; // Keep at most 1 blank line
+            }
+            return true;
+          });
+      }
+
+      // 3. Deduplicate consecutive identical lines
+      if (opts.dedupLines) {
+        lines = lines.filter((l, idx, arr) => idx === 0 || l !== arr[idx - 1]);
+      }
+
+      return lines.join('\n').trim();
+    }
+
+    function compressJson(text, opts) {
+      try {
+        const obj = JSON.parse(text);
+
+        function traverseAndPrune(val) {
+          if (Array.isArray(val)) {
+            if (opts.truncateArrays && val.length > 5) {
+              const head = val.slice(0, 3).map(traverseAndPrune);
+              const tail = traverseAndPrune(val[val.length - 1]);
+              return [...head, `... [TRUNCATED ${val.length - 4} ITEMS] ...`, tail];
+            }
+            return val.map(traverseAndPrune);
+          } else if (val !== null && typeof val === 'object') {
+            const out = {};
+            for (const [k, v] of Object.entries(val)) {
+              if (v === null || v === undefined || v === '') continue; // Prune empty values
+              out[k] = traverseAndPrune(v);
+            }
+            return out;
+          }
+          return val;
+        }
+
+        const pruned = traverseAndPrune(obj);
+        return JSON.stringify(pruned);
+      } catch (err) {
+        // Fallback to code compressor if JSON parsing fails
+        return compressCode(text, opts);
+      }
+    }
+
+    function compressLogs(text, opts) {
+      let lines = text.split('\n');
+
+      lines = lines.map(line => {
+        // 1. Strip timestamps (e.g. 2026-11-24T18:00:00.000Z or [18:00:00])
+        let cleaned = line.replace(/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?\s*/, '');
+        cleaned = cleaned.replace(/^\[\d{2}:\d{2}:\d{2}(\.\d+)?\]\s*/, '');
+
+        // 2. Collapse vendor node_modules / internal paths in stack traces
+        if (/at\s+.*\(.*node_modules\//.test(cleaned) || /at\s+node:internal\//.test(cleaned)) {
+          return '    [internal frame hidden]';
+        }
+
+        return cleaned;
+      });
+
+      // Filter consecutive [internal frame hidden] lines
+      lines = lines.filter((l, idx, arr) => {
+        if (l === '    [internal frame hidden]') {
+          return idx === 0 || arr[idx - 1] !== '    [internal frame hidden]';
+        }
+        return true;
+      });
+
+      if (opts.collapseBlanks) {
+        lines = lines.filter(l => l.trim().length > 0);
+      }
+
+      if (opts.dedupLines) {
+        const seen = new Set();
+        lines = lines.filter(l => {
+          if (seen.has(l)) return false;
+          seen.add(l);
+          return true;
+        });
+      }
+
+      return lines.join('\n').trim();
+    }
+
+    function compressPrompt(text, opts) {
+      let res = text;
+
+      // Strip polite padding & conversational noise
+      const fillerRegex = /\b(please|can you kindly|could you please|i would like you to|as an ai|in order to|as you know|needless to say)\b/gi;
+      res = res.replace(fillerRegex, '');
+
+      let lines = res.split('\n');
+
+      if (opts.collapseBlanks) {
+        lines = lines
+          .map(l => l.trim())
+          .filter(l => l.length > 0);
+      }
+
+      if (opts.dedupLines) {
+        lines = lines.filter((l, idx, arr) => idx === 0 || l !== arr[idx - 1]);
+      }
+
+      return lines.join('\n').trim();
+    }
+
+    // =============================================
+    // MAIN CONTROLLER
+    // =============================================
+
+    function compressText() {
+      const raw = document.getElementById('rawInput').value;
+      const opts = {
+        stripComments: document.getElementById('chkStripComments').checked,
+        collapseBlanks: document.getElementById('chkCollapseBlanks').checked,
+        dedupLines: document.getElementById('chkDedupLines').checked,
+        truncateArrays: document.getElementById('chkTruncateArrays').checked
+      };
+
+      let optimized = '';
+      if (currentMode === 'code') optimized = compressCode(raw, opts);
+      else if (currentMode === 'json') optimized = compressJson(raw, opts);
+      else if (currentMode === 'logs') optimized = compressLogs(raw, opts);
+      else if (currentMode === 'prompt') optimized = compressPrompt(raw, opts);
+
+      document.getElementById('optimizedOutput').value = optimized;
+
+      // Calculate Tokens & Stats
+      const origTokens = estimateTokens(raw);
+      const compTokens = estimateTokens(optimized);
+      const savedTokens = Math.max(0, origTokens - compTokens);
+      const reduction = origTokens > 0 ? ((savedTokens / origTokens) * 100).toFixed(1) : '0.0';
+
+      const rawLines = raw.length > 0 ? raw.split('\n').length : 0;
+      const compLines = optimized.length > 0 ? optimized.split('\n').length : 0;
+
+      // Update UI Metrics
+      document.getElementById('valOrigTokens').textContent = origTokens.toLocaleString();
+      document.getElementById('subOrigStats').textContent = `${raw.length.toLocaleString()} 字符 | ${rawLines} 行`;
+
+      document.getElementById('valCompTokens').textContent = compTokens.toLocaleString();
+      document.getElementById('subCompStats').textContent = `${optimized.length.toLocaleString()} 字符 | ${compLines} 行`;
+
+      document.getElementById('valReduction').textContent = reduction + '%';
+      document.getElementById('subReduction').textContent = `-${savedTokens.toLocaleString()} Tokens 节省`;
+
+      document.getElementById('savingsBadge').textContent = `[${reduction}% REDUCED]`;
+
+      // Cost Calculation
+      const pricePerMillion = parseFloat(document.getElementById('pricingSelect').value);
+      // Cost savings for 1000 requests with this context
+      const costSavings = ((savedTokens * 1000) / 1000000) * pricePerMillion;
+      document.getElementById('valCostSavings').textContent = '$' + costSavings.toFixed(4);
+
+      // Footer labels
+      document.getElementById('leftCharLabel').textContent = `${raw.length} 字符 | ${rawLines} 行`;
+      document.getElementById('rightCharLabel').textContent = `${optimized.length} 字符 | ${compLines} 行`;
+    }
+
+    function copyCompressedText() {
+      const text = document.getElementById('optimizedOutput').value;
+      if (!text) return;
+
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyBtn');
+        const orig = btn.textContent;
+        btn.textContent = '[COPIED!]';
+        btn.style.background = '#4ade80';
+        setTimeout(() => {
+          btn.textContent = orig;
+          btn.style.background = '';
+        }, 1800);
+      });
+    }
+
+    function downloadCompressed() {
+      const text = document.getElementById('optimizedOutput').value;
+      if (!text) return;
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = `optimized-context-${currentMode}.txt`;
+      link.href = url;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function clearInput() {
+      document.getElementById('rawInput').value = '';
+      compressText();
+    }
+
+    // =============================================
+    // SAMPLE PRESETS
+    // =============================================
+
+    const SAMPLES = {
+      code: `/**
+ * Authentication and Session Management Service
+ * Provides secure JWT validation and token refreshing.
+ *
+ * @author Engineering Team
+ * @version 2.4.1
+ */
+
+import { verify, sign } from 'jsonwebtoken';
+import { db } from './database';
+
+// Configuration constants
+const SECRET_KEY = process.env.JWT_SECRET || 'dev-secret';
+const TOKEN_EXPIRY = '2h';
+
+
+
+/**
+ * Validates incoming Bearer authorization token
+ * @param {string} authHeader - Raw Authorization header
+ * @returns {Promise<UserSession>}
+ */
+export async function authenticateRequest(authHeader) {
+  // Check if header is provided
+  if (!authHeader) {
+    throw new Error('Missing authorization header');
+  }
+
+  // Parse Bearer prefix
+  const parts = authHeader.split(' ');
+  if (parts.length !== 2 || parts[0] !== 'Bearer') {
+    throw new Error('Invalid bearer token format');
+  }
+
+  const token = parts[1];
+
+  /*
+   * Verify token signature with HMAC-SHA256
+   * Checks expiration time automatically
+   */
+  try {
+    const payload = verify(token, SECRET_KEY);
+    return payload;
+  } catch (err) {
+    throw new Error('Token verification failed: ' + err.message);
+  }
+}
+`,
+      json: `{
+  "status": "success",
+  "code": 200,
+  "data": {
+    "organization": "OpenTools",
+    "region": "us-west",
+    "debug_trace": null,
+    "internal_notes": "",
+    "items": [
+      { "id": 1, "name": "Item A", "active": true },
+      { "id": 2, "name": "Item B", "active": true },
+      { "id": 3, "name": "Item C", "active": false },
+      { "id": 4, "name": "Item D", "active": true },
+      { "id": 5, "name": "Item E", "active": true },
+      { "id": 6, "name": "Item F", "active": true },
+      { "id": 7, "name": "Item G", "active": false },
+      { "id": 8, "name": "Item H", "active": true },
+      { "id": 9, "name": "Item I", "active": true },
+      { "id": 10, "name": "Item J", "active": true }
+    ]
+  }
+}`,
+      logs: `2026-11-24T18:04:12.128Z [ERROR] Request failed with status 500: Database connection timeout
+    at ConnectionPool.getConnection (/app/node_modules/pg-pool/index.js:142:12)
+    at ConnectionPool.acquire (/app/node_modules/pg-pool/index.js:333:10)
+    at /app/node_modules/pg/lib/client.js:521:7
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async UserService.getUserProfile (/app/src/services/user.service.ts:48:22)
+    at async /app/node_modules/express/lib/router/layer.js:95:5
+    at async /app/node_modules/express/lib/router/route.js:144:13
+    at async UserController.getMe (/app/src/controllers/user.controller.ts:18:14)
+2026-11-24T18:04:12.130Z [ERROR] Request failed with status 500: Database connection timeout
+2026-11-24T18:04:12.131Z [ERROR] Request failed with status 500: Database connection timeout
+2026-11-24T18:04:13.002Z [WARN] Retrying connection attempt 2 of 3...`,
+      prompt: `Hello! Could you please kindly act as an expert senior software engineer and help me review this code?
+As you know, I am currently building a microservice and in order to optimize performance, I would like you to analyze it.
+Needless to say, please check if there are any performance bottlenecks or memory leaks.
+Could you please also provide a brief summary of recommendations? Thank you very much!`
+    };
+
+    function loadSample(key) {
+      if (SAMPLES[key]) {
+        document.getElementById('rawInput').value = SAMPLES[key];
+        setMode(key);
+      }
+    }
+
+    // Initialize with Code sample
+    loadSample('code');
+  </script>
+</body>
+</html>
