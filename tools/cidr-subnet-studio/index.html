@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CIDR &amp; VPC Subnet Planner Studio - Offline IPv4 Subnet Slicer, Overlap Auditor &amp; Terraform/Nginx Exporter v1.0.0</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --panel: #131c31;
+      --editor: #070b14;
+      --border: #26334d;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --green: #34d399;
+      --amber: #fbbf24;
+      --rose: #fb7185;
+      --purple: #c084fc;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .back-btn {
+      color: var(--primary);
+      text-decoration: none;
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+    .back-btn:hover { background: rgba(56, 189, 248, 0.2); }
+    h1 { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .badge {
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .badge-ver { background: rgba(192, 132, 252, 0.15); color: var(--purple); border: 1px solid rgba(192, 132, 252, 0.3); }
+    .badge-sec { background: rgba(52, 211, 153, 0.12); color: var(--green); border: 1px solid rgba(52, 211, 153, 0.3); }
+    .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .select-box, .text-input {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: var(--mono);
+      outline: none;
+    }
+    .text-input:focus, .select-box:focus { border-color: var(--primary); }
+    .btn {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: var(--mono);
+    }
+    .btn:hover { background: #2d3c56; }
+    .btn-primary { background: var(--primary); color: #0b1120; border-color: var(--primary); }
+    .btn-primary:hover { background: var(--primary-hover); color: #fff; }
+    .btn-danger { background: rgba(251, 113, 133, 0.15); border-color: rgba(251, 113, 133, 0.4); color: var(--rose); }
+
+    .master-bar {
+      background: #0e1627;
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .master-inputs { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-family: var(--mono); font-size: 12px; }
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+      gap: 10px;
+      padding: 12px 20px;
+      background: #0b1324;
+      border-bottom: 1px solid var(--border);
+    }
+    .kpi-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+    .kpi-label { font-size: 10.5px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; }
+    .kpi-val { font-size: 15px; font-weight: 700; font-family: var(--mono); margin-top: 3px; word-break: break-all; }
+    .c-blue { color: var(--primary); }
+    .c-green { color: var(--green); }
+    .c-amber { color: var(--amber); }
+    .c-rose { color: var(--rose); }
+    .c-purple { color: var(--purple); }
+
+    .binary-bar {
+      margin: 10px 20px 0;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-family: var(--mono);
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .bit-net { color: var(--primary); font-weight: 700; }
+    .bit-host { color: var(--green); }
+    .util-track {
+      height: 10px;
+      width: 100%;
+      background: var(--editor);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 8px;
+      display: flex;
+    }
+    .util-seg { height: 100%; transition: width 0.25s; }
+
+    .main-card {
+      flex: 1;
+      margin: 12px 20px 16px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .tab-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #162238;
+      border-bottom: 1px solid var(--border);
+    }
+    .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: var(--mono);
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { background: var(--editor); border-color: var(--primary); color: var(--primary); }
+    .tab-panel { display: none; padding: 14px; flex: 1; overflow: auto; }
+    .tab-panel.active { display: block; }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .pill {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-family: var(--mono);
+      cursor: pointer;
+    }
+    .pill.active { border-color: var(--primary); color: var(--primary); background: rgba(56, 189, 248, 0.12); }
+
+    table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+    th, td { text-align: left; padding: 8px 9px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    th { background: #0e172a; color: var(--muted); font-size: 10.5px; text-transform: uppercase; }
+    tr:hover td { background: rgba(56, 189, 248, 0.04); }
+
+    .st-tag {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 10.5px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .st-OK { background: rgba(52, 211, 153, 0.15); color: var(--green); border: 1px solid rgba(52, 211, 153, 0.35); }
+    .st-WARN { background: rgba(251, 191, 36, 0.18); color: var(--amber); border: 1px solid rgba(251, 191, 36, 0.4); }
+    .st-ERR { background: rgba(251, 113, 133, 0.2); color: var(--rose); border: 1px solid rgba(251, 113, 133, 0.45); }
+    .st-TIER { background: rgba(56, 189, 248, 0.15); color: var(--primary); border: 1px solid rgba(56, 189, 248, 0.35); }
+
+    .audit-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 14px; }
+    @media (max-width: 900px) { .audit-grid { grid-template-columns: 1fr; } }
+    textarea.cidr-area {
+      width: 100%;
+      height: 260px;
+      background: var(--editor);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: #e2e8f0;
+      padding: 12px;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.6;
+      outline: none;
+      resize: vertical;
+    }
+    textarea.cidr-area:focus { border-color: var(--primary); }
+
+    pre.code-out {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.55;
+      color: #bae6fd;
+      overflow: auto;
+      max-height: 390px;
+      white-space: pre;
+    }
+
+    footer {
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+      padding: 8px 20px;
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-family: var(--mono);
+    }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--green);
+      color: #0b1120;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+      z-index: 99;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <a href="../../index.html" class="back-btn">[BACK] Hub Portal</a>
+      <h1>
+        CIDR &amp; VPC Subnet Planner Studio
+        <span class="badge badge-ver">v1.0.0</span>
+        <span class="badge badge-sec">[100% OFFLINE]</span>
+      </h1>
+    </div>
+    <div class="controls">
+      <select id="presetSelect" class="select-box" onchange="applyPreset(this.value)">
+        <option value="aws_3az">[PRESET] AWS 3-AZ Production VPC (10.0.0.0/16)</option>
+        <option value="k8s_eks">[PRESET] Kubernetes Cluster VPC (10.20.0.0/16)</option>
+        <option value="homelab">[PRESET] Office / Lab Multi-VLAN (192.168.0.0/21)</option>
+        <option value="conflict_demo">[PRESET] VPC Peering Overlap Audit Demo</option>
+      </select>
+      <button class="btn btn-primary" onclick="recalculateAll()">[CALCULATE]</button>
+    </div>
+  </header>
+
+  <section class="master-bar">
+    <div class="master-inputs">
+      <label>Master VPC CIDR:</label>
+      <input type="text" id="masterCidrInput" class="text-input" value="10.0.0.0/16" style="width:170px;" oninput="recalculateAll()">
+      <span id="masterScopeBadge" class="st-tag st-OK">[RFC 1918 PRIVATE]</span>
+      <span id="masterWarnMsg" style="color:var(--amber); font-size:11.5px;"></span>
+    </div>
+    <div class="master-inputs">
+      <label>Test IP Membership:</label>
+      <input type="text" id="testIpInput" class="text-input" value="10.0.16.42" style="width:150px;" oninput="checkIpMembership()">
+      <span id="testIpResult" class="st-tag st-TIER">[READY]</span>
+    </div>
+  </section>
+
+  <section class="kpi-strip">
+    <div class="kpi-card"><div class="kpi-label">Network / Broadcast</div><div id="kpiNetBcast" class="kpi-val c-blue">-</div></div>
+    <div class="kpi-card"><div class="kpi-label">Usable Host Range</div><div id="kpiRange" class="kpi-val c-green">-</div></div>
+    <div class="kpi-card"><div class="kpi-label">Subnet / Wildcard</div><div id="kpiMasks" class="kpi-val c-purple">-</div></div>
+    <div class="kpi-card"><div class="kpi-label">Total / Usable IPs</div><div id="kpiTotals" class="kpi-val c-blue">-</div></div>
+    <div class="kpi-card"><div class="kpi-label">AWS Usable (-5 IPs)</div><div id="kpiAws" class="kpi-val c-amber">-</div></div>
+    <div class="kpi-card"><div class="kpi-label">Allocated Space</div><div id="kpiUtil" class="kpi-val c-green">0%</div></div>
+  </section>
+
+  <section class="binary-bar">
+    <div>
+      <span style="color:var(--muted);">32-Bit Mask Split:</span>
+      <span id="binaryView" style="margin-left:8px;"></span>
+    </div>
+    <div style="width:100%;">
+      <div id="utilTrack" class="util-track"></div>
+    </div>
+  </section>
+
+  <main class="main-card">
+    <div class="tab-bar">
+      <div class="tabs">
+        <button id="tabBtnSlicer" class="tab-btn active" onclick="switchTab('slicer')">[1] VPC SUBNET SLICER</button>
+        <button id="tabBtnAudit" class="tab-btn" onclick="switchTab('audit')">[2] OVERLAP &amp; PEERING AUDITOR</button>
+        <button id="tabBtnExport" class="tab-btn" onclick="switchTab('export')">[3] TERRAFORM / NGINX / WAF EXPORT</button>
+      </div>
+      <span style="font-size:11px; color:var(--muted); font-family:var(--mono);">RFC 1918 &amp; RFC 3021 Compliant | Bitwise Local Engine</span>
+    </div>
+
+    <!-- Tab 1: Visual VPC Subnet Slicer -->
+    <div id="tabSlicer" class="tab-panel active">
+      <div class="toolbar">
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+          <input type="text" id="newSubName" class="text-input" placeholder="Subnet name (e.g. app-az-a)" style="width:185px;">
+          <select id="newSubTier" class="select-box">
+            <option value="PUBLIC">PUBLIC</option>
+            <option value="PRIVATE" selected>PRIVATE</option>
+            <option value="DATABASE">DATABASE</option>
+            <option value="K8S_PODS">K8S_PODS</option>
+          </select>
+          <select id="newSubPrefix" class="select-box">
+            <option value="18">/18 (16,384 IPs)</option>
+            <option value="20">/20 (4,096 IPs)</option>
+            <option value="22">/22 (1,024 IPs)</option>
+            <option value="24" selected>/24 (256 IPs)</option>
+            <option value="26">/26 (64 IPs)</option>
+            <option value="27">/27 (32 IPs)</option>
+            <option value="28">/28 (16 IPs)</option>
+          </select>
+          <button class="btn btn-primary" onclick="addSubnetRow()">[+ ADD SUBNET]</button>
+        </div>
+        <button class="btn" onclick="syncPlanToAuditor()">[SEND PLAN TO AUDITOR]</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Subnet Name</th>
+            <th>Tier</th>
+            <th>Allocated CIDR</th>
+            <th>First ~ Last Usable</th>
+            <th>Total / AWS Usable</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="slicerTableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Tab 2: Overlap & Peering Auditor -->
+    <div id="tabAudit" class="tab-panel">
+      <div class="audit-grid">
+        <div>
+          <div class="toolbar">
+            <span style="font-family:var(--mono); font-size:12px; color:var(--muted);">Paste CIDRs (one per line, optional label | CIDR):</span>
+            <button class="btn btn-primary" onclick="runOverlapAudit()">[AUDIT OVERLAPS]</button>
+          </div>
+          <textarea id="auditInput" class="cidr-area" spellcheck="false" oninput="runOverlapAudit()"></textarea>
+        </div>
+        <div>
+          <div class="toolbar">
+            <span style="font-family:var(--mono); font-size:12px; color:var(--muted);">Conflict &amp; Normalization Diagnostics:</span>
+            <span id="auditSummaryBadge" class="st-tag st-OK">[0 CONFLICTS]</span>
+          </div>
+          <div id="auditResults"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3: Infrastructure Export -->
+    <div id="tabExport" class="tab-panel">
+      <div class="toolbar">
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button class="pill active" data-fmt="terraform" onclick="setExportFormat('terraform')">Terraform HCL (cidrsubnets + aws_subnet)</button>
+          <button class="pill" data-fmt="nginx" onclick="setExportFormat('nginx')">Nginx allow/deny</button>
+          <button class="pill" data-fmt="cloudflare" onclick="setExportFormat('cloudflare')">Cloudflare WAF</button>
+          <button class="pill" data-fmt="iptables" onclick="setExportFormat('iptables')">Linux iptables</button>
+          <button class="pill" data-fmt="json" onclick="setExportFormat('json')">JSON IPAM</button>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button class="btn" onclick="copyExport()">[COPY]</button>
+          <button class="btn btn-primary" onclick="downloadExport()">[DOWNLOAD]</button>
+        </div>
+      </div>
+      <pre id="exportOutput" class="code-out"></pre>
+    </div>
+  </main>
+
+  <footer>
+    <span>[OK] 100% Client-Side IPv4 Bitwise Engine | Zero Network Upload | RFC 1918 &amp; 5737 Safe Presets</span>
+    <span>OpenTools Hub · Community Micro-Tool Matrix #24</span>
+  </footer>
+
+  <div id="toast" class="toast">[OK] Copied</div>
+
+  <script>
+    const TIER_COLORS = {
+      PUBLIC: "#38bdf8",
+      PRIVATE: "#34d399",
+      DATABASE: "#c084fc",
+      K8S_PODS: "#fbbf24"
+    };
+
+    const PRESETS = {
+      aws_3az: {
+        master: "10.0.0.0/16",
+        testIp: "10.0.16.42",
+        subnets: [
+          { name: "public-az-a", tier: "PUBLIC", prefix: 24 },
+          { name: "public-az-b", tier: "PUBLIC", prefix: 24 },
+          { name: "public-az-c", tier: "PUBLIC", prefix: 24 },
+          { name: "private-app-az-a", tier: "PRIVATE", prefix: 20 },
+          { name: "private-app-az-b", tier: "PRIVATE", prefix: 20 },
+          { name: "private-app-az-c", tier: "PRIVATE", prefix: 20 },
+          { name: "isolated-db-az-a", tier: "DATABASE", prefix: 24 },
+          { name: "isolated-db-az-b", tier: "DATABASE", prefix: 24 },
+          { name: "isolated-db-az-c", tier: "DATABASE", prefix: 24 }
+        ],
+        audit: "prod-vpc-primary | 10.0.0.0/16\nstaging-vpc | 10.1.0.0/16\nshared-services | 10.2.0.0/20\ndoc-allowlist | 203.0.113.0/24"
+      },
+      k8s_eks: {
+        master: "10.20.0.0/16",
+        testIp: "10.20.64.15",
+        subnets: [
+          { name: "ingress-lb-a", tier: "PUBLIC", prefix: 24 },
+          { name: "ingress-lb-b", tier: "PUBLIC", prefix: 24 },
+          { name: "worker-nodes-a", tier: "PRIVATE", prefix: 22 },
+          { name: "worker-nodes-b", tier: "PRIVATE", prefix: 22 },
+          { name: "pod-overlay-pool", tier: "K8S_PODS", prefix: 18 },
+          { name: "stateful-db-pool", tier: "DATABASE", prefix: 24 }
+        ],
+        audit: "eks-vpc | 10.20.0.0/16\nservice-cidr | 172.20.0.0/16\nonprem-office | 192.168.10.0/24"
+      },
+      homelab: {
+        master: "192.168.0.0/21",
+        testIp: "192.168.2.50",
+        subnets: [
+          { name: "vlan10-mgmt", tier: "PUBLIC", prefix: 24 },
+          { name: "vlan20-servers", tier: "PRIVATE", prefix: 24 },
+          { name: "vlan30-storage", tier: "DATABASE", prefix: 24 },
+          { name: "vlan40-k8s-lab", tier: "K8S_PODS", prefix: 23 },
+          { name: "vlan50-guest", tier: "PUBLIC", prefix: 25 }
+        ],
+        audit: "vlan10-mgmt | 192.168.0.0/24\nvlan20-servers | 192.168.1.0/24\nvlan30-storage | 192.168.2.0/24\nvlan40-lab | 192.168.4.0/23"
+      },
+      conflict_demo: {
+        master: "10.10.0.0/16",
+        testIp: "10.10.1.25",
+        subnets: [
+          { name: "app-a", tier: "PRIVATE", prefix: 24 },
+          { name: "app-b", tier: "PRIVATE", prefix: 24 }
+        ],
+        audit: "vpc-core-us | 10.10.0.0/16\nvpc-legacy-peer | 10.10.1.0/24\ndev-sandbox | 10.10.1.5/24\nedge-dmz | 172.16.0.0/20\nedge-dmz-overlap | 172.16.8.0/22\ndoc-test-net | 198.51.100.0/24"
+      }
+    };
+
+    let subnetSpecs = [];
+    let allocatedPlan = [];
+    let currentExportFmt = "terraform";
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function ipToInt(ipStr) {
+      const parts = ipStr.trim().split(".");
+      if (parts.length !== 4) return null;
+      let val = 0;
+      for (const p of parts) {
+        if (!/^\d+$/.test(p)) return null;
+        const n = Number(p);
+        if (n < 0 || n > 255 || (p.length > 1 && p.startsWith("0"))) return null;
+        val = ((val << 8) | n) >>> 0;
+      }
+      return val >>> 0;
+    }
+
+    function intToIp(num) {
+      const n = num >>> 0;
+      return [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255].join(".");
+    }
+
+    function prefixToMask(prefix) {
+      if (prefix === 0) return 0;
+      return (~0 << (32 - prefix)) >>> 0;
+    }
+
+    function parseCidr(cidrStr) {
+      const s = cidrStr.trim();
+      const parts = s.split("/");
+      if (parts.length !== 2) return { valid: false, error: "Expected IPv4/prefix format (e.g. 10.0.0.0/16)" };
+      const ipInt = ipToInt(parts[0]);
+      if (ipInt === null) return { valid: false, error: "Invalid IPv4 address octets" };
+      if (!/^\d+$/.test(parts[1])) return { valid: false, error: "Invalid prefix length" };
+      const prefix = Number(parts[1]);
+      if (prefix < 0 || prefix > 32) return { valid: false, error: "Prefix must be between 0 and 32" };
+
+      const mask = prefixToMask(prefix);
+      const wildcard = (~mask) >>> 0;
+      const network = (ipInt & mask) >>> 0;
+      const broadcast = (network | wildcard) >>> 0;
+      const total = Math.pow(2, 32 - prefix);
+
+      let firstUsable = network;
+      let lastUsable = broadcast;
+      let usable = total;
+      if (prefix <= 30) {
+        firstUsable = (network + 1) >>> 0;
+        lastUsable = (broadcast - 1) >>> 0;
+        usable = total - 2;
+      }
+      const awsUsable = prefix <= 28 ? Math.max(0, total - 5) : 0;
+      const canonical = `${intToIp(network)}/${prefix}`;
+      const nonCanonical = ipInt !== network;
+
+      return {
+        valid: true,
+        input: s,
+        canonical,
+        nonCanonical,
+        ipInt,
+        prefix,
+        mask,
+        maskStr: intToIp(mask),
+        wildcardStr: intToIp(wildcard),
+        network,
+        networkStr: intToIp(network),
+        broadcast,
+        broadcastStr: intToIp(broadcast),
+        firstUsableStr: intToIp(firstUsable),
+        lastUsableStr: intToIp(lastUsable),
+        total,
+        usable,
+        awsUsable,
+        scope: classifyScope(network)
+      };
+    }
+
+    function classifyScope(netInt) {
+      const a = (netInt >>> 24) & 255;
+      const b = (netInt >>> 16) & 255;
+      const c = (netInt >>> 8) & 255;
+      if (a === 10) return "RFC 1918 PRIVATE";
+      if (a === 172 && b >= 16 && b <= 31) return "RFC 1918 PRIVATE";
+      if (a === 192 && b === 168) return "RFC 1918 PRIVATE";
+      if (a === 100 && b >= 64 && b <= 127) return "RFC 6598 CGNAT";
+      if (a === 127) return "LOOPBACK";
+      if (a === 169 && b === 254) return "LINK-LOCAL";
+      if ((a === 192 && b === 0 && c === 2) || (a === 198 && b === 51 && c === 100) || (a === 203 && b === 0 && c === 113)) return "RFC 5737 DOC";
+      return "PUBLIC ROUTABLE";
+    }
+
+    function formatBinarySplit(netInt, prefix) {
+      const bin = (netInt >>> 0).toString(2).padStart(32, "0");
+      let html = "";
+      for (let i = 0; i < 32; i++) {
+        if (i > 0 && i % 8 === 0) html += '<span style="color:var(--muted);">.</span>';
+        const cls = i < prefix ? "bit-net" : "bit-host";
+        html += `<span class="${cls}">${bin[i]}</span>`;
+      }
+      return html + ` <span style="color:var(--muted);">[Net: ${prefix}b | Host: ${32 - prefix}b]</span>`;
+    }
+
+    function allocateSubnets(master, specs) {
+      let cursor = master.network;
+      const maxEnd = master.broadcast;
+      return specs.map((spec, idx) => {
+        const size = Math.pow(2, 32 - spec.prefix);
+        const rem = cursor % size;
+        const alignedStart = rem === 0 ? cursor : cursor + (size - rem);
+        const end = alignedStart + size - 1;
+        const fits = spec.prefix >= master.prefix && alignedStart >= master.network && end <= maxEnd;
+        if (fits) {
+          cursor = end + 1;
+        }
+        const parsed = parseCidr(`${intToIp(alignedStart >>> 0)}/${spec.prefix}`);
+        return {
+          idx: idx + 1,
+          ...spec,
+          cidr: parsed.canonical,
+          parsed,
+          fits,
+          error: !fits ? (spec.prefix < master.prefix ? "PREFIX_LARGER_THAN_VPC" : "VPC_EXHAUSTED") : null
+        };
+      });
+    }
+
+    function detectOverlaps(rawLines) {
+      const parsedItems = [];
+      const errors = [];
+      const warnings = [];
+      const conflicts = [];
+
+      rawLines.split(/\r?\n/).forEach((line, idx) => {
+        const clean = line.trim();
+        if (!clean || clean.startsWith("#")) return;
+        let label = `block-${idx + 1}`;
+        let cidrRaw = clean;
+        if (clean.includes("|")) {
+          const [l, r] = clean.split("|");
+          label = l.trim() || label;
+          cidrRaw = r.trim();
+        }
+        const p = parseCidr(cidrRaw);
+        if (!p.valid) {
+          errors.push({ line: idx + 1, label, cidr: cidrRaw, msg: p.error });
+          return;
+        }
+        if (p.nonCanonical) {
+          warnings.push({ line: idx + 1, label, cidr: cidrRaw, canonical: p.canonical, msg: `Host bits set; canonical network is ${p.canonical}` });
+        }
+        parsedItems.push({ line: idx + 1, label, ...p });
+      });
+
+      for (let i = 0; i < parsedItems.length; i++) {
+        for (let j = i + 1; j < parsedItems.length; j++) {
+          const a = parsedItems[i];
+          const b = parsedItems[j];
+          if (a.network <= b.broadcast && b.network <= a.broadcast) {
+            let relation = "OVERLAPS";
+            if (a.network === b.network && a.broadcast === b.broadcast) relation = "EXACT_DUPLICATE";
+            else if (a.network <= b.network && a.broadcast >= b.broadcast) relation = "CONTAINS";
+            else if (b.network <= a.network && b.broadcast >= a.broadcast) relation = "CONTAINED_BY";
+            conflicts.push({ a, b, relation });
+          }
+        }
+      }
+      return { parsedItems, errors, warnings, conflicts };
+    }
+
+    function recalculateAll() {
+      const masterRaw = document.getElementById("masterCidrInput").value;
+      const master = parseCidr(masterRaw);
+      const warnEl = document.getElementById("masterWarnMsg");
+      const scopeEl = document.getElementById("masterScopeBadge");
+
+      if (!master.valid) {
+        warnEl.innerText = "[ERR] " + master.error;
+        scopeEl.innerText = "[INVALID CIDR]";
+        scopeEl.className = "st-tag st-ERR";
+        return;
+      }
+
+      warnEl.innerText = master.nonCanonical ? `[WARN] Host bits set; canonical VPC is ${master.canonical}` : "";
+      scopeEl.innerText = `[${master.scope}]`;
+      scopeEl.className = "st-tag st-OK";
+
+      document.getElementById("kpiNetBcast").innerText = `${master.networkStr} ~ ${master.broadcastStr}`;
+      document.getElementById("kpiRange").innerText = `${master.firstUsableStr} ~ ${master.lastUsableStr}`;
+      document.getElementById("kpiMasks").innerText = `${master.maskStr} / ${master.wildcardStr}`;
+      document.getElementById("kpiTotals").innerText = `${master.total.toLocaleString()} / ${master.usable.toLocaleString()}`;
+      document.getElementById("kpiAws").innerText = master.awsUsable.toLocaleString();
+      document.getElementById("binaryView").innerHTML = formatBinarySplit(master.network, master.prefix);
+
+      allocatedPlan = allocateSubnets(master, subnetSpecs);
+      const usedIps = allocatedPlan.filter(s => s.fits).reduce((acc, s) => acc + s.parsed.total, 0);
+      const utilPct = master.total > 0 ? Math.min(100, (usedIps / master.total) * 100) : 0;
+      document.getElementById("kpiUtil").innerText = `${utilPct.toFixed(1)}% (${usedIps.toLocaleString()} IPs)`;
+
+      const track = document.getElementById("utilTrack");
+      track.innerHTML = allocatedPlan.filter(s => s.fits).map(s => {
+        const w = Math.max(0.5, (s.parsed.total / master.total) * 100);
+        const col = TIER_COLORS[s.tier] || "#38bdf8";
+        return `<div class="util-seg" style="width:${w}%; background:${col};" title="${escapeHtml(s.name)} (${s.cidr})"></div>`;
+      }).join("");
+
+      renderSlicerTable();
+      checkIpMembership();
+      renderExport();
+    }
+
+    function renderSlicerTable() {
+      const tbody = document.getElementById("slicerTableBody");
+      if (!allocatedPlan.length) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--muted); padding:18px;">[INFO] Add a subnet above to slice your Master VPC cleanly.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = allocatedPlan.map((s, idx) => `
+        <tr>
+          <td>${s.idx}</td>
+          <td style="font-weight:700; color:#fff;">${escapeHtml(s.name)}</td>
+          <td><span class="st-tag st-TIER" style="border-color:${TIER_COLORS[s.tier] || '#38bdf8'}; color:${TIER_COLORS[s.tier] || '#38bdf8'};">${s.tier}</span></td>
+          <td style="color:var(--primary); font-weight:700;">${s.fits ? s.cidr : "-"}</td>
+          <td>${s.fits ? `${s.parsed.firstUsableStr} ~ ${s.parsed.lastUsableStr}` : "-"}</td>
+          <td>${s.fits ? `${s.parsed.total.toLocaleString()} / ${s.parsed.awsUsable.toLocaleString()}` : "-"}</td>
+          <td>${s.fits ? '<span class="st-tag st-OK">[OK]</span>' : `<span class="st-tag st-ERR">[${s.error}]</span>`}</td>
+          <td><button class="btn btn-danger" style="padding:2px 8px; font-size:11px;" onclick="removeSubnetRow(${idx})">[DEL]</button></td>
+        </tr>
+      `).join("");
+    }
+
+    function addSubnetRow() {
+      const name = document.getElementById("newSubName").value.trim() || `subnet-${subnetSpecs.length + 1}`;
+      const tier = document.getElementById("newSubTier").value;
+      const prefix = Number(document.getElementById("newSubPrefix").value);
+      subnetSpecs.push({ name, tier, prefix });
+      document.getElementById("newSubName").value = "";
+      recalculateAll();
+    }
+
+    function removeSubnetRow(idx) {
+      subnetSpecs.splice(idx, 1);
+      recalculateAll();
+    }
+
+    function syncPlanToAuditor() {
+      const lines = allocatedPlan.filter(s => s.fits).map(s => `${s.name} | ${s.cidr}`);
+      document.getElementById("auditInput").value = lines.join("\n");
+      switchTab("audit");
+      runOverlapAudit();
+      showToast("[SYNCED] Subnet plan sent to Overlap Auditor");
+    }
+
+    function runOverlapAudit() {
+      const raw = document.getElementById("auditInput").value;
+      const audit = detectOverlaps(raw);
+      const badge = document.getElementById("auditSummaryBadge");
+      const out = document.getElementById("auditResults");
+
+      const totalIssues = audit.conflicts.length + audit.errors.length;
+      if (totalIssues === 0 && audit.warnings.length === 0) {
+        badge.innerText = `[PASS] ${audit.parsedItems.length} CIDRs | 0 CONFLICTS`;
+        badge.className = "st-tag st-OK";
+      } else if (totalIssues === 0) {
+        badge.innerText = `[WARN] ${audit.warnings.length} NORMALIZATION WARNING(S)`;
+        badge.className = "st-tag st-WARN";
+      } else {
+        badge.innerText = `[FAIL] ${audit.conflicts.length} OVERLAP(S) | ${audit.errors.length} ERROR(S)`;
+        badge.className = "st-tag st-ERR";
+      }
+
+      let html = "";
+      audit.errors.forEach(e => {
+        html += `<div style="padding:8px; margin-bottom:8px; background:#0f172a; border:1px solid var(--rose); border-radius:6px; font-family:var(--mono); font-size:12px;">
+          <span class="st-tag st-ERR">[SYNTAX ERR]</span> L${e.line} <strong>${escapeHtml(e.cidr)}</strong>: ${escapeHtml(e.msg)}
+        </div>`;
+      });
+      audit.conflicts.forEach(c => {
+        html += `<div style="padding:8px; margin-bottom:8px; background:#0f172a; border:1px solid var(--rose); border-radius:6px; font-family:var(--mono); font-size:12px;">
+          <span class="st-tag st-ERR">[${c.relation}]</span> <strong>${escapeHtml(c.a.label)}</strong> (${c.a.canonical}) conflicts with <strong>${escapeHtml(c.b.label)}</strong> (${c.b.canonical})
+        </div>`;
+      });
+      audit.warnings.forEach(w => {
+        html += `<div style="padding:8px; margin-bottom:8px; background:#0f172a; border:1px solid var(--amber); border-radius:6px; font-family:var(--mono); font-size:12px;">
+          <span class="st-tag st-WARN">[NON-CANONICAL]</span> L${w.line} ${escapeHtml(w.label)}: ${escapeHtml(w.cidr)} -&gt; <strong>${w.canonical}</strong>
+        </div>`;
+      });
+
+      if (!html) {
+        html = `<div style="padding:14px; background:#0f172a; border:1px solid var(--green); border-radius:6px; font-family:var(--mono); font-size:12px; color:var(--green);">
+          [PASS] Zero overlapping CIDRs detected across ${audit.parsedItems.length} blocks. Safe for terraform apply and VPC peering.
+        </div>`;
+      }
+      out.innerHTML = html;
+      checkIpMembership();
+    }
+
+    function checkIpMembership() {
+      const ipStr = document.getElementById("testIpInput").value.trim();
+      const resEl = document.getElementById("testIpResult");
+      const ipInt = ipToInt(ipStr);
+      if (ipInt === null) {
+        resEl.innerText = "[INVALID IP]";
+        resEl.className = "st-tag st-ERR";
+        return;
+      }
+      const hits = allocatedPlan
+        .filter(s => s.fits && ipInt >= s.parsed.network && ipInt <= s.parsed.broadcast)
+        .map(s => `${s.name} (${s.cidr})`);
+      if (hits.length) {
+        resEl.innerText = `[MATCH] ${hits.join(", ")}`;
+        resEl.className = "st-tag st-OK";
+      } else {
+        const master = parseCidr(document.getElementById("masterCidrInput").value);
+        if (master.valid && ipInt >= master.network && ipInt <= master.broadcast) {
+          resEl.innerText = "[IN MASTER VPC / UNALLOCATED]";
+          resEl.className = "st-tag st-WARN";
+        } else {
+          resEl.innerText = "[NO MATCH]";
+          resEl.className = "st-tag st-ERR";
+        }
+      }
+    }
+
+    function generateTerraform(master, plan) {
+      const valid = plan.filter(s => s.fits);
+      const newbits = valid.map(s => s.prefix - master.prefix);
+      const lines = [
+        `# Generated by OpenTools Hub - CIDR & VPC Subnet Planner Studio v1.0.0`,
+        `locals {`,
+        `  vpc_cidr = "${master.canonical}"`,
+        `  # Sequential cidrsubnets() newbits: [${newbits.join(", ")}]`,
+        `  subnet_plan = {`
+      ];
+      valid.forEach(s => {
+        lines.push(`    "${s.name}" = { cidr = "${s.cidr}", tier = "${s.tier}", aws_usable_ips = ${s.parsed.awsUsable} }`);
+      });
+      lines.push(
+        `  }`,
+        `}`,
+        ``,
+        `resource "aws_vpc" "main" {`,
+        `  cidr_block           = local.vpc_cidr`,
+        `  enable_dns_hostnames = true`,
+        `  enable_dns_support   = true`,
+        `}`,
+        ``,
+        `resource "aws_subnet" "tiers" {`,
+        `  for_each   = local.subnet_plan`,
+        `  vpc_id     = aws_vpc.main.id`,
+        `  cidr_block = each.value.cidr`,
+        `  tags = {`,
+        `    Name = each.key`,
+        `    Tier = each.value.tier`,
+        `  }`,
+        `}`
+      );
+      return lines.join("\n");
+    }
+
+    function generateNginx(plan) {
+      const lines = ["# Nginx Allowlist Policy (Internal Subnets)", "location /internal/ {"];
+      plan.filter(s => s.fits).forEach(s => {
+        lines.push(`  allow ${s.cidr}; # ${s.name} (${s.tier})`);
+      });
+      lines.push("  deny all;", "}");
+      return lines.join("\n");
+    }
+
+    function generateCloudflareWaf(plan) {
+      const cidrs = plan.filter(s => s.fits).map(s => s.cidr).join(" ");
+      return `# Cloudflare WAF Custom Rule Expression\n(ip.src in { ${cidrs} })`;
+    }
+
+    function generateIptables(plan) {
+      const lines = ["# Linux iptables Inbound Allow Rules"];
+      plan.filter(s => s.fits).forEach(s => {
+        lines.push(`iptables -A INPUT -s ${s.cidr} -j ACCEPT # ${s.name}`);
+      });
+      return lines.join("\n");
+    }
+
+    function generateJsonIpam(master, plan) {
+      return JSON.stringify({
+        master_vpc: master.canonical,
+        scope: master.scope,
+        total_ips: master.total,
+        subnets: plan.filter(s => s.fits).map(s => ({
+          name: s.name,
+          tier: s.tier,
+          cidr: s.cidr,
+          network: s.parsed.networkStr,
+          broadcast: s.parsed.broadcastStr,
+          usable_range: `${s.parsed.firstUsableStr} - ${s.parsed.lastUsableStr}`,
+          aws_usable_hosts: s.parsed.awsUsable
+        }))
+      }, null, 2);
+    }
+
+    function renderExport() {
+      const master = parseCidr(document.getElementById("masterCidrInput").value);
+      if (!master.valid) return;
+      let text = "";
+      if (currentExportFmt === "terraform") text = generateTerraform(master, allocatedPlan);
+      else if (currentExportFmt === "nginx") text = generateNginx(allocatedPlan);
+      else if (currentExportFmt === "cloudflare") text = generateCloudflareWaf(allocatedPlan);
+      else if (currentExportFmt === "iptables") text = generateIptables(allocatedPlan);
+      else text = generateJsonIpam(master, allocatedPlan);
+      document.getElementById("exportOutput").textContent = text;
+    }
+
+    function switchTab(name) {
+      const map = { slicer: ["tabBtnSlicer", "tabSlicer"], audit: ["tabBtnAudit", "tabAudit"], export: ["tabBtnExport", "tabExport"] };
+      Object.values(map).forEach(([b, p]) => {
+        document.getElementById(b).classList.remove("active");
+        document.getElementById(p).classList.remove("active");
+      });
+      document.getElementById(map[name][0]).classList.add("active");
+      document.getElementById(map[name][1]).classList.add("active");
+    }
+
+    function setExportFormat(fmt) {
+      currentExportFmt = fmt;
+      document.querySelectorAll("#tabExport .pill").forEach(el => {
+        el.classList.toggle("active", el.getAttribute("data-fmt") === fmt);
+      });
+      renderExport();
+    }
+
+    function copyExport() {
+      navigator.clipboard.writeText(document.getElementById("exportOutput").textContent).then(() => showToast("[COPIED] Config copied"));
+    }
+
+    function downloadExport() {
+      const files = { terraform: "vpc-subnets.tf", nginx: "allowlist.conf", cloudflare: "cf-waf-rule.txt", iptables: "iptables-rules.sh", json: "ipam-plan.json" };
+      const txt = document.getElementById("exportOutput").textContent;
+      const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = files[currentExportFmt] || "cidr-export.txt";
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("[DOWNLOAD] Exported " + a.download);
+    }
+
+    function applyPreset(key) {
+      const p = PRESETS[key] || PRESETS.aws_3az;
+      document.getElementById("masterCidrInput").value = p.master;
+      document.getElementById("testIpInput").value = p.testIp;
+      subnetSpecs = p.subnets.map(s => ({ ...s }));
+      document.getElementById("auditInput").value = p.audit;
+      recalculateAll();
+      runOverlapAudit();
+      if (key === "conflict_demo") switchTab("audit");
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.innerText = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 2200);
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      applyPreset("aws_3az");
+    });
+  </script>
+</body>
+</html>

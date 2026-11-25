@@ -105,7 +105,8 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         """执行自主健康巡检引擎并验证 PASS 状态"""
         report = hub_health_checker.run_health_check()
         self.assertEqual(report["overall_status"], "PASS", f"Health check failed: {report}")
-        self.assertEqual(report["tools_count"], 23)
+        self.assertEqual(report["compliance_gate"], "PASS", f"Compliance gate failed: {report}")
+        self.assertEqual(report["tools_count"], 24)
         
         for tool in report["tools"]:
             self.assertEqual(tool["status"], "PASS", f"Tool {tool['tool_id']} not passing: {tool}")
@@ -399,6 +400,30 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         self.assertIn("renderSnippets", content)
         self.assertIn("applyCleanedToInput", content)
         self.assertIn("URL.createObjectURL", content)
+
+    def test_cidr_subnet_studio_features(self):
+        """验证 CIDR & VPC Subnet Planner Studio 页面结构、子网切分、冲突审计与导出核心功能"""
+        tool_file = self.tools_dir / "cidr-subnet-studio" / "index.html"
+        self.assertTrue(tool_file.exists())
+        content = tool_file.read_text(encoding="utf-8")
+        self.assertIn("CIDR &amp; VPC Subnet Planner Studio", content)
+        self.assertIn("parseCidr", content)
+        self.assertIn("allocateSubnets", content)
+        self.assertIn("detectOverlaps", content)
+        self.assertIn("checkIpMembership", content)
+        self.assertIn("generateTerraform", content)
+        self.assertIn("generateNginx", content)
+        self.assertIn("generateCloudflareWaf", content)
+        self.assertIn("generateIptables", content)
+        self.assertIn("generateJsonIpam", content)
+        self.assertIn("URL.createObjectURL", content)
+
+    def test_content_compliance_and_zero_telemetry_gate(self):
+        """全矩阵内容合规与零遥测门禁：强制 0 Emoji、0 遥测追踪域名、0 合规红线命中"""
+        report = hub_health_checker.run_health_check()
+        self.assertEqual(report["compliance_gate"], "PASS")
+        for tool in report["tools"]:
+            self.assertEqual(tool["compliance_audit"], "PASS", f"Compliance audit failed for {tool['tool_id']}: {tool['errors']}")
 
 if __name__ == "__main__":
     unittest.main()

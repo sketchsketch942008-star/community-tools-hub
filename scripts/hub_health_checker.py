@@ -18,6 +18,19 @@ TOOLS_DIR = REPO_ROOT / "tools"
 DOCS_DIR = REPO_ROOT / "docs"
 REPORT_FILE = DOCS_DIR / "health_report.json"
 
+TELEMETRY_DOMAINS = (
+    "google-analytics.com",
+    "googletagmanager.com",
+    "mixpanel.com",
+    "hotjar.com",
+    "segment.io",
+    "amplitude.com",
+)
+
+COMPLIANCE_REDLINE_PATTERNS = [
+    re.compile(r"\b(porn|pornography|nsfw|nude|escort|casino|gambling)\b", re.IGNORECASE),
+]
+
 def inspect_html_tool(tool_dir: Path) -> dict:
     index_file = tool_dir / "index.html"
     result = {
@@ -25,6 +38,7 @@ def inspect_html_tool(tool_dir: Path) -> dict:
         "entry_point": "index.html",
         "exists": index_file.exists(),
         "status": "PASS",
+        "compliance_audit": "PASS",
         "errors": [],
         "warnings": [],
         "version": "unknown",
@@ -65,6 +79,23 @@ def inspect_html_tool(tool_dir: Path) -> dict:
         if external_scripts:
             result["warnings"].append(f"External script dependencies found: {len(external_scripts)}")
 
+        # 4. 内容合规与纯净度自动红线审计 (Zero-Emoji / Zero-Telemetry / Content Red-Line)
+        emoji_chars = [ch for ch in content if ord(ch) > 0x1F000]
+        if emoji_chars:
+            result["errors"].append(f"Zero-Emoji policy violated: {len(emoji_chars)} emoji character(s) found")
+            result["compliance_audit"] = "FAIL"
+
+        lower_content = content.lower()
+        for domain in TELEMETRY_DOMAINS:
+            if domain in lower_content:
+                result["errors"].append(f"Telemetry domain detected: {domain}")
+                result["compliance_audit"] = "FAIL"
+
+        for pat in COMPLIANCE_REDLINE_PATTERNS:
+            if pat.search(content):
+                result["errors"].append(f"Content compliance red-line matched: {pat.pattern}")
+                result["compliance_audit"] = "FAIL"
+
         if result["errors"]:
             result["status"] = "FAIL"
         elif result["warnings"]:
@@ -102,6 +133,7 @@ def run_health_check() -> dict:
     final_report = {
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
         "overall_status": overall_status,
+        "compliance_gate": "PASS" if all(t.get("compliance_audit") == "PASS" for t in tools) else "FAIL",
         "tools_count": len(tools),
         "tools": tools
     }
