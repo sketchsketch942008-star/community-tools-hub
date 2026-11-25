@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-11-25 18:34:46",
+  "timestamp": "2026-11-25 19:03:50",
   "overall_status": "PASS",
   "compliance_gate": "PASS",
-  "tools_count": 24,
+  "tools_count": 25,
   "tools": [
     {
       "tool_id": "base64-binary-studio",
@@ -135,6 +135,18 @@
       "version": "v1.0.0",
       "title": "Hash & Checksum Studio - 现代离线哈希计算与完整性校验沙盒",
       "size_bytes": 23705
+    },
+    {
+      "tool_id": "id-inspector-studio",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "compliance_audit": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "IDForge &amp; Distributed ID Inspector Studio - Offline UUID v7, ULID, Snowflake BigInt &amp; ObjectID Decoder v1.0.0",
+      "size_bytes": 34313
     },
     {
       "tool_id": "json-semantic-diff",

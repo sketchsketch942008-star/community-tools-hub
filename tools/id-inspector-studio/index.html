@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IDForge &amp; Distributed ID Inspector Studio - Offline UUID v7, ULID, Snowflake BigInt &amp; ObjectID Decoder v1.0.0</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --panel: #131c31;
+      --editor: #070b14;
+      --border: #26334d;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --green: #34d399;
+      --amber: #fbbf24;
+      --rose: #fb7185;
+      --purple: #c084fc;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .back-btn {
+      color: var(--primary);
+      text-decoration: none;
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+    .back-btn:hover { background: rgba(56, 189, 248, 0.2); }
+    h1 { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .badge {
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .badge-ver { background: rgba(192, 132, 252, 0.15); color: var(--purple); border: 1px solid rgba(192, 132, 252, 0.3); }
+    .badge-sec { background: rgba(52, 211, 153, 0.12); color: var(--green); border: 1px solid rgba(52, 211, 153, 0.3); }
+    .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .select-box, .text-input {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: var(--mono);
+      outline: none;
+    }
+    .text-input:focus, .select-box:focus { border-color: var(--primary); }
+    .btn {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: var(--mono);
+    }
+    .btn:hover { background: #2d3c56; }
+    .btn-primary { background: var(--primary); color: #0b1120; border-color: var(--primary); }
+    .btn-primary:hover { background: var(--primary-hover); color: #fff; }
+
+    .main-card {
+      flex: 1;
+      margin: 14px 20px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .tab-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #162238;
+      border-bottom: 1px solid var(--border);
+    }
+    .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: var(--mono);
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { background: var(--editor); border-color: var(--primary); color: var(--primary); }
+    .tab-panel { display: none; padding: 16px; flex: 1; overflow: auto; }
+    .tab-panel.active { display: block; }
+
+    .inspect-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .kpi-card {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+    }
+    .kpi-label { font-size: 10.5px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; }
+    .kpi-val { font-size: 14px; font-weight: 700; font-family: var(--mono); margin-top: 4px; word-break: break-all; }
+    .c-blue { color: var(--primary); }
+    .c-green { color: var(--green); }
+    .c-amber { color: var(--amber); }
+    .c-rose { color: var(--rose); }
+    .c-purple { color: var(--purple); }
+
+    .bit-box {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      font-family: var(--mono);
+      font-size: 12px;
+      margin-bottom: 14px;
+      line-height: 1.7;
+      word-break: break-all;
+    }
+    .b-ts { color: var(--primary); font-weight: 700; }
+    .b-dc { color: var(--purple); font-weight: 700; }
+    .b-wk { color: var(--amber); font-weight: 700; }
+    .b-sq { color: var(--green); font-weight: 700; }
+    .b-sign { color: var(--muted); }
+
+    .warn-banner {
+      background: rgba(251, 191, 36, 0.12);
+      border: 1px solid rgba(251, 191, 36, 0.4);
+      color: var(--amber);
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 12px;
+      margin-bottom: 14px;
+      display: none;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    th { background: #0e172a; color: var(--muted); font-size: 10.5px; text-transform: uppercase; }
+    tr:hover td { background: rgba(56, 189, 248, 0.04); }
+
+    .st-tag {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 10.5px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .st-OK { background: rgba(52, 211, 153, 0.15); color: var(--green); border: 1px solid rgba(52, 211, 153, 0.35); }
+    .st-INFO { background: rgba(56, 189, 248, 0.15); color: var(--primary); border: 1px solid rgba(56, 189, 248, 0.35); }
+    .st-WARN { background: rgba(251, 191, 36, 0.18); color: var(--amber); border: 1px solid rgba(251, 191, 36, 0.4); }
+    .st-ERR { background: rgba(251, 113, 133, 0.2); color: var(--rose); border: 1px solid rgba(251, 113, 133, 0.45); }
+
+    textarea.batch-area {
+      width: 100%;
+      height: 150px;
+      background: var(--editor);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: #e2e8f0;
+      padding: 12px;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.55;
+      outline: none;
+      margin-bottom: 12px;
+      resize: vertical;
+    }
+    pre.code-out {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.6;
+      color: #bae6fd;
+      overflow: auto;
+      max-height: 360px;
+      white-space: pre;
+    }
+
+    footer {
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+      padding: 8px 20px;
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-family: var(--mono);
+    }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--green);
+      color: #0b1120;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+      z-index: 99;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <a href="../../index.html" class="back-btn">[BACK] Hub Portal</a>
+      <h1>
+        IDForge &amp; Distributed ID Inspector Studio
+        <span class="badge badge-ver">v1.0.0</span>
+        <span class="badge badge-sec">[BIGINT SAFE · 100% OFFLINE]</span>
+      </h1>
+    </div>
+    <div class="controls">
+      <select id="presetSelect" class="select-box" onchange="loadDemoPreset(this.value)">
+        <option value="uuidv7">[SAMPLE] UUID v7 (RFC 9562 Time-Ordered)</option>
+        <option value="ulid">[SAMPLE] ULID (Crockford Base32)</option>
+        <option value="snowflake_twitter">[SAMPLE] Snowflake 64-bit (Twitter Epoch)</option>
+        <option value="snowflake_discord">[SAMPLE] Snowflake 64-bit (Discord Epoch)</option>
+        <option value="objectid">[SAMPLE] MongoDB ObjectID (24-Hex)</option>
+        <option value="ksuid">[SAMPLE] Segment KSUID (27-Base62)</option>
+      </select>
+      <button class="btn btn-primary" onclick="inspectSingleId()">[DECODE]</button>
+    </div>
+  </header>
+
+  <main class="main-card">
+    <div class="tab-bar">
+      <div class="tabs">
+        <button id="tabBtnDecode" class="tab-btn active" onclick="switchTab('decode')">[1] AUTO-DECODER &amp; BIT LAYOUT</button>
+        <button id="tabBtnBatch" class="tab-btn" onclick="switchTab('batch')">[2] BATCH TIMELINE FORENSICS</button>
+        <button id="tabBtnGen" class="tab-btn" onclick="switchTab('gen')">[3] CRYPTO GENERATOR (WEB CRYPTO)</button>
+      </div>
+      <span style="font-size:11px; color:var(--muted); font-family:var(--mono);">Pure BigInt Arithmetic | Zero Precision Loss | Zero Data Upload</span>
+    </div>
+
+    <!-- Tab 1: Auto-Decoder -->
+    <div id="tabDecode" class="tab-panel active">
+      <div class="inspect-bar">
+        <input type="text" id="singleIdInput" class="text-input" style="flex:1; min-width:280px; font-size:14px; padding:8px 12px;" placeholder="Paste UUID v1/v4/v7, ULID, 64-bit Snowflake, ObjectID, or KSUID..." oninput="inspectSingleId()">
+        <select id="epochSelect" class="select-box" onchange="inspectSingleId()">
+          <option value="1288834974657">Snowflake Epoch: Twitter (2010-11-04)</option>
+          <option value="1420070400000">Snowflake Epoch: Discord (2015-01-01)</option>
+          <option value="1577836800000">Snowflake Epoch: Custom 2020-01-01</option>
+          <option value="0">Snowflake Epoch: Unix (1970-01-01)</option>
+        </select>
+        <button class="btn" onclick="copyText(document.getElementById('singleIdInput').value)">[COPY ID]</button>
+      </div>
+
+      <div id="jsPrecisionWarn" class="warn-banner"></div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-label">Detected Format</div><div id="dFormat" class="kpi-val c-purple">-</div></div>
+        <div class="kpi-card"><div class="kpi-label">Embedded UTC Time</div><div id="dUtc" class="kpi-val c-green">-</div></div>
+        <div class="kpi-card"><div class="kpi-label">Unix Timestamp (ms)</div><div id="dUnix" class="kpi-val c-blue">-</div></div>
+        <div class="kpi-card"><div class="kpi-label">Version / Variant / Node</div><div id="dMeta" class="kpi-val c-amber">-</div></div>
+        <div class="kpi-card"><div class="kpi-label">Cross-Format / Canonical</div><div id="dAlt" class="kpi-val c-blue">-</div></div>
+      </div>
+
+      <div id="bitLayoutBox" class="bit-box"></div>
+
+      <div id="multiEpochWrap" style="display:none; margin-top:12px;">
+        <div style="font-family:var(--mono); font-size:12px; color:var(--muted); margin-bottom:8px;">
+          [EPOCH DISAMBIGUATION] Compare decoded timestamp across common Snowflake epochs:
+        </div>
+        <table>
+          <thead>
+            <tr><th>Preset Epoch</th><th>Epoch Offset (ms)</th><th>Decoded UTC Timestamp</th><th>Datacenter / Worker / Seq</th><th>Sanity</th></tr>
+          </thead>
+          <tbody id="multiEpochBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab 2: Batch Timeline Forensics -->
+    <div id="tabBatch" class="tab-panel">
+      <div class="inspect-bar" style="justify-content:space-between;">
+        <span style="font-family:var(--mono); font-size:12px; color:var(--muted);">Paste mixed IDs (one per line) to auto-detect, extract timestamps, and sort chronologically:</span>
+        <div style="display:flex; gap:8px;">
+          <button class="btn" onclick="loadMixedBatchDemo()">[LOAD MIXED DEMO]</button>
+          <button class="btn btn-primary" onclick="runBatchForensics()">[BUILD TIMELINE]</button>
+          <button class="btn" onclick="copyBatchJson()">[COPY JSON]</button>
+        </div>
+      </div>
+      <textarea id="batchInput" class="batch-area" spellcheck="false" placeholder="Paste multiple UUID v7, ULID, Snowflake, ObjectID, or KSUID strings (one per line)..."></textarea>
+      <table>
+        <thead>
+          <tr><th>#</th><th>Raw ID</th><th>Format</th><th>UTC Timestamp</th><th>Delta from Prev</th><th>Details</th></tr>
+        </thead>
+        <tbody id="batchTableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Tab 3: Crypto Generator -->
+    <div id="tabGen" class="tab-panel">
+      <div class="inspect-bar">
+        <select id="genType" class="select-box" onchange="generateBatchIds()">
+          <option value="uuidv7">UUID v7 (RFC 9562 Time-Ordered)</option>
+          <option value="uuidv4">UUID v4 (Random 122-bit)</option>
+          <option value="ulid">ULID (Crockford Base32)</option>
+          <option value="snowflake">Snowflake 64-bit (BigInt)</option>
+          <option value="objectid">MongoDB ObjectID (24-Hex)</option>
+          <option value="ksuid">Segment KSUID (27-Base62)</option>
+        </select>
+        <label style="font-family:var(--mono); font-size:12px;">Count:</label>
+        <input type="number" id="genCount" class="text-input" value="10" min="1" max="100" style="width:76px;">
+        <select id="genFormat" class="select-box" onchange="renderGeneratedOutput()">
+          <option value="plain">Plaintext (one per line)</option>
+          <option value="json">JSON Array</option>
+          <option value="sql">SQL IN (...) Clause</option>
+          <option value="csv">CSV</option>
+        </select>
+        <button class="btn btn-primary" onclick="generateBatchIds()">[GENERATE]</button>
+        <button class="btn" onclick="copyText(document.getElementById('genOutput').textContent)">[COPY]</button>
+        <button class="btn" onclick="downloadGenerated()">[DOWNLOAD]</button>
+      </div>
+      <pre id="genOutput" class="code-out"></pre>
+    </div>
+  </main>
+
+  <footer>
+    <span>[OK] 100% Client-Side Web Crypto &amp; BigInt Engine | Zero Precision Loss | Zero Telemetry</span>
+    <span>OpenTools Hub · Community Micro-Tool Matrix #25 (25-in-1 Milestone)</span>
+  </footer>
+
+  <div id="toast" class="toast">[OK] Copied</div>
+
+  <script>
+    const CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+    const BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    const KSUID_EPOCH = 1400000000;
+    const EPOCHS = [
+      { name: "Twitter / X", ms: 1288834974657n },
+      { name: "Discord", ms: 1420070400000n },
+      { name: "Custom 2020-01-01", ms: 1577836800000n },
+      { name: "Unix 1970-01-01", ms: 0n }
+    ];
+
+    let lastGeneratedList = [];
+    let lastBatchRecords = [];
+    let snowflakeSeq = 0n;
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function randomBytes(len) {
+      const arr = new Uint8Array(len);
+      crypto.getRandomValues(arr);
+      return arr;
+    }
+
+    function bytesToHex(bytes) {
+      return Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    function formatUuidFromHex(hex32) {
+      return `${hex32.slice(0,8)}-${hex32.slice(8,12)}-${hex32.slice(12,16)}-${hex32.slice(16,20)}-${hex32.slice(20,32)}`;
+    }
+
+    function generateUuidV7(tsMs = Date.now()) {
+      const bytes = randomBytes(16);
+      const t = BigInt(tsMs);
+      bytes[0] = Number((t >> 40n) & 0xFFn);
+      bytes[1] = Number((t >> 32n) & 0xFFn);
+      bytes[2] = Number((t >> 24n) & 0xFFn);
+      bytes[3] = Number((t >> 16n) & 0xFFn);
+      bytes[4] = Number((t >> 8n) & 0xFFn);
+      bytes[5] = Number(t & 0xFFn);
+      bytes[6] = (bytes[6] & 0x0F) | 0x70;
+      bytes[8] = (bytes[8] & 0x3F) | 0x80;
+      return formatUuidFromHex(bytesToHex(bytes));
+    }
+
+    function generateUuidV4() {
+      const bytes = randomBytes(16);
+      bytes[6] = (bytes[6] & 0x0F) | 0x40;
+      bytes[8] = (bytes[8] & 0x3F) | 0x80;
+      return formatUuidFromHex(bytesToHex(bytes));
+    }
+
+    function generateUlid(tsMs = Date.now()) {
+      let t = BigInt(tsMs);
+      let timePart = "";
+      for (let i = 0; i < 10; i++) {
+        timePart = CROCKFORD[Number(t & 31n)] + timePart;
+        t >>= 5n;
+      }
+      const rand = randomBytes(10);
+      let rBig = 0n;
+      for (const b of rand) rBig = (rBig << 8n) | BigInt(b);
+      let randPart = "";
+      for (let i = 0; i < 16; i++) {
+        randPart = CROCKFORD[Number(rBig & 31n)] + randPart;
+        rBig >>= 5n;
+      }
+      return timePart + randPart;
+    }
+
+    function ulidToUuid(ulid) {
+      let val = 0n;
+      const up = ulid.toUpperCase().replace(/O/g, "0").replace(/[IL]/g, "1");
+      for (const ch of up) {
+        const idx = CROCKFORD.indexOf(ch);
+        if (idx === -1) return null;
+        val = (val << 5n) | BigInt(idx);
+      }
+      const hex32 = val.toString(16).padStart(32, "0");
+      return formatUuidFromHex(hex32);
+    }
+
+    function uuidToUlid(uuid) {
+      const hex = uuid.replace(/-/g, "");
+      let val = BigInt("0x" + hex);
+      let out = "";
+      for (let i = 0; i < 26; i++) {
+        out = CROCKFORD[Number(val & 31n)] + out;
+        val >>= 5n;
+      }
+      return out;
+    }
+
+    function generateSnowflake(tsMs = Date.now(), epochMs = 1288834974657n, dc = 3n, worker = 7n) {
+      const delta = BigInt(tsMs) - BigInt(epochMs);
+      snowflakeSeq = (snowflakeSeq + 1n) & 0xFFFn;
+      const id = (delta << 22n) | ((dc & 31n) << 17n) | ((worker & 31n) << 12n) | snowflakeSeq;
+      return id.toString();
+    }
+
+    function generateObjectId(tsSec = Math.floor(Date.now() / 1000)) {
+      const bytes = randomBytes(12);
+      bytes[0] = (tsSec >>> 24) & 0xFF;
+      bytes[1] = (tsSec >>> 16) & 0xFF;
+      bytes[2] = (tsSec >>> 8) & 0xFF;
+      bytes[3] = tsSec & 0xFF;
+      return bytesToHex(bytes);
+    }
+
+    function generateKsuid(tsSec = Math.floor(Date.now() / 1000)) {
+      const offset = BigInt(Math.max(0, tsSec - KSUID_EPOCH));
+      const payload = randomBytes(16);
+      let val = offset;
+      for (const b of payload) val = (val << 8n) | BigInt(b);
+      let out = "";
+      for (let i = 0; i < 27; i++) {
+        out = BASE62[Number(val % 62n)] + out;
+        val /= 62n;
+      }
+      return out;
+    }
+
+    function decodeSnowflake(idBig, epochBig) {
+      const tsDelta = idBig >> 22n;
+      const unixMs = Number(tsDelta + epochBig);
+      const dc = Number((idBig >> 17n) & 31n);
+      const worker = Number((idBig >> 12n) & 31n);
+      const seq = Number(idBig & 4095n);
+      const dt = new Date(unixMs);
+      const validYear = !isNaN(dt.getTime()) && dt.getUTCFullYear() >= 2010 && dt.getUTCFullYear() <= 2045;
+      return { unixMs, utc: isNaN(dt.getTime()) ? "Invalid Date" : dt.toISOString(), dc, worker, seq, validYear };
+    }
+
+    function decodeAnyId(rawInput, selectedEpochMs = 1288834974657n) {
+      const s = rawInput.trim();
+      if (!s) return { valid: false, error: "Empty input" };
+
+      // 1. UUID (with or without hyphens)
+      const uuidRe = /^([0-9a-f]{8})-?([0-9a-f]{4})-?([0-9a-f]{4})-?([0-9a-f]{4})-?([0-9a-f]{12})$/i;
+      const um = s.match(uuidRe);
+      if (um) {
+        const hex = (um[1] + um[2] + um[3] + um[4] + um[5]).toLowerCase();
+        const canonical = formatUuidFromHex(hex);
+        const ver = parseInt(hex[12], 16);
+        const varNibble = parseInt(hex[16], 16);
+        const variant = (varNibble & 0x8) === 0 ? "NCS" : ((varNibble & 0xC) === 0x8 ? "RFC 4122/9562" : "Microsoft/Future");
+
+        if (ver === 7) {
+          const unixMs = Number(BigInt("0x" + hex.slice(0, 12)));
+          return {
+            valid: true,
+            format: "UUID v7 (RFC 9562)",
+            unixMs,
+            utc: new Date(unixMs).toISOString(),
+            meta: `Version 7 | ${variant} | 74-bit Rand`,
+            alt: `ULID: ${uuidToUlid(canonical)}`,
+            bitHtml: `<span class="b-ts">48b Unix ms: ${hex.slice(0,12)}</span> | <span class="b-dc">Ver: 7</span> | <span class="b-wk">12b RandA: ${hex.slice(13,16)}</span> | <span class="b-sq">62b RandB: ${hex.slice(16)}</span>`
+          };
+        }
+        if (ver === 1) {
+          const timeLow = hex.slice(0, 8);
+          const timeMid = hex.slice(8, 12);
+          const timeHi = hex.slice(13, 16);
+          const ticks100ns = BigInt("0x" + timeHi + timeMid + timeLow);
+          const unixMs = Number((ticks100ns - 122192928000000000n) / 10000n);
+          return {
+            valid: true,
+            format: "UUID v1 (Gregorian)",
+            unixMs,
+            utc: new Date(unixMs).toISOString(),
+            meta: `Version 1 | Node: ${hex.slice(20)}`,
+            alt: canonical,
+            bitHtml: `<span class="b-ts">60b Gregorian 100ns: ${timeHi}${timeMid}${timeLow}</span> | <span class="b-dc">Ver: 1</span> | <span class="b-sq">Node: ${hex.slice(20)}</span>`
+          };
+        }
+        return {
+          valid: true,
+          format: `UUID v${ver}`,
+          unixMs: null,
+          utc: "No Embedded Timestamp (Random/Hash)",
+          meta: `Version ${ver} | ${variant}`,
+          alt: `ULID: ${uuidToUlid(canonical)}`,
+          bitHtml: `<span class="b-sq">Hex128: ${canonical}</span> <span class="b-sign">(v${ver} carries no epoch timestamp)</span>`
+        };
+      }
+
+      // 2. ULID (26 chars Crockford Base32)
+      if (/^[0-7][0-9A-HJKMNP-TV-Z]{25}$/i.test(s)) {
+        const up = s.toUpperCase();
+        let t = 0n;
+        for (let i = 0; i < 10; i++) {
+          t = (t << 5n) | BigInt(CROCKFORD.indexOf(up[i]));
+        }
+        const unixMs = Number(t);
+        return {
+          valid: true,
+          format: "ULID (Crockford Base32)",
+          unixMs,
+          utc: new Date(unixMs).toISOString(),
+          meta: "48-bit Time | 80-bit Crypto Entropy",
+          alt: `UUID: ${ulidToUuid(up)}`,
+          bitHtml: `<span class="b-ts">10c Time (48b): ${up.slice(0,10)}</span> | <span class="b-sq">16c Randomness (80b): ${up.slice(10)}</span>`
+        };
+      }
+
+      // 3. MongoDB ObjectID (24 hex chars)
+      if (/^[0-9a-f]{24}$/i.test(s)) {
+        const hex = s.toLowerCase();
+        const unixSec = parseInt(hex.slice(0, 8), 16);
+        const unixMs = unixSec * 1000;
+        const counter = parseInt(hex.slice(18, 24), 16);
+        return {
+          valid: true,
+          format: "MongoDB ObjectID (96-bit)",
+          unixMs,
+          utc: new Date(unixMs).toISOString(),
+          meta: `Rand5B: ${hex.slice(8,18)} | Counter: ${counter}`,
+          alt: `Unix Sec: ${unixSec}`,
+          bitHtml: `<span class="b-ts">4B Time: ${hex.slice(0,8)}</span> | <span class="b-dc">5B Process/Rand: ${hex.slice(8,18)}</span> | <span class="b-sq">3B Counter: ${hex.slice(18)}</span>`
+        };
+      }
+
+      // 4. Snowflake 64-bit unsigned decimal integer (15..20 digits)
+      if (/^\d{15,20}$/.test(s)) {
+        const idBig = BigInt(s);
+        if (idBig <= 18446744073709551615n) {
+          const dec = decodeSnowflake(idBig, BigInt(selectedEpochMs));
+          const bin64 = idBig.toString(2).padStart(64, "0");
+          const jsNumberLoss = idBig > BigInt(Number.MAX_SAFE_INTEGER);
+          const corruptedJsNum = jsNumberLoss ? String(Number(s)) : null;
+          return {
+            valid: true,
+            isSnowflake: true,
+            idBig,
+            format: "Snowflake 64-bit (BigInt)",
+            unixMs: dec.unixMs,
+            utc: dec.utc,
+            meta: `DC: ${dec.dc} | Worker: ${dec.worker} | Seq: ${dec.seq}`,
+            alt: `Hex: 0x${idBig.toString(16).toUpperCase()}`,
+            jsNumberLoss,
+            corruptedJsNum,
+            bitHtml:
+              `<span class="b-sign">[Sign:${bin64[0]}]</span> ` +
+              `<span class="b-ts">[41b Time:${bin64.slice(1,42)}]</span> ` +
+              `<span class="b-dc">[5b DC:${bin64.slice(42,47)}]</span> ` +
+              `<span class="b-wk">[5b Wk:${bin64.slice(47,52)}]</span> ` +
+              `<span class="b-sq">[12b Seq:${bin64.slice(52)}]</span>`
+          };
+        }
+      }
+
+      // 5. Segment KSUID (27 chars Base62)
+      if (/^[0-9A-Za-z]{27}$/.test(s)) {
+        let val = 0n;
+        for (const ch of s) {
+          val = val * 62n + BigInt(BASE62.indexOf(ch));
+        }
+        const tsOffset = Number(val >> 128n);
+        const unixSec = tsOffset + KSUID_EPOCH;
+        const unixMs = unixSec * 1000;
+        const payloadHex = (val & ((1n << 128n) - 1n)).toString(16).padStart(32, "0");
+        return {
+          valid: true,
+          format: "Segment KSUID (160-bit)",
+          unixMs,
+          utc: new Date(unixMs).toISOString(),
+          meta: `Epoch +${tsOffset}s | 128-bit Payload`,
+          alt: `Payload: 0x${payloadHex.slice(0,16)}...`,
+          bitHtml: `<span class="b-ts">32b Timestamp (+1.4B): ${tsOffset}</span> | <span class="b-sq">128b Payload: ${payloadHex}</span>`
+        };
+      }
+
+      return { valid: false, error: "Unrecognized ID format (supports UUID v1/v4/v7, ULID, Snowflake 64-bit, MongoDB ObjectID, KSUID)" };
+    }
+
+    function inspectSingleId() {
+      const raw = document.getElementById("singleIdInput").value;
+      const epoch = BigInt(document.getElementById("epochSelect").value);
+      const res = decodeAnyId(raw, epoch);
+      const warnEl = document.getElementById("jsPrecisionWarn");
+      const multiWrap = document.getElementById("multiEpochWrap");
+
+      if (!res.valid) {
+        document.getElementById("dFormat").innerText = "[INVALID / UNKNOWN]";
+        document.getElementById("dUtc").innerText = "-";
+        document.getElementById("dUnix").innerText = "-";
+        document.getElementById("dMeta").innerText = res.error;
+        document.getElementById("dAlt").innerText = "-";
+        document.getElementById("bitLayoutBox").innerText = "[INFO] " + res.error;
+        warnEl.style.display = "none";
+        multiWrap.style.display = "none";
+        return;
+      }
+
+      document.getElementById("dFormat").innerText = res.format;
+      document.getElementById("dUtc").innerText = res.utc;
+      document.getElementById("dUnix").innerText = res.unixMs !== null ? String(res.unixMs) : "N/A";
+      document.getElementById("dMeta").innerText = res.meta;
+      document.getElementById("dAlt").innerText = res.alt;
+      document.getElementById("bitLayoutBox").innerHTML = res.bitHtml;
+
+      if (res.jsNumberLoss) {
+        warnEl.style.display = "block";
+        warnEl.innerText = `[WARN] JS Number.MAX_SAFE_INTEGER Overflow Detected! As JS Number this ID corrupts to "${res.corruptedJsNum}" (actual BigInt: "${raw.trim()}"). Always serialize as String in JSON APIs!`;
+      } else {
+        warnEl.style.display = "none";
+      }
+
+      if (res.isSnowflake) {
+        multiWrap.style.display = "block";
+        document.getElementById("multiEpochBody").innerHTML = EPOCHS.map(ep => {
+          const d = decodeSnowflake(res.idBig, ep.ms);
+          return `
+            <tr>
+              <td style="font-weight:700; color:#fff;">${ep.name}</td>
+              <td>${ep.ms.toString()}</td>
+              <td style="color:${d.validYear ? 'var(--green)' : 'var(--muted)'};">${d.utc}</td>
+              <td>DC=${d.dc} / Wk=${d.worker} / Seq=${d.seq}</td>
+              <td>${d.validYear ? '<span class="st-tag st-OK">[LIKELY]</span>' : '<span class="st-tag st-WARN">[OUTLIER]</span>'}</td>
+            </tr>
+          `;
+        }).join("");
+      } else {
+        multiWrap.style.display = "none";
+      }
+    }
+
+    function loadDemoPreset(key) {
+      const now = Date.now();
+      let val = "";
+      if (key === "uuidv7") val = generateUuidV7(now);
+      else if (key === "ulid") val = generateUlid(now);
+      else if (key === "snowflake_twitter") {
+        document.getElementById("epochSelect").value = "1288834974657";
+        val = generateSnowflake(now, 1288834974657n, 3n, 11n);
+      } else if (key === "snowflake_discord") {
+        document.getElementById("epochSelect").value = "1420070400000";
+        val = generateSnowflake(now, 1420070400000n, 5n, 2n);
+      } else if (key === "objectid") val = generateObjectId(Math.floor(now / 1000));
+      else if (key === "ksuid") val = generateKsuid(Math.floor(now / 1000));
+      document.getElementById("singleIdInput").value = val;
+      inspectSingleId();
+    }
+
+    function loadMixedBatchDemo() {
+      const base = Date.now() - 12000;
+      const samples = [
+        generateSnowflake(base + 4850, 1288834974657n, 2n, 4n),
+        generateUuidV7(base),
+        generateUlid(base + 1420),
+        generateObjectId(Math.floor((base + 8000) / 1000)),
+        generateKsuid(Math.floor((base + 11000) / 1000)),
+        generateUuidV7(base + 11650)
+      ];
+      document.getElementById("batchInput").value = samples.join("\n");
+      runBatchForensics();
+    }
+
+    function runBatchForensics() {
+      const epoch = BigInt(document.getElementById("epochSelect").value);
+      const lines = document.getElementById("batchInput").value.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+      const decoded = lines.map(raw => ({ raw, ...decodeAnyId(raw, epoch) }));
+      decoded.sort((a, b) => (a.unixMs ?? Infinity) - (b.unixMs ?? Infinity));
+      lastBatchRecords = decoded;
+
+      const tbody = document.getElementById("batchTableBody");
+      if (!decoded.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--muted); padding:18px;">[INFO] Paste IDs above and click Build Timeline.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = decoded.map((r, idx) => {
+        let deltaStr = "-";
+        if (idx > 0 && r.unixMs !== null && decoded[idx - 1].unixMs !== null) {
+          const diff = r.unixMs - decoded[idx - 1].unixMs;
+          deltaStr = `+${diff} ms`;
+        }
+        return `
+          <tr>
+            <td>${idx + 1}</td>
+            <td style="color:#fff; font-weight:600;">${escapeHtml(r.raw)}</td>
+            <td>${r.valid ? `<span class="st-tag st-INFO">${escapeHtml(r.format)}</span>` : '<span class="st-tag st-ERR">INVALID</span>'}</td>
+            <td style="color:var(--green);">${r.valid ? escapeHtml(r.utc) : "-"}</td>
+            <td style="color:var(--amber);">${deltaStr}</td>
+            <td style="color:var(--muted);">${r.valid ? escapeHtml(r.meta) : escapeHtml(r.error)}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function copyBatchJson() {
+      const clean = lastBatchRecords.map(r => ({ id: r.raw, format: r.format || "INVALID", utc: r.utc || null, unix_ms: r.unixMs ?? null, meta: r.meta || r.error }));
+      copyText(JSON.stringify(clean, null, 2));
+    }
+
+    function generateBatchIds() {
+      const type = document.getElementById("genType").value;
+      const count = Math.max(1, Math.min(100, Number(document.getElementById("genCount").value) || 10));
+      const epoch = BigInt(document.getElementById("epochSelect").value);
+      const baseMs = Date.now();
+      const out = [];
+      for (let i = 0; i < count; i++) {
+        if (type === "uuidv7") out.push(generateUuidV7(baseMs + i));
+        else if (type === "uuidv4") out.push(generateUuidV4());
+        else if (type === "ulid") out.push(generateUlid(baseMs + i));
+        else if (type === "snowflake") out.push(generateSnowflake(baseMs + i, epoch, 1n, 1n));
+        else if (type === "objectid") out.push(generateObjectId(Math.floor(baseMs / 1000)));
+        else if (type === "ksuid") out.push(generateKsuid(Math.floor(baseMs / 1000)));
+      }
+      lastGeneratedList = out;
+      renderGeneratedOutput();
+    }
+
+    function renderGeneratedOutput() {
+      const fmt = document.getElementById("genFormat").value;
+      let txt = "";
+      if (fmt === "plain") txt = lastGeneratedList.join("\n");
+      else if (fmt === "json") txt = JSON.stringify(lastGeneratedList, null, 2);
+      else if (fmt === "sql") txt = `WHERE id IN (\n  ${lastGeneratedList.map(x => `'${x}'`).join(",\n  ")}\n);`;
+      else txt = "index,id\n" + lastGeneratedList.map((x, i) => `${i + 1},${x}`).join("\n");
+      document.getElementById("genOutput").textContent = txt;
+    }
+
+    function downloadGenerated() {
+      const txt = document.getElementById("genOutput").textContent;
+      const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "idforge-generated.txt";
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("[DOWNLOAD] Exported idforge-generated.txt");
+    }
+
+    function switchTab(name) {
+      const map = { decode: ["tabBtnDecode", "tabDecode"], batch: ["tabBtnBatch", "tabBatch"], gen: ["tabBtnGen", "tabGen"] };
+      Object.values(map).forEach(([b, p]) => {
+        document.getElementById(b).classList.remove("active");
+        document.getElementById(p).classList.remove("active");
+      });
+      document.getElementById(map[name][0]).classList.add("active");
+      document.getElementById(map[name][1]).classList.add("active");
+    }
+
+    function copyText(txt) {
+      navigator.clipboard.writeText(txt).then(() => showToast("[COPIED] Copied to clipboard"));
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.innerText = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 2200);
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      loadDemoPreset("snowflake_twitter");
+      loadMixedBatchDemo();
+      generateBatchIds();
+    });
+  </script>
+</body>
+</html>

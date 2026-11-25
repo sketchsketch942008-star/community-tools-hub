@@ -106,7 +106,7 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         report = hub_health_checker.run_health_check()
         self.assertEqual(report["overall_status"], "PASS", f"Health check failed: {report}")
         self.assertEqual(report["compliance_gate"], "PASS", f"Compliance gate failed: {report}")
-        self.assertEqual(report["tools_count"], 24)
+        self.assertEqual(report["tools_count"], 25)
         
         for tool in report["tools"]:
             self.assertEqual(tool["status"], "PASS", f"Tool {tool['tool_id']} not passing: {tool}")
@@ -416,6 +416,25 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         self.assertIn("generateCloudflareWaf", content)
         self.assertIn("generateIptables", content)
         self.assertIn("generateJsonIpam", content)
+        self.assertIn("URL.createObjectURL", content)
+
+    def test_id_inspector_studio_features(self):
+        """验证 IDForge & Distributed ID Inspector Studio 页面结构、BigInt 解码与批量生成核心功能"""
+        tool_file = self.tools_dir / "id-inspector-studio" / "index.html"
+        self.assertTrue(tool_file.exists())
+        content = tool_file.read_text(encoding="utf-8")
+        self.assertIn("IDForge &amp; Distributed ID Inspector Studio", content)
+        self.assertIn("decodeAnyId", content)
+        self.assertIn("decodeSnowflake", content)
+        self.assertIn("generateUuidV7", content)
+        self.assertIn("generateUlid", content)
+        self.assertIn("generateSnowflake", content)
+        self.assertIn("generateObjectId", content)
+        self.assertIn("generateKsuid", content)
+        self.assertIn("ulidToUuid", content)
+        self.assertIn("uuidToUlid", content)
+        self.assertIn("Number.MAX_SAFE_INTEGER", content)
+        self.assertIn("crypto.getRandomValues", content)
         self.assertIn("URL.createObjectURL", content)
 
     def test_content_compliance_and_zero_telemetry_gate(self):

@@ -93,6 +93,7 @@ flowchart TD
 | `env-config-studio` | **EnvDrift & Config Studio** | `v1.0.0` | 纯前端离线 .env 配置漂移语义比对、语法/安全审计与 Docker/K8s/Zod 六格式转换工坊 | [OK] PASS |
 | `unicode-ghost-inspector` | **GhostChar & Unicode Inspector Studio** | `v1.0.0` | 隐形字符 X-Ray 透视、Trojan Source BiDi/AI 标签/同形字/CRLF 安全取证与一键清洗工坊 | [OK] PASS |
 | `cidr-subnet-studio` | **CIDR & VPC Subnet Planner Studio** | `v1.0.0` | 离线 IPv4 CIDR 掩码可视化、无重叠 VPC 子网规划、Peering 冲突审计与 Terraform/Nginx/WAF 规则导出 | [OK] PASS |
+| `id-inspector-studio` | **IDForge & Distributed ID Inspector Studio** | `v1.0.0` | 纯 BigInt 离线分布式 ID 解码与批量生成工坊；支持 UUID v7/ULID/Snowflake/ObjectID/KSUID 与时间轴取证 | [OK] PASS |
 
 ---
 

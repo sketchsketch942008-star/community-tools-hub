@@ -59,6 +59,7 @@ flowchart LR
 | **EnvDrift & Config Studio** | [`tools/env-config-studio`](./tools/env-config-studio/index.html) | `v1.0.0` | 纯前端离线 .env 配置漂移比对、语法与安全诊断及 Docker/K8s/Zod 六格式本地转换工坊 | 纯前端沙盒 | [OK] PASS |
 | **GhostChar & Unicode Inspector** | [`tools/unicode-ghost-inspector`](./tools/unicode-ghost-inspector/index.html) | `v1.0.0` | 隐形字符 X-Ray 透视与一键清洗工坊；精准检出零宽空格、BOM、Trojan Source BiDi、AI 隐藏标签、同形字与 CRLF | 纯前端沙盒 | [OK] PASS |
 | **CIDR & VPC Subnet Planner** | [`tools/cidr-subnet-studio`](./tools/cidr-subnet-studio/index.html) | `v1.0.0` | 离线 IPv4 CIDR 计算器、无重叠 VPC 子网切分、Peering 冲突审计与 Terraform/Nginx/Cloudflare WAF 导出 | 纯前端沙盒 | [OK] PASS |
+| **IDForge & ID Inspector Studio** | [`tools/id-inspector-studio`](./tools/id-inspector-studio/index.html) | `v1.0.0` | 纯 BigInt 离线分布式 ID 解码与生成工坊；支持 UUID v1/v4/v7、ULID、64 位 Snowflake（多 Epoch 对照）、ObjectID 与 KSUID | 纯前端沙盒 | [OK] PASS |
 
 ---
 
