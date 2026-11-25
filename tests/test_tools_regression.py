@@ -106,7 +106,7 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         report = hub_health_checker.run_health_check()
         self.assertEqual(report["overall_status"], "PASS", f"Health check failed: {report}")
         self.assertEqual(report["compliance_gate"], "PASS", f"Compliance gate failed: {report}")
-        self.assertEqual(report["tools_count"], 27)
+        self.assertEqual(report["tools_count"], 28)
         
         for tool in report["tools"]:
             self.assertEqual(tool["status"], "PASS", f"Tool {tool['tool_id']} not passing: {tool}")
@@ -469,6 +469,21 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         self.assertIn("SIGTERM_SHELL_FORM_CMD", content)
         self.assertIn("HARDENED_TEMPLATES", content)
         self.assertIn("DOCKERIGNORE_TEMPLATE", content)
+        self.assertIn("URL.createObjectURL", content)
+
+    def test_x509_cert_inspector_features(self):
+        """验证 CertLens X.509 & PEM Inspector Studio 页面结构、ASN.1 DER 解析与证书链审计核心功能"""
+        tool_file = self.tools_dir / "x509-cert-inspector" / "index.html"
+        self.assertTrue(tool_file.exists())
+        content = tool_file.read_text(encoding="utf-8")
+        self.assertIn("CertLens X.509 &amp; PEM Inspector Studio", content)
+        self.assertIn("parseAsn1", content)
+        self.assertIn("decodeX509Der", content)
+        self.assertIn("parsePemChain", content)
+        self.assertIn("auditCertChain", content)
+        self.assertIn("computeFingerprints", content)
+        self.assertIn("formatAsn1Tree", content)
+        self.assertIn("crypto.subtle.digest", content)
         self.assertIn("URL.createObjectURL", content)
 
     def test_content_compliance_and_zero_telemetry_gate(self):

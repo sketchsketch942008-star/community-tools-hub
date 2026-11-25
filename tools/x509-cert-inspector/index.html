@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CertLens X.509 &amp; PEM Inspector Studio - Offline SSL/TLS Certificate, SAN &amp; ASN.1 Decoder v1.0.0</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --panel: #131c31;
+      --editor: #070b14;
+      --border: #26334d;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --green: #34d399;
+      --amber: #fbbf24;
+      --rose: #fb7185;
+      --purple: #c084fc;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .back-btn {
+      color: var(--primary);
+      text-decoration: none;
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+    .back-btn:hover { background: rgba(56, 189, 248, 0.2); }
+    h1 { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .badge {
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .badge-ver { background: rgba(192, 132, 252, 0.15); color: var(--purple); border: 1px solid rgba(192, 132, 252, 0.3); }
+    .badge-sec { background: rgba(52, 211, 153, 0.12); color: var(--green); border: 1px solid rgba(52, 211, 153, 0.3); }
+    .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .select-box {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: var(--mono);
+      cursor: pointer;
+    }
+    .btn {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: var(--mono);
+    }
+    .btn:hover { background: #2d3c56; }
+    .btn-primary { background: var(--primary); color: #0b1120; border-color: var(--primary); }
+    .btn-primary:hover { background: var(--primary-hover); color: #fff; }
+
+    .alert-banner {
+      display: none;
+      margin: 10px 20px 0;
+      padding: 10px 14px;
+      background: rgba(244, 63, 94, 0.18);
+      border: 1px solid rgba(244, 63, 94, 0.55);
+      border-radius: 6px;
+      color: #fda4af;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+      gap: 10px;
+      padding: 10px 20px;
+      background: #0e1627;
+      border-bottom: 1px solid var(--border);
+    }
+    .kpi-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+    .kpi-label { font-size: 10.5px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; }
+    .kpi-val { font-size: 16px; font-weight: 700; font-family: var(--mono); margin-top: 2px; }
+    .c-blue { color: var(--primary); }
+    .c-green { color: var(--green); }
+    .c-amber { color: var(--amber); }
+    .c-rose { color: var(--rose); }
+    .c-purple { color: var(--purple); }
+
+    .workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 0.95fr 1.35fr;
+      gap: 14px;
+      padding: 14px 20px;
+    }
+    @media (max-width: 960px) { .workspace { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .card-head {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      background: #162238;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 12px;
+      font-family: var(--mono);
+    }
+    .mini-btn {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: var(--mono);
+      cursor: pointer;
+    }
+    .mini-btn:hover { color: var(--text); border-color: var(--primary); }
+    textarea.pem-in {
+      flex: 1;
+      width: 100%;
+      min-height: 440px;
+      background: var(--editor);
+      color: #cbd5e1;
+      border: none;
+      outline: none;
+      padding: 14px;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      line-height: 1.5;
+      resize: vertical;
+    }
+
+    .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-family: var(--mono);
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { background: var(--editor); border-color: var(--primary); color: var(--primary); }
+    .tab-panel { display: none; padding: 14px; flex: 1; overflow: auto; max-height: 600px; }
+    .tab-panel.active { display: block; }
+
+    .cert-block {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+    .cert-header {
+      background: #162238;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+    .kv-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11.5px; }
+    .kv-table td {
+      padding: 6px 10px;
+      border-bottom: 1px solid #141e33;
+      vertical-align: top;
+      word-break: break-all;
+    }
+    .kv-table td:first-child { width: 175px; color: var(--muted); white-space: nowrap; }
+    .kv-table tr:last-child td { border-bottom: none; }
+
+    .st-tag {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10.5px;
+      font-weight: 700;
+      font-family: var(--mono);
+    }
+    .st-OK { background: rgba(52, 211, 153, 0.16); color: var(--green); border: 1px solid rgba(52, 211, 153, 0.4); }
+    .st-WARN { background: rgba(251, 191, 36, 0.2); color: var(--amber); border: 1px solid rgba(251, 191, 36, 0.45); }
+    .st-ERR { background: rgba(244, 63, 94, 0.24); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.55); }
+    .st-INFO { background: rgba(56, 189, 248, 0.16); color: var(--primary); border: 1px solid rgba(56, 189, 248, 0.4); }
+
+    .san-pill {
+      display: inline-block;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #bae6fd;
+      padding: 2px 7px;
+      border-radius: 4px;
+      margin: 2px 4px 2px 0;
+      font-size: 11px;
+    }
+
+    pre.code-out {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      line-height: 1.55;
+      color: #bae6fd;
+      overflow: auto;
+      max-height: 460px;
+      white-space: pre;
+    }
+
+    footer {
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+      padding: 8px 20px;
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-family: var(--mono);
+    }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--green);
+      color: #0b1120;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+      z-index: 99;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <a href="../../index.html" class="back-btn">[BACK] Hub Portal</a>
+      <h1>
+        CertLens X.509 &amp; PEM Inspector Studio
+        <span class="badge badge-ver">v1.0.0</span>
+        <span class="badge badge-sec">[ASN.1 DER · 100% OFFLINE]</span>
+      </h1>
+    </div>
+    <div class="controls">
+      <select id="presetSelect" class="select-box" onchange="loadPreset(this.value)">
+        <option value="prod_chain">[PRESET] Valid TLS Leaf + Intermediate Chain (ECDSA P-256)</option>
+        <option value="legacy_risk">[PRESET] Expired Legacy SHA-1 / RSA-1024 Cert (Risk Audit Demo)</option>
+        <option value="mtls_client">[PRESET] Internal mTLS Service Client Certificate</option>
+      </select>
+      <button class="btn btn-primary" onclick="inspectPemInput()">[DECODE PEM]</button>
+    </div>
+  </header>
+
+  <div id="privKeyAlert" class="alert-banner"></div>
+
+  <section class="kpi-strip">
+    <div class="kpi-card"><div class="kpi-label">Certificates</div><div id="kpiCount" class="kpi-val c-blue">0</div></div>
+    <div class="kpi-card"><div class="kpi-label">Chain Linkage</div><div id="kpiChain" class="kpi-val c-green">-</div></div>
+    <div class="kpi-card"><div class="kpi-label">Leaf Expiry</div><div id="kpiExpiry" class="kpi-val c-green">-</div></div>
+    <div class="kpi-card"><div class="kpi-label">SAN Entries</div><div id="kpiSans" class="kpi-val c-purple">0</div></div>
+    <div class="kpi-card"><div class="kpi-label">Security Findings</div><div id="kpiFindings" class="kpi-val c-amber">0</div></div>
+  </section>
+
+  <main class="workspace">
+    <!-- Left: PEM / DER Input -->
+    <div class="card">
+      <div class="card-head">
+        <span>[INPUT] PEM Certificate Chain (.pem / .crt / .cer / .der)</span>
+        <div style="display:flex; gap:6px;">
+          <input type="file" id="certFileIn" accept=".pem,.crt,.cer,.der,.txt" style="display:none" onchange="loadLocalCertFile(event)">
+          <button class="mini-btn" onclick="document.getElementById('certFileIn').click()">[LOAD FILE]</button>
+          <button class="mini-btn" onclick="copyText(document.getElementById('pemInput').value)">[COPY]</button>
+          <button class="mini-btn" onclick="document.getElementById('pemInput').value=''; inspectPemInput();">[CLEAR]</button>
+        </div>
+      </div>
+      <textarea id="pemInput" class="pem-in" spellcheck="false" placeholder="Paste -----BEGIN CERTIFICATE----- ... -----END CERTIFICATE----- chain here..."></textarea>
+    </div>
+
+    <!-- Right: Decoded Certs, Chain Audit, ASN.1 Tree, CLI Snippets -->
+    <div class="card">
+      <div class="card-head">
+        <div class="tabs">
+          <button id="tabBtnCerts" class="tab-btn active" onclick="switchTab('certs')">[1] X.509 DECODER</button>
+          <button id="tabBtnAudit" class="tab-btn" onclick="switchTab('audit')">[2] CHAIN &amp; CRYPTO AUDIT</button>
+          <button id="tabBtnAsn1" class="tab-btn" onclick="switchTab('asn1')">[3] ASN.1 DER TREE</button>
+          <button id="tabBtnCli" class="tab-btn" onclick="switchTab('cli')">[4] OPENSSL / K8S CLI</button>
+        </div>
+        <button class="mini-btn" onclick="exportReportJson()">[EXPORT JSON]</button>
+      </div>
+
+      <div id="tabCerts" class="tab-panel active"><div id="certsContainer"></div></div>
+      <div id="tabAudit" class="tab-panel"><div id="auditContainer"></div></div>
+      <div id="tabAsn1" class="tab-panel"><pre id="asn1Output" class="code-out"></pre></div>
+      <div id="tabCli" class="tab-panel">
+        <div style="margin-bottom:8px; display:flex; justify-content:flex-end;">
+          <button class="btn" onclick="copyText(document.getElementById('cliOutput').textContent)">[COPY CLI]</button>
+        </div>
+        <pre id="cliOutput" class="code-out"></pre>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <span>[OK] 100% Pure-JS RFC 5280 ASN.1 DER Parser &amp; Web Crypto Fingerprints | Zero Upload</span>
+    <span>OpenTools Hub · Community Micro-Tool Matrix #28</span>
+  </footer>
+
+  <div id="toast" class="toast">[OK] Copied</div>
+
+  <script>
+    const OID_MAP = {
+      "2.5.4.3": "CN",
+      "2.5.4.6": "C",
+      "2.5.4.7": "L",
+      "2.5.4.8": "ST",
+      "2.5.4.10": "O",
+      "2.5.4.11": "OU",
+      "1.2.840.113549.1.9.1": "emailAddress",
+      "1.2.840.113549.1.1.1": "rsaEncryption",
+      "1.2.840.113549.1.1.4": "md5WithRSAEncryption",
+      "1.2.840.113549.1.1.5": "sha1WithRSAEncryption",
+      "1.2.840.113549.1.1.11": "sha256WithRSAEncryption",
+      "1.2.840.113549.1.1.12": "sha384WithRSAEncryption",
+      "1.2.840.113549.1.1.13": "sha512WithRSAEncryption",
+      "1.2.840.10045.2.1": "ecPublicKey",
+      "1.2.840.10045.3.1.7": "prime256v1 (P-256)",
+      "1.3.132.0.34": "secp384r1 (P-384)",
+      "1.3.132.0.35": "secp521r1 (P-521)",
+      "1.2.840.10045.4.3.2": "ecdsa-with-SHA256",
+      "1.2.840.10045.4.3.3": "ecdsa-with-SHA384",
+      "1.3.101.112": "Ed25519",
+      "2.5.29.14": "subjectKeyIdentifier",
+      "2.5.29.15": "keyUsage",
+      "2.5.29.17": "subjectAltName",
+      "2.5.29.19": "basicConstraints",
+      "2.5.29.35": "authorityKeyIdentifier",
+      "2.5.29.37": "extKeyUsage",
+      "1.3.6.1.5.5.7.3.1": "serverAuth",
+      "1.3.6.1.5.5.7.3.2": "clientAuth",
+      "1.3.6.1.5.5.7.3.3": "codeSigning",
+      "1.3.6.1.5.5.7.3.4": "emailProtection"
+    };
+
+    const TAG_NAMES = {
+      0x01: "BOOLEAN", 0x02: "INTEGER", 0x03: "BIT STRING", 0x04: "OCTET STRING",
+      0x05: "NULL", 0x06: "OID", 0x0C: "UTF8String", 0x13: "PrintableString",
+      0x16: "IA5String", 0x17: "UTCTime", 0x18: "GeneralizedTime",
+      0x30: "SEQUENCE", 0x31: "SET"
+    };
+
+    let latestDecoded = [];
+    let debounceTimer = null;
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function bytesToHexColon(bytes) {
+      return Array.from(bytes).map(b => b.toString(16).toUpperCase().padStart(2, "0")).join(":");
+    }
+
+    function base64ToBytes(b64) {
+      const bin = atob(b64.replace(/\s+/g, ""));
+      const out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      return out;
+    }
+
+    function bytesToBase64Lines(bytes) {
+      let bin = "";
+      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      const b64 = btoa(bin);
+      return b64.match(/.{1,64}/g).join("\n");
+    }
+
+    // --- Pure-JS ASN.1 DER Binary Parser ---
+    function parseAsn1(bytes, offset = 0, limit = bytes.length, depth = 0) {
+      if (offset >= limit || depth > 24) return null;
+      const tag = bytes[offset];
+      const constructed = (tag & 0x20) !== 0;
+      let pos = offset + 1;
+      if (pos >= limit) return null;
+
+      let len = bytes[pos++];
+      if (len & 0x80) {
+        const numBytes = len & 0x7F;
+        if (numBytes === 0 || numBytes > 4 || pos + numBytes > limit) return null;
+        len = 0;
+        for (let i = 0; i < numBytes; i++) len = (len << 8) | bytes[pos++];
+      }
+      const valStart = pos;
+      const valEnd = Math.min(limit, valStart + len);
+      const value = bytes.slice(valStart, valEnd);
+      const node = { tag, constructed, offset, valStart, valEnd, len, value, children: [] };
+
+      if (constructed) {
+        let cPos = valStart;
+        while (cPos < valEnd) {
+          const child = parseAsn1(bytes, cPos, valEnd, depth + 1);
+          if (!child || child.valEnd <= cPos) break;
+          node.children.push(child);
+          cPos = child.valEnd;
+        }
+      }
+      return node;
+    }
+
+    function decodeOid(bytes) {
+      if (!bytes.length) return "";
+      const parts = [Math.floor(bytes[0] / 40), bytes[0] % 40];
+      let cur = 0;
+      for (let i = 1; i < bytes.length; i++) {
+        cur = (cur * 128) + (bytes[i] & 0x7F);
+        if ((bytes[i] & 0x80) === 0) {
+          parts.push(cur);
+          cur = 0;
+        }
+      }
+      return parts.join(".");
+    }
+
+    function decodeString(node) {
+      return new TextDecoder("utf-8", { fatal: false }).decode(node.value);
+    }
+
+    function decodeAsn1Time(node) {
+      const s = decodeString(node);
+      let year, mon, day, hr, min, sec;
+      if (node.tag === 0x17 && s.length >= 12) {
+        const yy = parseInt(s.slice(0, 2), 10);
+        year = yy < 50 ? 2000 + yy : 1900 + yy;
+        mon = parseInt(s.slice(2, 4), 10) - 1;
+        day = parseInt(s.slice(4, 6), 10);
+        hr = parseInt(s.slice(6, 8), 10);
+        min = parseInt(s.slice(8, 10), 10);
+        sec = parseInt(s.slice(10, 12), 10);
+      } else if (node.tag === 0x18 && s.length >= 14) {
+        year = parseInt(s.slice(0, 4), 10);
+        mon = parseInt(s.slice(4, 6), 10) - 1;
+        day = parseInt(s.slice(6, 8), 10);
+        hr = parseInt(s.slice(8, 10), 10);
+        min = parseInt(s.slice(10, 12), 10);
+        sec = parseInt(s.slice(12, 14), 10);
+      } else {
+        return null;
+      }
+      return new Date(Date.UTC(year, mon, day, hr, min, sec));
+    }
+
+    function decodeName(seqNode) {
+      const entries = [];
+      for (const rdnSet of (seqNode?.children || [])) {
+        for (const atvSeq of (rdnSet.children || [])) {
+          if (atvSeq.children.length >= 2) {
+            const oid = decodeOid(atvSeq.children[0].value);
+            const label = OID_MAP[oid] || oid;
+            const val = decodeString(atvSeq.children[1]);
+            entries.push(`${label}=${val}`);
+          }
+        }
+      }
+      return entries.join(", ");
+    }
+
+    function parsePublicKeyInfo(spkiNode) {
+      const algSeq = spkiNode?.children?.[0];
+      const bitStr = spkiNode?.children?.[1];
+      const algOid = algSeq?.children?.[0] ? decodeOid(algSeq.children[0].value) : "";
+      const paramOid = algSeq?.children?.[1]?.tag === 0x06 ? decodeOid(algSeq.children[1].value) : "";
+      const algName = OID_MAP[algOid] || algOid;
+      let keyBits = 0;
+      let detail = algName;
+
+      if (algOid === "1.2.840.113549.1.1.1" && bitStr && bitStr.value.length > 2) {
+        const inner = parseAsn1(bitStr.value.slice(1));
+        const mod = inner?.children?.[0]?.value;
+        if (mod && mod.length) {
+          let start = 0;
+          while (start < mod.length - 1 && mod[start] === 0) start++;
+          const firstBits = mod[start].toString(2).length;
+          keyBits = (mod.length - start - 1) * 8 + firstBits;
+          detail = `RSA ${keyBits}-bit`;
+        }
+      } else if (algOid === "1.2.840.10045.2.1") {
+        const curve = OID_MAP[paramOid] || paramOid || "EC";
+        keyBits = curve.includes("256") ? 256 : curve.includes("384") ? 384 : curve.includes("521") ? 521 : 256;
+        detail = `ECDSA (${curve})`;
+      } else if (algOid === "1.3.101.112") {
+        keyBits = 256;
+        detail = "Ed25519 (256-bit)";
+      }
+      return { algOid, algName, keyBits, detail };
+    }
+
+    function parseExtensions(extWrapper) {
+      const extSeq = extWrapper?.children?.[0];
+      const sans = [];
+      let isCa = false;
+      const eku = [];
+      const extNames = [];
+
+      for (const ext of (extSeq?.children || [])) {
+        if (!ext.children.length) continue;
+        const oid = decodeOid(ext.children[0].value);
+        extNames.push(OID_MAP[oid] || oid);
+        const octNode = ext.children[ext.children.length - 1];
+        if (!octNode || octNode.tag !== 0x04) continue;
+
+        if (oid === "2.5.29.17") {
+          const sanSeq = parseAsn1(octNode.value);
+          for (const gn of (sanSeq?.children || [])) {
+            if (gn.tag === 0x82) sans.push("DNS:" + decodeString(gn));
+            else if (gn.tag === 0x86) sans.push("URI:" + decodeString(gn));
+            else if (gn.tag === 0x81) sans.push("EMAIL:" + decodeString(gn));
+            else if (gn.tag === 0x87 && gn.value.length === 4) sans.push("IP:" + Array.from(gn.value).join("."));
+            else if (gn.tag === 0x87 && gn.value.length === 16) {
+              const g = [];
+              for (let i = 0; i < 16; i += 2) g.push(((gn.value[i] << 8) | gn.value[i + 1]).toString(16));
+              sans.push("IP:" + g.join(":"));
+            }
+          }
+        } else if (oid === "2.5.29.19") {
+          const bcSeq = parseAsn1(octNode.value);
+          if (bcSeq?.children?.[0]?.tag === 0x01 && bcSeq.children[0].value[0] !== 0) isCa = true;
+        } else if (oid === "2.5.29.37") {
+          const ekuSeq = parseAsn1(octNode.value);
+          for (const item of (ekuSeq?.children || [])) {
+            if (item.tag === 0x06) {
+              const o = decodeOid(item.value);
+              eku.push(OID_MAP[o] || o);
+            }
+          }
+        }
+      }
+      return { sans, isCa, eku, extNames };
+    }
+
+    async function computeFingerprints(derBytes) {
+      if (typeof crypto !== "undefined" && crypto.subtle) {
+        const s256 = new Uint8Array(await crypto.subtle.digest("SHA-256", derBytes));
+        const s1 = new Uint8Array(await crypto.subtle.digest("SHA-1", derBytes));
+        return { sha256: bytesToHexColon(s256), sha1: bytesToHexColon(s1) };
+      }
+      return { sha256: "(Web Crypto unavailable)", sha1: "(Web Crypto unavailable)" };
+    }
+
+    async function decodeX509Der(derBytes, index = 1) {
+      const root = parseAsn1(derBytes);
+      if (!root || root.tag !== 0x30 || root.children.length < 3) {
+        throw new Error(`Certificate #${index}: Malformed ASN.1 X.509 SEQUENCE`);
+      }
+      const tbs = root.children[0];
+      const sigAlgSeq = root.children[1];
+      let ptr = 0;
+      let version = 1;
+      if (tbs.children[0]?.tag === 0xA0) {
+        version = (tbs.children[0].children?.[0]?.value?.[0] ?? 0) + 1;
+        ptr = 1;
+      }
+
+      const serialBytes = tbs.children[ptr++]?.value || new Uint8Array();
+      const tbsSigAlg = tbs.children[ptr++];
+      const issuerNode = tbs.children[ptr++];
+      const validityNode = tbs.children[ptr++];
+      const subjectNode = tbs.children[ptr++];
+      const spkiNode = tbs.children[ptr++];
+
+      let extInfo = { sans: [], isCa: false, eku: [], extNames: [] };
+      for (let i = ptr; i < tbs.children.length; i++) {
+        if (tbs.children[i].tag === 0xA3) {
+          extInfo = parseExtensions(tbs.children[i]);
+        }
+      }
+
+      const sigOid = sigAlgSeq.children?.[0] ? decodeOid(sigAlgSeq.children[0].value) : "";
+      const sigAlg = OID_MAP[sigOid] || sigOid;
+      const notBefore = validityNode?.children?.[0] ? decodeAsn1Time(validityNode.children[0]) : null;
+      const notAfter = validityNode?.children?.[1] ? decodeAsn1Time(validityNode.children[1]) : null;
+      const now = Date.now();
+      const daysRemaining = notAfter ? Math.floor((notAfter.getTime() - now) / 86400000) : null;
+      const pubKey = parsePublicKeyInfo(spkiNode);
+      const fingerprints = await computeFingerprints(derBytes);
+
+      return {
+        index,
+        version: `v${version}`,
+        serial: bytesToHexColon(serialBytes),
+        sigOid,
+        sigAlg,
+        issuer: decodeName(issuerNode),
+        subject: decodeName(subjectNode),
+        notBefore: notBefore ? notBefore.toISOString() : "Unknown",
+        notAfter: notAfter ? notAfter.toISOString() : "Unknown",
+        daysRemaining,
+        pubKey,
+        ...extInfo,
+        fingerprints,
+        derSize: derBytes.length,
+        asn1Root: root
+      };
+    }
+
+    function formatAsn1Tree(node, indent = 0, lines = []) {
+      if (!node || lines.length > 160) return lines;
+      const pad = "  ".repeat(indent);
+      const tHex = "0x" + node.tag.toString(16).toUpperCase().padStart(2, "0");
+      const tName = TAG_NAMES[node.tag] || (node.tag >= 0x80 ? `CONTEXT[${node.tag & 0x1F}]` : `TAG_${tHex}`);
+      let summary = "";
+      if (node.tag === 0x06) {
+        const oid = decodeOid(node.value);
+        summary = ` = ${oid}${OID_MAP[oid] ? " (" + OID_MAP[oid] + ")" : ""}`;
+      } else if ([0x0C, 0x13, 0x16, 0x17, 0x18].includes(node.tag)) {
+        summary = ` = "${decodeString(node)}"`;
+      } else if (node.tag === 0x02) {
+        summary = ` (${node.value.length}B) = ${bytesToHexColon(node.value.slice(0, 12))}${node.value.length > 12 ? "..." : ""}`;
+      }
+      lines.push(`${pad}${tName} (${tHex}, len=${node.len})${summary}`);
+      for (const ch of node.children) formatAsn1Tree(ch, indent + 1, lines);
+      return lines;
+    }
+
+    function auditCertChain(certs) {
+      const findings = [];
+      let chainOk = true;
+      certs.forEach((c, idx) => {
+        const label = `Cert #${c.index} (${c.subject.split(",")[0] || "Unknown"})`;
+        if (c.daysRemaining !== null && c.daysRemaining < 0) {
+          findings.push({ sev: "ERR", cert: label, msg: `Certificate EXPIRED ${Math.abs(c.daysRemaining)} day(s) ago (${c.notAfter}).` });
+        } else if (c.daysRemaining !== null && c.daysRemaining <= 30) {
+          findings.push({ sev: "WARN", cert: label, msg: `Certificate expires soon: ${c.daysRemaining} day(s) left (${c.notAfter}).` });
+        }
+        if (/sha1|md5/i.test(c.sigAlg)) {
+          findings.push({ sev: "ERR", cert: label, msg: `Weak/deprecated signature algorithm '${c.sigAlg}' (rejected by modern TLS clients).` });
+        }
+        if (c.pubKey.algOid === "1.2.840.113549.1.1.1" && c.pubKey.keyBits > 0 && c.pubKey.keyBits < 2048) {
+          findings.push({ sev: "ERR", cert: label, msg: `Weak RSA key size (${c.pubKey.keyBits}-bit < 2048-bit minimum standard).` });
+        }
+        if (idx === 0 && !c.isCa && c.sans.length === 0) {
+          findings.push({ sev: "WARN", cert: label, msg: "Leaf certificate has NO Subject Alternative Name (SAN) extension; Chrome/Go TLS reject CN-only certs." });
+        }
+        if (idx < certs.length - 1) {
+          const next = certs[idx + 1];
+          if (c.issuer !== next.subject) {
+            chainOk = false;
+            findings.push({ sev: "ERR", cert: label, msg: `Chain break: Cert #${c.index} Issuer ('${c.issuer}') does not match Cert #${next.index} Subject ('${next.subject}').` });
+          }
+        }
+      });
+      return { findings, chainOk };
+    }
+
+    // --- Pure-JS RFC 5280 DER Encoder for Clean Offline Demo Presets ---
+    function derLen(len) {
+      if (len < 0x80) return [len];
+      if (len < 0x100) return [0x81, len];
+      return [0x82, (len >> 8) & 0xFF, len & 0xFF];
+    }
+    function derTlv(tag, body) { return [tag, ...derLen(body.length), ...body]; }
+    function derOid(oidStr) {
+      const p = oidStr.split(".").map(Number);
+      const out = [p[0] * 40 + p[1]];
+      for (let i = 2; i < p.length; i++) {
+        let v = p[i];
+        const tmp = [v & 0x7F];
+        v >>= 7;
+        while (v > 0) { tmp.unshift((v & 0x7F) | 0x80); v >>= 7; }
+        out.push(...tmp);
+      }
+      return derTlv(0x06, out);
+    }
+    function derStr(tag, str) { return derTlv(tag, Array.from(new TextEncoder().encode(str))); }
+    function derName(fields) {
+      return derTlv(0x30, fields.flatMap(([oid, val]) => derTlv(0x31, derTlv(0x30, [...derOid(oid), ...derStr(0x0C, val)]))));
+    }
+    function derUtcTime(date) {
+      const pad = n => String(n).padStart(2, "0");
+      const s = `${pad(date.getUTCFullYear() % 100)}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}${pad(date.getUTCHours())}${pad(date.getUTCMinutes())}${pad(date.getUTCSeconds())}Z`;
+      return derStr(0x17, s);
+    }
+    function buildSyntheticCertPem(cfg) {
+      const version = derTlv(0xA0, derTlv(0x02, [0x02])); // v3
+      const serial = derTlv(0x02, cfg.serialBytes);
+      const sigAlg = derTlv(0x30, [...derOid(cfg.sigOid), ...(cfg.sigOid.startsWith("1.2.840.113549") ? [0x05, 0x00] : [])]);
+      const issuer = derName(cfg.issuer);
+      const validity = derTlv(0x30, [...derUtcTime(cfg.notBefore), ...derUtcTime(cfg.notAfter)]);
+      const subject = derName(cfg.subject);
+
+      let spki;
+      if (cfg.keyType === "rsa1024") {
+        const mod = [0x00, 0xC1, ...new Array(127).fill(0x5A)];
+        const rsaSeq = derTlv(0x30, [...derTlv(0x02, mod), ...derTlv(0x02, [0x01, 0x00, 0x01])]);
+        spki = derTlv(0x30, [...derTlv(0x30, [...derOid("1.2.840.113549.1.1.1"), 0x05, 0x00]), ...derTlv(0x03, [0x00, ...rsaSeq])]);
+      } else {
+        const pubBytes = [0x00, 0x04, ...new Array(64).fill(0x3B)];
+        spki = derTlv(0x30, [...derTlv(0x30, [...derOid("1.2.840.10045.2.1"), ...derOid("1.2.840.10045.3.1.7")]), ...derTlv(0x03, pubBytes)]);
+      }
+
+      const exts = [];
+      if (cfg.isCa !== undefined) {
+        const bcVal = derTlv(0x30, cfg.isCa ? derTlv(0x01, [0xFF]) : []);
+        exts.push(derTlv(0x30, [...derOid("2.5.29.19"), ...derTlv(0x04, bcVal)]));
+      }
+      if (cfg.sans && cfg.sans.length) {
+        const sanItems = cfg.sans.flatMap(entry => {
+          if (entry.startsWith("DNS:")) return derStr(0x82, entry.slice(4));
+          if (entry.startsWith("IP:")) return derTlv(0x87, entry.slice(3).split(".").map(Number));
+          return [];
+        });
+        exts.push(derTlv(0x30, [...derOid("2.5.29.17"), ...derTlv(0x04, derTlv(0x30, sanItems))]));
+      }
+      if (cfg.ekuOids && cfg.ekuOids.length) {
+        exts.push(derTlv(0x30, [...derOid("2.5.29.37"), ...derTlv(0x04, derTlv(0x30, cfg.ekuOids.flatMap(o => derOid(o))))]));
+      }
+
+      const tbsChildren = [...version, ...serial, ...sigAlg, ...issuer, ...validity, ...subject, ...spki];
+      if (exts.length) tbsChildren.push(...derTlv(0xA3, derTlv(0x30, exts.flat())));
+      const tbs = derTlv(0x30, tbsChildren);
+      const fakeSig = derTlv(0x03, [0x00, ...new Array(64).fill(0x7E)]);
+      const certDer = new Uint8Array(derTlv(0x30, [...tbs, ...sigAlg, ...fakeSig]));
+      return `-----BEGIN CERTIFICATE-----\n${bytesToBase64Lines(certDer)}\n-----END CERTIFICATE-----`;
+    }
+
+    function buildPresetPem(key) {
+      const now = Date.now();
+      const day = 86400000;
+      if (key === "legacy_risk") {
+        return buildSyntheticCertPem({
+          serialBytes: [0x12, 0x34, 0xAB, 0xCD, 0x99],
+          sigOid: "1.2.840.113549.1.1.5", // sha1WithRSAEncryption
+          keyType: "rsa1024",
+          issuer: [["2.5.4.10", "Legacy Internal CA"], ["2.5.4.3", "Legacy Root G1"]],
+          subject: [["2.5.4.10", "Example Corp"], ["2.5.4.3", "legacy-portal.example.com"]],
+          notBefore: new Date(now - 420 * day),
+          notAfter: new Date(now - 55 * day),
+          isCa: false,
+          sans: [],
+          ekuOids: ["1.3.6.1.5.5.7.3.1"]
+        });
+      }
+      if (key === "mtls_client") {
+        return buildSyntheticCertPem({
+          serialBytes: [0x08, 0x9F, 0x44, 0x22, 0x01, 0x7A],
+          sigOid: "1.2.840.10045.4.3.2",
+          keyType: "ecdsa256",
+          issuer: [["2.5.4.10", "Service Mesh MeshCA"], ["2.5.4.3", "Mesh Intermediate CA"]],
+          subject: [["2.5.4.10", "Payments Service"], ["2.5.4.11", "Backend mTLS"], ["2.5.4.3", "billing-worker.internal.example"]],
+          notBefore: new Date(now - 5 * day),
+          notAfter: new Date(now + 25 * day),
+          isCa: false,
+          sans: ["DNS:billing-worker.internal.example", "IP:10.0.16.42"],
+          ekuOids: ["1.3.6.1.5.5.7.3.2"]
+        });
+      }
+      // prod_chain (Leaf + Intermediate)
+      const leaf = buildSyntheticCertPem({
+        serialBytes: [0x04, 0xA8, 0x91, 0x77, 0x33, 0xC2, 0x10],
+        sigOid: "1.2.840.10045.4.3.2",
+        keyType: "ecdsa256",
+        issuer: [["2.5.4.10", "OpenTools Trust Services"], ["2.5.4.3", "OpenTools TLS Intermediate E1"]],
+        subject: [["2.5.4.10", "Example Cloud Inc"], ["2.5.4.3", "api.example.com"]],
+        notBefore: new Date(now - 10 * day),
+        notAfter: new Date(now + 80 * day),
+        isCa: false,
+        sans: ["DNS:api.example.com", "DNS:*.example.com", "IP:203.0.113.10"],
+        ekuOids: ["1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.2"]
+      });
+      const inter = buildSyntheticCertPem({
+        serialBytes: [0x01, 0xFF, 0x20, 0x26, 0x00, 0x01],
+        sigOid: "1.2.840.10045.4.3.2",
+        keyType: "ecdsa256",
+        issuer: [["2.5.4.10", "OpenTools Trust Services"], ["2.5.4.3", "OpenTools Global Root R1"]],
+        subject: [["2.5.4.10", "OpenTools Trust Services"], ["2.5.4.3", "OpenTools TLS Intermediate E1"]],
+        notBefore: new Date(now - 180 * day),
+        notAfter: new Date(now + 1800 * day),
+        isCa: true,
+        sans: [],
+        ekuOids: ["1.3.6.1.5.5.7.3.1"]
+      });
+      return `${leaf}\n\n${inter}`;
+    }
+
+    async function parsePemChain(pemText) {
+      const blocks = [];
+      const re = /-----BEGIN CERTIFICATE-----([\s\S]*?)-----END CERTIFICATE-----/g;
+      let m;
+      let idx = 1;
+      while ((m = re.exec(pemText)) !== null) {
+        const der = base64ToBytes(m[1]);
+        blocks.push(await decodeX509Der(der, idx++));
+      }
+      return blocks;
+    }
+
+    async function inspectPemInput() {
+      const raw = document.getElementById("pemInput").value;
+      const alertBox = document.getElementById("privKeyAlert");
+      if (/-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(raw)) {
+        alertBox.style.display = "block";
+        alertBox.innerText = "[SECURITY ALERT] Private Key block detected in input! CertLens runs 100% locally in browser memory (zero network upload), but never paste production private keys into third-party sites.";
+      } else {
+        alertBox.style.display = "none";
+      }
+
+      try {
+        const certs = await parsePemChain(raw);
+        latestDecoded = certs;
+        const { findings, chainOk } = auditCertChain(certs);
+
+        document.getElementById("kpiCount").innerText = certs.length;
+        const chainEl = document.getElementById("kpiChain");
+        chainEl.innerText = certs.length <= 1 ? "SINGLE" : (chainOk ? "VALID" : "BROKEN");
+        chainEl.className = "kpi-val " + (certs.length <= 1 ? "c-blue" : (chainOk ? "c-green" : "c-rose"));
+
+        const leaf = certs[0];
+        const expEl = document.getElementById("kpiExpiry");
+        if (!leaf || leaf.daysRemaining === null) {
+          expEl.innerText = "-";
+          expEl.className = "kpi-val c-blue";
+        } else if (leaf.daysRemaining < 0) {
+          expEl.innerText = `EXPIRED (${Math.abs(leaf.daysRemaining)}d)`;
+          expEl.className = "kpi-val c-rose";
+        } else if (leaf.daysRemaining <= 30) {
+          expEl.innerText = `${leaf.daysRemaining}d LEFT`;
+          expEl.className = "kpi-val c-amber";
+        } else {
+          expEl.innerText = `${leaf.daysRemaining}d VALID`;
+          expEl.className = "kpi-val c-green";
+        }
+
+        document.getElementById("kpiSans").innerText = certs.reduce((a, c) => a + c.sans.length, 0);
+        document.getElementById("kpiFindings").innerText = findings.length;
+
+        renderCerts(certs);
+        renderAudit(findings, certs.length);
+        document.getElementById("asn1Output").textContent = certs.length
+          ? certs.map(c => `=== Certificate #${c.index} (${c.derSize} bytes DER) ===\n` + formatAsn1Tree(c.asn1Root).join("\n")).join("\n\n")
+          : "[INFO] No PEM certificate blocks detected.";
+        renderCliSnippets(certs);
+      } catch (err) {
+        document.getElementById("certsContainer").innerHTML = `<div class="cert-block" style="padding:14px; color:var(--rose); font-family:var(--mono); font-size:12px;">[ERR] ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    function renderCerts(certs) {
+      const box = document.getElementById("certsContainer");
+      if (!certs.length) {
+        box.innerHTML = '<div style="color:var(--muted); font-family:var(--mono); font-size:12px;">[INFO] Paste one or more PEM certificates on the left, or load a .pem / .crt / .der file.</div>';
+        return;
+      }
+      box.innerHTML = certs.map(c => {
+        const expBadge = c.daysRemaining < 0
+          ? `<span class="st-tag st-ERR">[EXPIRED]</span>`
+          : (c.daysRemaining <= 30 ? `<span class="st-tag st-WARN">[EXPIRING: ${c.daysRemaining}d]</span>` : `<span class="st-tag st-OK">[VALID: ${c.daysRemaining}d]</span>`);
+        const roleBadge = c.isCa ? '<span class="st-tag st-INFO">[CA / INTERMEDIATE]</span>' : '<span class="st-tag st-OK">[LEAF CERT]</span>';
+        const sanHtml = c.sans.length ? c.sans.map(s => `<span class="san-pill">${escapeHtml(s)}</span>`).join("") : '<span style="color:var(--muted);">(none)</span>';
+        return `
+          <div class="cert-block">
+            <div class="cert-header">
+              <span><strong>Cert #${c.index}</strong> · ${escapeHtml(c.subject)}</span>
+              <span style="display:flex; gap:6px;">${roleBadge} ${expBadge}</span>
+            </div>
+            <table class="kv-table">
+              <tr><td>Version / Size</td><td>${c.version} (${c.derSize} bytes DER)</td></tr>
+              <tr><td>Subject</td><td style="color:#fff;">${escapeHtml(c.subject)}</td></tr>
+              <tr><td>Issuer</td><td>${escapeHtml(c.issuer)}</td></tr>
+              <tr><td>Validity (UTC)</td><td>${escapeHtml(c.notBefore)}  ->  ${escapeHtml(c.notAfter)}</td></tr>
+              <tr><td>Public Key</td><td style="color:var(--primary);">${escapeHtml(c.pubKey.detail)}</td></tr>
+              <tr><td>Signature Algo</td><td>${escapeHtml(c.sigAlg)} (${escapeHtml(c.sigOid)})</td></tr>
+              <tr><td>Serial (Hex)</td><td>${escapeHtml(c.serial)}</td></tr>
+              <tr><td>SANs</td><td>${sanHtml}</td></tr>
+              <tr><td>Ext Key Usage</td><td>${c.eku.length ? escapeHtml(c.eku.join(", ")) : "(none)"}</td></tr>
+              <tr><td>SHA-256 Fingerprint</td><td style="color:var(--green);">${escapeHtml(c.fingerprints.sha256)}</td></tr>
+              <tr><td>SHA-1 Fingerprint</td><td style="color:var(--muted);">${escapeHtml(c.fingerprints.sha1)}</td></tr>
+            </table>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderAudit(findings, count) {
+      const box = document.getElementById("auditContainer");
+      if (!count) {
+        box.innerHTML = '<div style="color:var(--muted); font-family:var(--mono); font-size:12px;">[INFO] Load a certificate to run chain and cryptography checks.</div>';
+        return;
+      }
+      if (!findings.length) {
+        box.innerHTML = '<div style="padding:14px; background:var(--editor); border:1px solid var(--green); border-radius:6px; font-family:var(--mono); font-size:12px; color:var(--green);">[PASS] Zero expiry, weak-crypto, SAN, or chain ordering issues detected.</div>';
+        return;
+      }
+      box.innerHTML = findings.map(f => `
+        <div style="padding:10px 12px; margin-bottom:8px; background:var(--editor); border:1px solid ${f.sev === 'ERR' ? 'var(--rose)' : 'var(--amber)'}; border-radius:6px; font-family:var(--mono); font-size:12px;">
+          <span class="st-tag st-${f.sev}">[${f.sev}]</span> <strong>${escapeHtml(f.cert)}</strong><br>
+          <span style="color:#e2e8f0; display:inline-block; margin-top:4px;">${escapeHtml(f.msg)}</span>
+        </div>
+      `).join("");
+    }
+
+    function renderCliSnippets(certs) {
+      const cn = certs[0]?.subject?.match(/CN=([^,]+)/)?.[1] || "api.example.com";
+      document.getElementById("cliOutput").textContent =
+`# 1. Inspect live TLS endpoint & verify chain via OpenSSL
+openssl s_client -connect ${cn}:443 -servername ${cn} -showcerts </dev/null 2>/dev/null | openssl x509 -noout -subject -issuer -dates -fingerprint -sha256
+
+# 2. Verify local cert matches private key modulus / public key hash
+openssl x509 -in fullchain.pem -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256
+openssl pkey -in privkey.pem -pubout -outform der | openssl dgst -sha256
+
+# 3. Create Kubernetes TLS Secret from fullchain.pem & privkey.pem
+kubectl create secret tls ${cn.replace(/[^a-z0-9-]/gi, "-").toLowerCase()}-tls \\
+  --cert=fullchain.pem \\
+  --key=privkey.pem \\
+  --dry-run=client -o yaml | kubectl apply -f -
+
+# 4. Nginx Modern TLS 1.2/1.3 Configuration
+ssl_certificate     /etc/ssl/certs/fullchain.pem;
+ssl_certificate_key /etc/ssl/private/privkey.pem;
+ssl_protocols       TLSv1.2 TLSv1.3;`;
+    }
+
+    function loadLocalCertFile(event) {
+      const f = event.target.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const bytes = new Uint8Array(e.target.result);
+        const asText = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+        if (asText.includes("-----BEGIN CERTIFICATE-----")) {
+          document.getElementById("pemInput").value = asText;
+        } else {
+          document.getElementById("pemInput").value = `-----BEGIN CERTIFICATE-----\n${bytesToBase64Lines(bytes)}\n-----END CERTIFICATE-----`;
+        }
+        inspectPemInput();
+        showToast(`[LOADED] ${f.name} decoded locally`);
+      };
+      reader.readAsArrayBuffer(f);
+    }
+
+    function exportReportJson() {
+      const clean = latestDecoded.map(({ asn1Root, ...rest }) => rest);
+      const blob = new Blob([JSON.stringify(clean, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "x509-cert-report.json";
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("[DOWNLOAD] Exported x509-cert-report.json");
+    }
+
+    function switchTab(name) {
+      const map = { certs: ["tabBtnCerts", "tabCerts"], audit: ["tabBtnAudit", "tabAudit"], asn1: ["tabBtnAsn1", "tabAsn1"], cli: ["tabBtnCli", "tabCli"] };
+      Object.values(map).forEach(([b, p]) => {
+        document.getElementById(b).classList.remove("active");
+        document.getElementById(p).classList.remove("active");
+      });
+      document.getElementById(map[name][0]).classList.add("active");
+      document.getElementById(map[name][1]).classList.add("active");
+    }
+
+    function loadPreset(key) {
+      document.getElementById("pemInput").value = buildPresetPem(key);
+      inspectPemInput();
+    }
+
+    function copyText(txt) {
+      navigator.clipboard.writeText(txt).then(() => showToast("[COPIED] Copied to clipboard"));
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.innerText = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 2200);
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("pemInput").addEventListener("input", () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(inspectPemInput, 180);
+      });
+      loadPreset("prod_chain");
+    });
+  </script>
+</body>
+</html>

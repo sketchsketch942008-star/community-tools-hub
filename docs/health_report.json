@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-11-25 22:03:19",
+  "timestamp": "2026-11-25 23:42:49",
   "overall_status": "PASS",
   "compliance_gate": "PASS",
-  "tools_count": 27,
+  "tools_count": 28,
   "tools": [
     {
       "tool_id": "base64-binary-studio",
@@ -327,6 +327,18 @@
       "version": "v1.0.0",
       "title": "StreamInspector Studio - Modern WebSocket &amp; SSE Stream Debugger Studio v1.0.0",
       "size_bytes": 34405
+    },
+    {
+      "tool_id": "x509-cert-inspector",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "compliance_audit": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "CertLens X.509 &amp; PEM Inspector Studio - Offline SSL/TLS Certificate, SAN &amp; ASN.1 Decoder v1.0.0",
+      "size_bytes": 43137
     }
   ]
 }
