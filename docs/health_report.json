@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-11-25 21:11:25",
+  "timestamp": "2026-11-25 22:01:10",
   "overall_status": "PASS",
   "compliance_gate": "PASS",
-  "tools_count": 26,
+  "tools_count": 27,
   "tools": [
     {
       "tool_id": "base64-binary-studio",
@@ -99,6 +99,18 @@
       "version": "v1.0.0",
       "title": "SecretSanitizer - 开发者敏感凭证与日志隐私脱敏器",
       "size_bytes": 9159
+    },
+    {
+      "tool_id": "dockerfile-linter-studio",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "compliance_audit": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "DockerLint &amp; Multi-Stage Optimizer Studio - Offline Dockerfile Security Linter &amp; Cache Analyzer v1.0.0",
+      "size_bytes": 36986
     },
     {
       "tool_id": "env-config-studio",

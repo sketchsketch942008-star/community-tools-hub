@@ -95,6 +95,7 @@ flowchart TD
 | `cidr-subnet-studio` | **CIDR & VPC Subnet Planner Studio** | `v1.0.0` | 离线 IPv4 CIDR 掩码可视化、无重叠 VPC 子网规划、Peering 冲突审计与 Terraform/Nginx/WAF 规则导出 | [OK] PASS |
 | `id-inspector-studio` | **IDForge & Distributed ID Inspector Studio** | `v1.0.0` | 纯 BigInt 离线分布式 ID 解码与批量生成工坊；支持 UUID v7/ULID/Snowflake/ObjectID/KSUID 与时间轴取证 | [OK] PASS |
 | `sql-ddl-studio` | **SQLForge DDL Studio** | `v1.0.0` | 纯前端离线 SQL DDL AST 解析、架构规范审计与 Prisma/Drizzle/TS+Zod/Go GORM/SQLAlchemy/Mermaid ER 生成工坊 | [OK] PASS |
+| `dockerfile-linter-studio` | **DockerLint & Multi-Stage Optimizer Studio** | `v1.0.0` | 阶段感知 Dockerfile 安全审计（14 条 Hadolint 级规则）、多阶段层缓存地图与加固模板/.dockerignore 导出 | [OK] PASS |
 
 ---
 

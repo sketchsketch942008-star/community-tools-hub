@@ -106,7 +106,7 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         report = hub_health_checker.run_health_check()
         self.assertEqual(report["overall_status"], "PASS", f"Health check failed: {report}")
         self.assertEqual(report["compliance_gate"], "PASS", f"Compliance gate failed: {report}")
-        self.assertEqual(report["tools_count"], 26)
+        self.assertEqual(report["tools_count"], 27)
         
         for tool in report["tools"]:
             self.assertEqual(tool["status"], "PASS", f"Tool {tool['tool_id']} not passing: {tool}")
@@ -453,6 +453,22 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         self.assertIn("generateSqlAlchemy", content)
         self.assertIn("generateMermaidEr", content)
         self.assertIn("generateMockSeedSql", content)
+        self.assertIn("URL.createObjectURL", content)
+
+    def test_dockerfile_linter_studio_features(self):
+        """验证 DockerLint & Multi-Stage Optimizer Studio 页面结构、阶段感知审计与加固模板核心功能"""
+        tool_file = self.tools_dir / "dockerfile-linter-studio" / "index.html"
+        self.assertTrue(tool_file.exists())
+        content = tool_file.read_text(encoding="utf-8")
+        self.assertIn("DockerLint &amp; Multi-Stage Optimizer Studio", content)
+        self.assertIn("parseDockerfileStages", content)
+        self.assertIn("auditDockerfile", content)
+        self.assertIn("DL3002_ROOT_FINAL_STAGE", content)
+        self.assertIn("SEC_HARDCODED_SECRET", content)
+        self.assertIn("CACHE_COPY_ALL_BEFORE_INSTALL", content)
+        self.assertIn("SIGTERM_SHELL_FORM_CMD", content)
+        self.assertIn("HARDENED_TEMPLATES", content)
+        self.assertIn("DOCKERIGNORE_TEMPLATE", content)
         self.assertIn("URL.createObjectURL", content)
 
     def test_content_compliance_and_zero_telemetry_gate(self):

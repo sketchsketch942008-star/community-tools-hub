@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DockerLint &amp; Multi-Stage Optimizer Studio - Offline Dockerfile Security Linter &amp; Cache Analyzer v1.0.0</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --panel: #131c31;
+      --editor: #070b14;
+      --border: #26334d;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --green: #34d399;
+      --amber: #fbbf24;
+      --rose: #fb7185;
+      --purple: #c084fc;
+      --orange: #fb923c;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .back-btn {
+      color: var(--primary);
+      text-decoration: none;
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+    .back-btn:hover { background: rgba(56, 189, 248, 0.2); }
+    h1 { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .badge {
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .badge-ver { background: rgba(192, 132, 252, 0.15); color: var(--purple); border: 1px solid rgba(192, 132, 252, 0.3); }
+    .badge-sec { background: rgba(52, 211, 153, 0.12); color: var(--green); border: 1px solid rgba(52, 211, 153, 0.3); }
+    .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .select-box {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: var(--mono);
+      cursor: pointer;
+    }
+    .btn {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: var(--mono);
+    }
+    .btn:hover { background: #2d3c56; }
+    .btn-primary { background: var(--primary); color: #0b1120; border-color: var(--primary); }
+    .btn-primary:hover { background: var(--primary-hover); color: #fff; }
+
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+      gap: 10px;
+      padding: 10px 20px;
+      background: #0e1627;
+      border-bottom: 1px solid var(--border);
+    }
+    .kpi-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+    .kpi-label { font-size: 10.5px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; }
+    .kpi-val { font-size: 19px; font-weight: 700; font-family: var(--mono); margin-top: 2px; }
+    .c-blue { color: var(--primary); }
+    .c-green { color: var(--green); }
+    .c-amber { color: var(--amber); }
+    .c-rose { color: var(--rose); }
+    .c-purple { color: var(--purple); }
+
+    .workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1.25fr;
+      gap: 14px;
+      padding: 14px 20px;
+    }
+    @media (max-width: 960px) { .workspace { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .card-head {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      background: #162238;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 12px;
+      font-family: var(--mono);
+    }
+    .mini-btn {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: var(--mono);
+      cursor: pointer;
+    }
+    .mini-btn:hover { color: var(--text); border-color: var(--primary); }
+    textarea.df-in {
+      flex: 1;
+      width: 100%;
+      min-height: 440px;
+      background: var(--editor);
+      color: #e2e8f0;
+      border: none;
+      outline: none;
+      padding: 14px;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.6;
+      resize: vertical;
+    }
+
+    .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-family: var(--mono);
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { background: var(--editor); border-color: var(--primary); color: var(--primary); }
+    .tab-panel { display: none; padding: 14px; flex: 1; overflow: auto; max-height: 580px; }
+    .tab-panel.active { display: block; }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .pill {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-family: var(--mono);
+      cursor: pointer;
+    }
+    .pill.active { border-color: var(--primary); color: var(--primary); background: rgba(56, 189, 248, 0.12); }
+
+    .finding {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .finding-meta {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+      font-family: var(--mono);
+    }
+    .st-tag {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10.5px;
+      font-weight: 700;
+      font-family: var(--mono);
+    }
+    .st-CRIT { background: rgba(244, 63, 94, 0.25); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.55); }
+    .st-HIGH { background: rgba(251, 146, 60, 0.22); color: #fdba74; border: 1px solid rgba(251, 146, 60, 0.5); }
+    .st-WARN { background: rgba(251, 191, 36, 0.2); color: #fde68a; border: 1px solid rgba(251, 191, 36, 0.45); }
+    .st-INFO { background: rgba(56, 189, 248, 0.18); color: #bae6fd; border: 1px solid rgba(56, 189, 248, 0.45); }
+    .st-OK { background: rgba(52, 211, 153, 0.15); color: var(--green); border: 1px solid rgba(52, 211, 153, 0.35); }
+
+    .stage-card {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+    .stage-head {
+      background: #162238;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .layer-row {
+      padding: 6px 12px;
+      border-bottom: 1px solid #152036;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 11.5px;
+    }
+    .layer-row:last-child { border-bottom: none; }
+
+    pre.code-out {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.55;
+      color: #bae6fd;
+      overflow: auto;
+      max-height: 440px;
+      white-space: pre;
+    }
+
+    footer {
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+      padding: 8px 20px;
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-family: var(--mono);
+    }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--green);
+      color: #0b1120;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+      z-index: 99;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <a href="../../index.html" class="back-btn">[BACK] Hub Portal</a>
+      <h1>
+        DockerLint &amp; Multi-Stage Optimizer Studio
+        <span class="badge badge-ver">v1.0.0</span>
+        <span class="badge badge-sec">[STAGE-AWARE · 100% OFFLINE]</span>
+      </h1>
+    </div>
+    <div class="controls">
+      <select id="presetSelect" class="select-box" onchange="applyPreset(this.value)">
+        <option value="node_bloated">[PRESET] Vulnerable Single-Stage Node.js App</option>
+        <option value="python_api">[PRESET] Python FastAPI Service (Cache &amp; Size Leaks)</option>
+        <option value="go_hardened">[PRESET] Hardened Go Multi-Stage Distroless (Grade A+)</option>
+        <option value="nginx_nonroot">[PRESET] React + Nginx Multi-Stage (Port 80 Non-Root Check)</option>
+      </select>
+      <button class="btn btn-primary" onclick="runAudit()">[AUDIT DOCKERFILE]</button>
+    </div>
+  </header>
+
+  <section class="kpi-strip">
+    <div class="kpi-card"><div class="kpi-label">Security Score</div><div id="kpiScore" class="kpi-val c-green">100</div></div>
+    <div class="kpi-card"><div class="kpi-label">Grade</div><div id="kpiGrade" class="kpi-val c-green">A+</div></div>
+    <div class="kpi-card"><div class="kpi-label">Build Stages</div><div id="kpiStages" class="kpi-val c-blue">0</div></div>
+    <div class="kpi-card"><div class="kpi-label">Final Layers</div><div id="kpiLayers" class="kpi-val c-purple">0</div></div>
+    <div class="kpi-card"><div class="kpi-label">Critical / High</div><div id="kpiCritHigh" class="kpi-val c-rose">0</div></div>
+    <div class="kpi-card"><div class="kpi-label">Warnings / Info</div><div id="kpiWarnInfo" class="kpi-val c-amber">0</div></div>
+  </section>
+
+  <main class="workspace">
+    <!-- Left: Dockerfile Input -->
+    <div class="card">
+      <div class="card-head">
+        <span>[INPUT] Dockerfile Source</span>
+        <div style="display:flex; gap:6px;">
+          <input type="file" id="dfFileIn" style="display:none" onchange="loadLocalDockerfile(event)">
+          <button class="mini-btn" onclick="document.getElementById('dfFileIn').click()">[LOAD FILE]</button>
+          <button class="mini-btn" onclick="copyText(document.getElementById('dfInput').value)">[COPY]</button>
+          <button class="mini-btn" onclick="document.getElementById('dfInput').value=''; runAudit();">[CLEAR]</button>
+        </div>
+      </div>
+      <textarea id="dfInput" class="df-in" spellcheck="false" placeholder="Paste your Dockerfile here..."></textarea>
+    </div>
+
+    <!-- Right: Audit, Stage Map, Hardened Template, .dockerignore -->
+    <div class="card">
+      <div class="card-head">
+        <div class="tabs">
+          <button id="tabBtnAudit" class="tab-btn active" onclick="switchTab('audit')">[1] STAGE-AWARE AUDIT</button>
+          <button id="tabBtnStages" class="tab-btn" onclick="switchTab('stages')">[2] STAGE &amp; CACHE MAP</button>
+          <button id="tabBtnHardened" class="tab-btn" onclick="switchTab('hardened')">[3] HARDENED TEMPLATE</button>
+          <button id="tabBtnIgnore" class="tab-btn" onclick="switchTab('ignore')">[4] .DOCKERIGNORE</button>
+        </div>
+      </div>
+
+      <!-- Tab 1: Audit Findings -->
+      <div id="tabAudit" class="tab-panel active">
+        <div class="toolbar">
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button class="pill active" data-sev="ALL" onclick="setSevFilter('ALL')">ALL</button>
+            <button class="pill" data-sev="CRIT" onclick="setSevFilter('CRIT')">CRIT</button>
+            <button class="pill" data-sev="HIGH" onclick="setSevFilter('HIGH')">HIGH</button>
+            <button class="pill" data-sev="WARN" onclick="setSevFilter('WARN')">WARN</button>
+            <button class="pill" data-sev="INFO" onclick="setSevFilter('INFO')">INFO</button>
+          </div>
+          <button class="btn" onclick="copyAuditJson()">[COPY AUDIT JSON]</button>
+        </div>
+        <div id="findingsList"></div>
+      </div>
+
+      <!-- Tab 2: Stage & Layer Cache Map -->
+      <div id="tabStages" class="tab-panel">
+        <div id="stageMap"></div>
+      </div>
+
+      <!-- Tab 3: Auto-Hardened Multi-Stage Template -->
+      <div id="tabHardened" class="tab-panel">
+        <div class="toolbar">
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button class="pill active" data-stack="node" onclick="setHardenedStack('node')">Node.js 22</button>
+            <button class="pill" data-stack="python" onclick="setHardenedStack('python')">Python 3.12</button>
+            <button class="pill" data-stack="go" onclick="setHardenedStack('go')">Go 1.23 Distroless</button>
+            <button class="pill" data-stack="nginx" onclick="setHardenedStack('nginx')">Static + Nginx Unprivileged</button>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn" onclick="copyText(document.getElementById('hardenedOutput').textContent)">[COPY]</button>
+            <button class="btn btn-primary" onclick="downloadFile(document.getElementById('hardenedOutput').textContent, 'Dockerfile.hardened')">[DOWNLOAD]</button>
+          </div>
+        </div>
+        <pre id="hardenedOutput" class="code-out"></pre>
+      </div>
+
+      <!-- Tab 4: .dockerignore Generator -->
+      <div id="tabIgnore" class="tab-panel">
+        <div class="toolbar">
+          <span style="font-family:var(--mono); font-size:12px; color:var(--muted);">Prevents .env/key leaks &amp; massive build contexts:</span>
+          <div style="display:flex; gap:6px;">
+            <button class="btn" onclick="copyText(document.getElementById('ignoreOutput').textContent)">[COPY]</button>
+            <button class="btn btn-primary" onclick="downloadFile(document.getElementById('ignoreOutput').textContent, '.dockerignore')">[DOWNLOAD]</button>
+          </div>
+        </div>
+        <pre id="ignoreOutput" class="code-out"></pre>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <span>[OK] 100% Client-Side Stage-Aware Dockerfile Linter | Zero External Scripts | Zero Code Upload</span>
+    <span>OpenTools Hub · Community Micro-Tool Matrix #27</span>
+  </footer>
+
+  <div id="toast" class="toast">[OK] Copied</div>
+
+  <script>
+    const PRESETS = {
+      node_bloated: `# Typical Unoptimized Node.js Dockerfile
+FROM node:latest
+WORKDIR /app
+ENV API_SECRET=sample_secret_value_123456
+ADD . /app
+RUN cd /app && npm install
+RUN apt-get update && apt-get install -y curl
+RUN curl -sSL https://example.com/install.sh | sh
+EXPOSE 3000
+CMD node dist/server.js`,
+      python_api: `FROM python:3.12
+WORKDIR /service
+COPY . .
+RUN apt-get update && apt-get install -y build-essential
+RUN pip install -r requirements.txt
+EXPOSE 8000
+CMD uvicorn app.main:app --host 0.0.0.0 --port 8000`,
+      go_hardened: `# Production Hardened Multi-Stage Go Build
+FROM golang:1.23.3-alpine AS builder
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /out/server ./cmd/server
+
+FROM gcr.io/distroless/static-debian12:nonroot AS runtime
+WORKDIR /app
+COPY --from=builder /out/server /app/server
+USER 65532:65532
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=3s CMD ["/app/server", "--health"]
+ENTRYPOINT ["/app/server"]`,
+      nginx_nonroot: `FROM node:22-alpine AS builder
+WORKDIR /web
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM nginxinc/nginx-unprivileged:1.27-alpine AS runtime
+COPY --from=builder /web/dist /usr/share/nginx/html
+USER 101
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]`
+    };
+
+    const HARDENED_TEMPLATES = {
+      node: `# Hardened Multi-Stage Node.js 22 Dockerfile
+FROM node:22.12-alpine AS deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+FROM node:22.12-alpine AS builder
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM node:22.12-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+COPY --from=deps --chown=appuser:appgroup /app/node_modules ./node_modules
+COPY --from=builder --chown=appuser:appgroup /app/dist ./dist
+COPY --chown=appuser:appgroup package.json ./
+USER appuser
+EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s CMD wget -qO- http://127.0.0.1:3000/health || exit 1
+CMD ["node", "dist/server.js"]`,
+      python: `# Hardened Multi-Stage Python 3.12 Slim Dockerfile
+FROM python:3.12-slim AS builder
+WORKDIR /build
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+FROM python:3.12-slim AS runtime
+WORKDIR /app
+RUN groupadd -r appgroup && useradd -r -g appgroup -u 10001 appuser
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH" PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+COPY --chown=appuser:appgroup . .
+USER 10001:10001
+EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=3s CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')" || exit 1
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]`,
+      go: `# Hardened Multi-Stage Go 1.23 Distroless Dockerfile
+FROM golang:1.23.3-alpine AS builder
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/app ./cmd/server
+
+FROM gcr.io/distroless/static-debian12:nonroot AS runtime
+WORKDIR /app
+COPY --from=builder /out/app /app/app
+USER 65532:65532
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=3s CMD ["/app/app", "--health"]
+ENTRYPOINT ["/app/app"]`,
+      nginx: `# Hardened Multi-Stage Static Frontend + Unprivileged Nginx
+FROM node:22.12-alpine AS builder
+WORKDIR /web
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM nginxinc/nginx-unprivileged:1.27-alpine AS runtime
+COPY --from=builder /web/dist /usr/share/nginx/html
+USER 101
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://127.0.0.1:8080/ || exit 1
+CMD ["nginx", "-g", "daemon off;"]`
+    };
+
+    const DOCKERIGNORE_TEMPLATE = `# Version control & CI metadata
+.git
+.gitignore
+.github
+.gitlab-ci.yml
+
+# Local secrets & environment files (CRITICAL)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.crt
+
+# Dependencies & build caches
+node_modules
+npm-debug.log*
+.pnpm-store
+__pycache__
+*.py[cod]
+.venv
+venv
+dist
+build
+target
+coverage
+.pytest_cache
+
+# Editor & OS junk
+.vscode
+.idea
+*.swp
+.DS_Store
+Thumbs.db
+README.md
+docs/
+tests/`;
+
+    let currentSevFilter = "ALL";
+    let currentHardenedStack = "node";
+    let latestAudit = { stages: [], findings: [], score: 100, grade: "A+" };
+    let debounceTimer = null;
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function parseDockerfileStages(rawText) {
+      const rawLines = rawText.split(/\r?\n/);
+      const instructions = [];
+      let buf = "";
+      let startLine = 1;
+
+      for (let i = 0; i < rawLines.length; i++) {
+        const line = rawLines[i];
+        const trimmed = line.trim();
+        if (!buf) {
+          if (!trimmed || trimmed.startsWith("#")) continue;
+          startLine = i + 1;
+        }
+        if (trimmed.endsWith("\\")) {
+          buf += (buf ? " " : "") + trimmed.slice(0, -1).trim();
+        } else {
+          buf += (buf ? " " : "") + trimmed;
+          const m = buf.match(/^([A-Za-z]+)\s+([\s\S]*)$/);
+          if (m) {
+            instructions.push({ line: startLine, cmd: m[1].toUpperCase(), args: m[2].trim(), raw: buf });
+          }
+          buf = "";
+        }
+      }
+
+      const stages = [];
+      let currentStage = null;
+      for (const inst of instructions) {
+        if (inst.cmd === "FROM") {
+          const asMatch = inst.args.match(/\s+AS\s+([A-Za-z0-9._-]+)/i);
+          const image = inst.args.replace(/^--platform=\S+\s+/i, "").split(/\s+/)[0];
+          currentStage = {
+            index: stages.length + 1,
+            name: asMatch ? asMatch[1] : `stage-${stages.length + 1}`,
+            image,
+            fromLine: inst.line,
+            instructions: [inst]
+          };
+          stages.push(currentStage);
+        } else if (currentStage) {
+          currentStage.instructions.push(inst);
+        }
+      }
+      return stages;
+    }
+
+    function auditDockerfile(rawText) {
+      const stages = parseDockerfileStages(rawText);
+      const findings = [];
+      if (!stages.length) {
+        return { stages: [], findings: [{ severity: "INFO", rule: "EMPTY_FILE", line: 1, stage: "-", msg: "No FROM instruction found.", fix: "Start with a pinned base image, e.g. FROM node:22.12-alpine AS builder." }], score: 100, grade: "A+" };
+      }
+
+      const secretKeyRe = /(SECRET|PASSWORD|PASSWD|TOKEN|API_KEY|PRIVATE_KEY|AWS_SECRET)/i;
+      const secretValRe = /(sk-(?:proj-)?[A-Za-z0-9_-]{12,}|ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})/;
+
+      stages.forEach((st, sIdx) => {
+        const isFinal = sIdx === stages.length - 1;
+        const stLabel = `Stage ${st.index} (${st.name})`;
+
+        // 1. Base image tag pinning
+        if (st.image !== "scratch") {
+          if (/:latest$/i.test(st.image) || (!st.image.includes(":") && !st.image.includes("@sha256:"))) {
+            findings.push({
+              severity: "HIGH", rule: "DL3007_LATEST_TAG", line: st.fromLine, stage: stLabel,
+              msg: `Base image '${st.image}' uses mutable :latest or unpinned tag.`,
+              fix: "Pin an immutable version or digest (e.g. node:22.12-alpine or @sha256:...)."
+            });
+          }
+        }
+
+        // Single-stage heavy SDK check
+        if (stages.length === 1 && /^(node|golang|python|rust|maven|gradle|openjdk):[^-]+$/i.test(st.image)) {
+          findings.push({
+            severity: "INFO", rule: "SINGLE_STAGE_HEAVY_SDK", line: st.fromLine, stage: stLabel,
+            msg: `Full SDK base image '${st.image}' used in a single-stage build (~800MB-1.2GB).`,
+            fix: "Split into a multi-stage build copying runtime artifacts into -slim, -alpine, or distroless."
+          });
+        }
+
+        let seenCopyAll = false;
+        let copyAllLine = 0;
+        let lastUser = null;
+        let hasHealthcheck = false;
+        let exposedPrivPorts = [];
+
+        for (const inst of st.instructions) {
+          const { cmd, args, line } = inst;
+
+          if (cmd === "ENV" || cmd === "ARG") {
+            if (secretKeyRe.test(args) || secretValRe.test(args)) {
+              findings.push({
+                severity: "CRIT", rule: "SEC_HARDCODED_SECRET", line, stage: stLabel,
+                msg: `Sensitive credential pattern baked into ${cmd} instruction (persists in image history layers).`,
+                fix: "Use BuildKit secret mounts (RUN --mount=type=secret,id=...) or inject at runtime."
+              });
+            }
+          }
+
+          if (cmd === "ADD") {
+            if (!/\.(tar|tar\.gz|tgz|tar\.xz|tar\.bz2)\b/i.test(args)) {
+              findings.push({
+                severity: "HIGH", rule: "DL3020_ADD_INSTEAD_OF_COPY", line, stage: stLabel,
+                msg: "ADD used where COPY is safer and more explicit.",
+                fix: "Replace ADD with COPY unless intentionally auto-extracting a local tar archive."
+              });
+            }
+          }
+
+          if (cmd === "COPY" || cmd === "ADD") {
+            if (!/--from=/i.test(args) && /^\.\s+/.test(args)) {
+              seenCopyAll = true;
+              copyAllLine = line;
+            }
+          }
+
+          if (cmd === "RUN") {
+            if (seenCopyAll && /(npm\s+(ci|install)|pnpm\s+install|yarn\s+install|pip\s+install\s+-r|go\s+mod\s+download|poetry\s+install)/i.test(args)) {
+              findings.push({
+                severity: "HIGH", rule: "CACHE_COPY_ALL_BEFORE_INSTALL", line, stage: stLabel,
+                msg: `Dependency install runs AFTER 'COPY . .' (L${copyAllLine}), busting Docker layer cache on every source file edit.`,
+                fix: "COPY only lockfiles/manifests first, install dependencies, then COPY the rest of the source tree."
+              });
+            }
+            if (/(curl|wget)[^|]+\|\s*(sh|bash|zsh)\b/i.test(args)) {
+              findings.push({
+                severity: "CRIT", rule: "SEC_CURL_PIPE_SH", line, stage: stLabel,
+                msg: "Piping remote script directly into shell (curl/wget | sh) introduces supply-chain execution risk.",
+                fix: "Download the script, verify its SHA-256 checksum, then execute explicitly."
+              });
+            }
+            if (/apt-get\s+install/i.test(args)) {
+              if (!/--no-install-recommends/i.test(args) || !/rm\s+-rf\s+\/var\/lib\/apt\/lists/i.test(args)) {
+                findings.push({
+                  severity: "WARN", rule: "DL3009_APT_CACHE_LEAK", line, stage: stLabel,
+                  msg: "apt-get install missing '--no-install-recommends' or 'rm -rf /var/lib/apt/lists/*' cleanup in the same RUN layer.",
+                  fix: "Chain 'apt-get update && apt-get install -y --no-install-recommends <pkgs> && rm -rf /var/lib/apt/lists/*'."
+                });
+              }
+            }
+            if (/apk\s+add/i.test(args) && !/--no-cache/i.test(args)) {
+              findings.push({
+                severity: "WARN", rule: "DL3018_APK_NO_CACHE", line, stage: stLabel,
+                msg: "apk add without '--no-cache' retains Alpine package index cache in the image layer.",
+                fix: "Use 'apk add --no-cache <packages>'."
+              });
+            }
+            if (/pip3?\s+install/i.test(args) && !/--no-cache-dir/i.test(args)) {
+              findings.push({
+                severity: "WARN", rule: "DL3042_PIP_NO_CACHE", line, stage: stLabel,
+                msg: "pip install without '--no-cache-dir' bloats layer size with downloaded wheels.",
+                fix: "Add '--no-cache-dir' or use BuildKit cache mount '--mount=type=cache,target=/root/.cache/pip'."
+              });
+            }
+            if (/(?:^|&&\s*|;\s*)cd\s+/i.test(args)) {
+              findings.push({
+                severity: "WARN", rule: "DL3003_RUN_CD", line, stage: stLabel,
+                msg: "Using 'cd' inside RUN instead of WORKDIR reduces readability and breaks path clarity.",
+                fix: "Use WORKDIR /target/path before RUN."
+              });
+            }
+          }
+
+          if (cmd === "USER") lastUser = args.split(/\s+/)[0];
+          if (cmd === "HEALTHCHECK") hasHealthcheck = true;
+          if (cmd === "EXPOSE") {
+            const ports = args.match(/\d+/g) || [];
+            ports.forEach(p => { if (Number(p) < 1024) exposedPrivPorts.push({ port: Number(p), line }); });
+          }
+
+          if (isFinal && (cmd === "CMD" || cmd === "ENTRYPOINT")) {
+            if (!args.trim().startsWith("[")) {
+              findings.push({
+                severity: "HIGH", rule: "SIGTERM_SHELL_FORM_CMD", line, stage: stLabel,
+                msg: `Final stage ${cmd} uses shell form ('${args}'), wrapping process under /bin/sh so Kubernetes/Docker SIGTERM is not forwarded.`,
+                fix: `Use JSON exec form: ${cmd} ["executable", "arg1"].`
+              });
+            }
+          }
+        }
+
+        // Stage-aware Final Stage checks ONLY
+        if (isFinal) {
+          const isDistrolessNonroot = /distroless.*:nonroot/i.test(st.image);
+          if (!isDistrolessNonroot && (!lastUser || lastUser === "root" || lastUser === "0" || lastUser.startsWith("0:"))) {
+            findings.push({
+              severity: "CRIT", rule: "DL3002_ROOT_FINAL_STAGE", line: st.fromLine, stage: stLabel,
+              msg: "Final runtime stage executes as root (no non-root USER directive found).",
+              fix: "Create and switch to a non-root user (e.g. USER 10001:10001) before CMD/ENTRYPOINT."
+            });
+          } else if (exposedPrivPorts.length) {
+            exposedPrivPorts.forEach(ep => {
+              findings.push({
+                severity: "WARN", rule: "PRIV_PORT_WITH_NONROOT", line: ep.line, stage: stLabel,
+                msg: `Privileged port ${ep.port} (< 1024) exposed with non-root USER (${lastUser || "nonroot"}); container may fail with EACCES.`,
+                fix: "Bind to an unprivileged port (>= 1024, e.g. 8080) and map ports in Docker/Kubernetes."
+              });
+            });
+          }
+
+          if (!hasHealthcheck) {
+            findings.push({
+              severity: "WARN", rule: "DL3025_NO_HEALTHCHECK", line: st.fromLine, stage: stLabel,
+              msg: "Final runtime stage has no HEALTHCHECK instruction.",
+              fix: "Add HEALTHCHECK --interval=30s --timeout=3s CMD [...] for container liveness monitoring."
+            });
+          }
+        }
+      });
+
+      let score = 100;
+      for (const f of findings) {
+        if (f.severity === "CRIT") score -= 22;
+        else if (f.severity === "HIGH") score -= 12;
+        else if (f.severity === "WARN") score -= 5;
+        else if (f.severity === "INFO") score -= 2;
+      }
+      score = Math.max(0, score);
+      const grade = score >= 95 ? "A+" : score >= 85 ? "A" : score >= 70 ? "B" : score >= 50 ? "C" : "D";
+      return { stages, findings, score, grade };
+    }
+
+    function runAudit() {
+      const raw = document.getElementById("dfInput").value;
+      latestAudit = auditDockerfile(raw);
+      const { stages, findings, score, grade } = latestAudit;
+
+      const scoreEl = document.getElementById("kpiScore");
+      const gradeEl = document.getElementById("kpiGrade");
+      scoreEl.innerText = score;
+      gradeEl.innerText = grade;
+      const cls = score >= 85 ? "kpi-val c-green" : score >= 60 ? "kpi-val c-amber" : "kpi-val c-rose";
+      scoreEl.className = cls;
+      gradeEl.className = cls;
+
+      document.getElementById("kpiStages").innerText = stages.length;
+      const finalLayers = stages.length ? stages[stages.length - 1].instructions.filter(i => ["RUN", "COPY", "ADD"].includes(i.cmd)).length : 0;
+      document.getElementById("kpiLayers").innerText = finalLayers;
+      document.getElementById("kpiCritHigh").innerText = findings.filter(f => f.severity === "CRIT" || f.severity === "HIGH").length;
+      document.getElementById("kpiWarnInfo").innerText = findings.filter(f => f.severity === "WARN" || f.severity === "INFO").length;
+
+      renderFindings();
+      renderStageMap();
+    }
+
+    function renderFindings() {
+      const box = document.getElementById("findingsList");
+      const list = latestAudit.findings.filter(f => currentSevFilter === "ALL" || f.severity === currentSevFilter);
+      if (!list.length) {
+        box.innerHTML = '<div style="padding:16px; background:var(--editor); border:1px solid var(--green); border-radius:6px; font-family:var(--mono); font-size:12px; color:var(--green);">[PASS] Zero security or optimization issues for the selected severity filter.</div>';
+        return;
+      }
+      box.innerHTML = list.map(f => `
+        <div class="finding">
+          <div class="finding-meta">
+            <span class="st-tag st-${f.severity}">[${f.severity}]</span>
+            <span style="color:var(--primary); font-weight:700;">${escapeHtml(f.rule)}</span>
+            <span style="color:var(--muted);">L${f.line} · ${escapeHtml(f.stage)}</span>
+          </div>
+          <div style="color:#e2e8f0; margin-bottom:4px;">${escapeHtml(f.msg)}</div>
+          <div style="color:var(--green); font-family:var(--mono); font-size:11.5px;">[FIX] ${escapeHtml(f.fix)}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderStageMap() {
+      const box = document.getElementById("stageMap");
+      if (!latestAudit.stages.length) {
+        box.innerHTML = '<div style="color:var(--muted); font-family:var(--mono); font-size:12px;">[INFO] No build stages parsed.</div>';
+        return;
+      }
+      box.innerHTML = latestAudit.stages.map((st, idx) => {
+        const isFinal = idx === latestAudit.stages.length - 1;
+        const rows = st.instructions.map(inst => {
+          const createsLayer = ["RUN", "COPY", "ADD"].includes(inst.cmd);
+          const tag = createsLayer ? '<span class="st-tag st-INFO">LAYER</span>' : '<span class="st-tag st-OK">META</span>';
+          const preview = inst.raw.length > 78 ? inst.raw.slice(0, 78) + "..." : inst.raw;
+          return `<div class="layer-row"><span>L${inst.line}: ${escapeHtml(preview)}</span>${tag}</div>`;
+        }).join("");
+        return `
+          <div class="stage-card">
+            <div class="stage-head">
+              <span><strong>Stage ${st.index}: ${escapeHtml(st.name)}</strong> (${escapeHtml(st.image)})</span>
+              <span class="st-tag ${isFinal ? 'st-OK' : 'st-INFO'}">${isFinal ? '[FINAL RUNTIME]' : '[BUILD STAGE]'}</span>
+            </div>
+            ${rows}
+          </div>
+        `;
+      }).join("");
+    }
+
+    function switchTab(name) {
+      const map = { audit: ["tabBtnAudit", "tabAudit"], stages: ["tabBtnStages", "tabStages"], hardened: ["tabBtnHardened", "tabHardened"], ignore: ["tabBtnIgnore", "tabIgnore"] };
+      Object.values(map).forEach(([b, p]) => {
+        document.getElementById(b).classList.remove("active");
+        document.getElementById(p).classList.remove("active");
+      });
+      document.getElementById(map[name][0]).classList.add("active");
+      document.getElementById(map[name][1]).classList.add("active");
+    }
+
+    function setSevFilter(sev) {
+      currentSevFilter = sev;
+      document.querySelectorAll("#tabAudit .pill").forEach(el => {
+        el.classList.toggle("active", el.getAttribute("data-sev") === sev);
+      });
+      renderFindings();
+    }
+
+    function setHardenedStack(stack) {
+      currentHardenedStack = stack;
+      document.querySelectorAll("#tabHardened .pill").forEach(el => {
+        el.classList.toggle("active", el.getAttribute("data-stack") === stack);
+      });
+      document.getElementById("hardenedOutput").textContent = HARDENED_TEMPLATES[stack] || HARDENED_TEMPLATES.node;
+    }
+
+    function applyPreset(key) {
+      document.getElementById("dfInput").value = PRESETS[key] || PRESETS.node_bloated;
+      runAudit();
+    }
+
+    function loadLocalDockerfile(event) {
+      const f = event.target.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById("dfInput").value = e.target.result;
+        runAudit();
+        showToast(`[LOADED] ${f.name} loaded locally`);
+      };
+      reader.readAsText(f);
+    }
+
+    function copyAuditJson() {
+      copyText(JSON.stringify({ score: latestAudit.score, grade: latestAudit.grade, stages: latestAudit.stages.length, findings: latestAudit.findings }, null, 2));
+    }
+
+    function copyText(txt) {
+      navigator.clipboard.writeText(txt).then(() => showToast("[COPIED] Copied to clipboard"));
+    }
+
+    function downloadFile(txt, filename) {
+      const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("[DOWNLOAD] Exported " + filename);
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.innerText = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 2200);
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("dfInput").addEventListener("input", () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(runAudit, 180);
+      });
+      document.getElementById("ignoreOutput").textContent = DOCKERIGNORE_TEMPLATE;
+      setHardenedStack("node");
+      applyPreset("node_bloated");
+    });
+  </script>
+</body>
+</html>
