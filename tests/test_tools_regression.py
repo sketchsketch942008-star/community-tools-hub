@@ -106,7 +106,7 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         report = hub_health_checker.run_health_check()
         self.assertEqual(report["overall_status"], "PASS", f"Health check failed: {report}")
         self.assertEqual(report["compliance_gate"], "PASS", f"Compliance gate failed: {report}")
-        self.assertEqual(report["tools_count"], 25)
+        self.assertEqual(report["tools_count"], 26)
         
         for tool in report["tools"]:
             self.assertEqual(tool["status"], "PASS", f"Tool {tool['tool_id']} not passing: {tool}")
@@ -435,6 +435,24 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         self.assertIn("uuidToUlid", content)
         self.assertIn("Number.MAX_SAFE_INTEGER", content)
         self.assertIn("crypto.getRandomValues", content)
+        self.assertIn("URL.createObjectURL", content)
+
+    def test_sql_ddl_studio_features(self):
+        """验证 SQLForge DDL Studio 页面结构、SQL AST 解析、架构审计与多 ORM 导出核心功能"""
+        tool_file = self.tools_dir / "sql-ddl-studio" / "index.html"
+        self.assertTrue(tool_file.exists())
+        content = tool_file.read_text(encoding="utf-8")
+        self.assertIn("SQLForge DDL Studio", content)
+        self.assertIn("parseSqlDdl", content)
+        self.assertIn("splitTopLevelCommas", content)
+        self.assertIn("auditSchema", content)
+        self.assertIn("generatePrisma", content)
+        self.assertIn("generateDrizzle", content)
+        self.assertIn("generateTsZod", content)
+        self.assertIn("generateGoGorm", content)
+        self.assertIn("generateSqlAlchemy", content)
+        self.assertIn("generateMermaidEr", content)
+        self.assertIn("generateMockSeedSql", content)
         self.assertIn("URL.createObjectURL", content)
 
     def test_content_compliance_and_zero_telemetry_gate(self):

@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQLForge DDL Studio - Offline SQL DDL Parser, Schema Linter &amp; Prisma/Drizzle/Go ORM Converter v1.0.0</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --panel: #131c31;
+      --editor: #070b14;
+      --border: #26334d;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --green: #34d399;
+      --amber: #fbbf24;
+      --rose: #fb7185;
+      --purple: #c084fc;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .back-btn {
+      color: var(--primary);
+      text-decoration: none;
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+    .back-btn:hover { background: rgba(56, 189, 248, 0.2); }
+    h1 { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .badge {
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .badge-ver { background: rgba(192, 132, 252, 0.15); color: var(--purple); border: 1px solid rgba(192, 132, 252, 0.3); }
+    .badge-sec { background: rgba(52, 211, 153, 0.12); color: var(--green); border: 1px solid rgba(52, 211, 153, 0.3); }
+    .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .select-box {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: var(--mono);
+      cursor: pointer;
+    }
+    .btn {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: var(--mono);
+    }
+    .btn:hover { background: #2d3c56; }
+    .btn-primary { background: var(--primary); color: #0b1120; border-color: var(--primary); }
+    .btn-primary:hover { background: var(--primary-hover); color: #fff; }
+
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+      padding: 10px 20px;
+      background: #0e1627;
+      border-bottom: 1px solid var(--border);
+    }
+    .kpi-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+    .kpi-label { font-size: 10.5px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; }
+    .kpi-val { font-size: 18px; font-weight: 700; font-family: var(--mono); margin-top: 2px; }
+    .c-blue { color: var(--primary); }
+    .c-green { color: var(--green); }
+    .c-amber { color: var(--amber); }
+    .c-purple { color: var(--purple); }
+    .c-rose { color: var(--rose); }
+
+    .workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1.25fr;
+      gap: 14px;
+      padding: 14px 20px;
+    }
+    @media (max-width: 960px) { .workspace { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .card-head {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      background: #162238;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 12px;
+      font-family: var(--mono);
+    }
+    .mini-btn {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: var(--mono);
+      cursor: pointer;
+    }
+    .mini-btn:hover { color: var(--text); border-color: var(--primary); }
+
+    textarea.sql-in {
+      flex: 1;
+      width: 100%;
+      min-height: 440px;
+      background: var(--editor);
+      color: #e2e8f0;
+      border: none;
+      outline: none;
+      padding: 14px;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.6;
+      resize: vertical;
+    }
+
+    .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-family: var(--mono);
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { background: var(--editor); border-color: var(--primary); color: var(--primary); }
+    .tab-panel { display: none; padding: 14px; flex: 1; overflow: auto; max-height: 580px; }
+    .tab-panel.active { display: block; }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .pill {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-family: var(--mono);
+      cursor: pointer;
+    }
+    .pill.active { border-color: var(--primary); color: var(--primary); background: rgba(56, 189, 248, 0.12); }
+
+    .er-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 14px; }
+    .er-table {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      font-family: var(--mono);
+      font-size: 11.5px;
+    }
+    .er-title {
+      background: #162238;
+      padding: 7px 10px;
+      font-weight: 700;
+      color: var(--primary);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+    }
+    .er-col {
+      padding: 5px 10px;
+      border-bottom: 1px solid #162033;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .er-col:last-child { border-bottom: none; }
+    .k-badge {
+      font-size: 10px;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-weight: 700;
+      margin-right: 4px;
+    }
+    .k-PK { background: rgba(251, 191, 36, 0.2); color: var(--amber); }
+    .k-FK { background: rgba(192, 132, 252, 0.2); color: var(--purple); }
+    .k-UQ { background: rgba(56, 189, 248, 0.2); color: var(--primary); }
+    .k-NN { background: rgba(52, 211, 153, 0.16); color: var(--green); }
+
+    .audit-box {
+      background: #0e172a;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+    .audit-row { padding: 5px 0; border-bottom: 1px solid #1a2640; }
+    .audit-row:last-child { border-bottom: none; }
+
+    pre.code-out {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.55;
+      color: #bae6fd;
+      overflow: auto;
+      max-height: 440px;
+      white-space: pre;
+    }
+
+    footer {
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+      padding: 8px 20px;
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-family: var(--mono);
+    }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--green);
+      color: #0b1120;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+      z-index: 99;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <a href="../../index.html" class="back-btn">[BACK] Hub Portal</a>
+      <h1>
+        SQLForge DDL Studio
+        <span class="badge badge-ver">v1.0.0</span>
+        <span class="badge badge-sec">[100% OFFLINE]</span>
+      </h1>
+    </div>
+    <div class="controls">
+      <select id="presetSelect" class="select-box" onchange="applyPreset(this.value)">
+        <option value="saas_billing">[PRESET] SaaS Multi-Tenant Billing (PostgreSQL)</option>
+        <option value="ecommerce">[PRESET] E-Commerce Orders &amp; Items (MySQL)</option>
+        <option value="blog_cms">[PRESET] Developer Blog &amp; Comments (SQLite/PG)</option>
+        <option value="ai_rag">[PRESET] AI Document &amp; Chunk Indexer</option>
+      </select>
+      <button class="btn btn-primary" onclick="parseAndRender()">[PARSE DDL]</button>
+    </div>
+  </header>
+
+  <section class="kpi-strip">
+    <div class="kpi-card"><div class="kpi-label">Tables</div><div id="kpiTables" class="kpi-val c-blue">0</div></div>
+    <div class="kpi-card"><div class="kpi-label">Columns</div><div id="kpiCols" class="kpi-val c-green">0</div></div>
+    <div class="kpi-card"><div class="kpi-label">Foreign Keys</div><div id="kpiFks" class="kpi-val c-purple">0</div></div>
+    <div class="kpi-card"><div class="kpi-label">Audit Warnings</div><div id="kpiWarns" class="kpi-val c-amber">0</div></div>
+  </section>
+
+  <main class="workspace">
+    <!-- Left Panel: SQL DDL Editor -->
+    <div class="card">
+      <div class="card-head">
+        <span>[INPUT] SQL CREATE TABLE DDL (PostgreSQL / MySQL / SQLite)</span>
+        <div style="display:flex; gap:6px;">
+          <input type="file" id="sqlFileIn" accept=".sql,.txt" style="display:none" onchange="loadSqlFile(event)">
+          <button class="mini-btn" onclick="document.getElementById('sqlFileIn').click()">[LOAD .SQL]</button>
+          <button class="mini-btn" onclick="copyText(document.getElementById('sqlInput').value)">[COPY]</button>
+          <button class="mini-btn" onclick="document.getElementById('sqlInput').value=''; parseAndRender();">[CLEAR]</button>
+        </div>
+      </div>
+      <textarea id="sqlInput" class="sql-in" spellcheck="false" placeholder="Paste CREATE TABLE SQL statements here..."></textarea>
+    </div>
+
+    <!-- Right Panel: Multi-Tab Output -->
+    <div class="card">
+      <div class="card-head">
+        <div class="tabs">
+          <button id="tabBtnOrm" class="tab-btn active" onclick="switchTab('orm')">[1] ORM &amp; CODEGEN</button>
+          <button id="tabBtnEr" class="tab-btn" onclick="switchTab('er')">[2] ER CARDS &amp; AUDIT</button>
+          <button id="tabBtnSeed" class="tab-btn" onclick="switchTab('seed')">[3] MOCK SEED SQL</button>
+          <button id="tabBtnAst" class="tab-btn" onclick="switchTab('ast')">[4] JSON AST</button>
+        </div>
+      </div>
+
+      <!-- Tab 1: ORM & Codegen -->
+      <div id="tabOrm" class="tab-panel active">
+        <div class="toolbar">
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button class="pill active" data-fmt="prisma" onclick="setOrmFormat('prisma')">Prisma</button>
+            <button class="pill" data-fmt="drizzle" onclick="setOrmFormat('drizzle')">Drizzle TS</button>
+            <button class="pill" data-fmt="ts_zod" onclick="setOrmFormat('ts_zod')">TypeScript + Zod</button>
+            <button class="pill" data-fmt="golang" onclick="setOrmFormat('golang')">Go (GORM)</button>
+            <button class="pill" data-fmt="sqlalchemy" onclick="setOrmFormat('sqlalchemy')">Python SQLAlchemy</button>
+            <button class="pill" data-fmt="mermaid" onclick="setOrmFormat('mermaid')">Mermaid ER</button>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn" onclick="copyText(document.getElementById('ormOutput').textContent)">[COPY]</button>
+            <button class="btn btn-primary" onclick="downloadOrm()">[DOWNLOAD]</button>
+          </div>
+        </div>
+        <pre id="ormOutput" class="code-out"></pre>
+      </div>
+
+      <!-- Tab 2: Visual ER Cards & Schema Linter -->
+      <div id="tabEr" class="tab-panel">
+        <div id="erCards" class="er-grid"></div>
+        <div class="audit-box">
+          <div style="color:var(--primary); font-weight:700; margin-bottom:6px;">[SCHEMA LINTER &amp; BEST-PRACTICE AUDIT]</div>
+          <div id="auditList"></div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Mock Seed SQL -->
+      <div id="tabSeed" class="tab-panel">
+        <div class="toolbar">
+          <span style="font-family:var(--mono); font-size:12px; color:var(--muted);">Synthesized sample INSERT rows (type-safe &amp; FK-aligned):</span>
+          <div style="display:flex; gap:6px;">
+            <button class="btn" onclick="copyText(document.getElementById('seedOutput').textContent)">[COPY SQL]</button>
+            <button class="btn btn-primary" onclick="downloadSeed()">[DOWNLOAD .SQL]</button>
+          </div>
+        </div>
+        <pre id="seedOutput" class="code-out"></pre>
+      </div>
+
+      <!-- Tab 4: JSON AST -->
+      <div id="tabAst" class="tab-panel">
+        <div class="toolbar">
+          <span style="font-family:var(--mono); font-size:12px; color:var(--muted);">Parsed Database Schema AST:</span>
+          <button class="btn" onclick="copyText(document.getElementById('astOutput').textContent)">[COPY AST]</button>
+        </div>
+        <pre id="astOutput" class="code-out"></pre>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <span>[OK] 100% Client-Side DDL AST Engine | Zero External Scripts | Zero Schema Upload</span>
+    <span>OpenTools Hub · Community Micro-Tool Matrix #26</span>
+  </footer>
+
+  <div id="toast" class="toast">[OK] Copied</div>
+
+  <script>
+    const PRESETS = {
+      saas_billing: `-- SaaS Multi-Tenant Billing Schema (PostgreSQL)
+CREATE TABLE organizations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug VARCHAR(64) NOT NULL UNIQUE,
+  display_name VARCHAR(120) NOT NULL,
+  plan_tier VARCHAR(32) NOT NULL DEFAULT 'free',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id),
+  email VARCHAR(255) NOT NULL UNIQUE,
+  role VARCHAR(32) NOT NULL DEFAULT 'member',
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE invoices (
+  id BIGSERIAL PRIMARY KEY,
+  org_id UUID NOT NULL REFERENCES organizations(id),
+  amount_usd DECIMAL(10, 2) NOT NULL,
+  status VARCHAR(24) NOT NULL DEFAULT 'pending',
+  metadata JSONB,
+  issued_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);`,
+      ecommerce: `-- E-Commerce Core Schema (MySQL style)
+CREATE TABLE \`customers\` (
+  \`id\` BIGINT PRIMARY KEY AUTO_INCREMENT,
+  \`email\` VARCHAR(255) NOT NULL UNIQUE,
+  \`full_name\` VARCHAR(120) NOT NULL,
+  \`created_at\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE \`products\` (
+  \`id\` BIGINT PRIMARY KEY AUTO_INCREMENT,
+  \`sku\` VARCHAR(64) NOT NULL UNIQUE,
+  \`title\` VARCHAR(200) NOT NULL,
+  \`price\` FLOAT NOT NULL,
+  \`stock_qty\` INT NOT NULL DEFAULT 0,
+  \`active\` BOOLEAN NOT NULL DEFAULT true
+);
+
+CREATE TABLE \`orders\` (
+  \`id\` BIGINT PRIMARY KEY AUTO_INCREMENT,
+  \`customer_id\` BIGINT NOT NULL,
+  \`total_amount\` DECIMAL(12, 2) NOT NULL,
+  \`status\` VARCHAR(32) NOT NULL DEFAULT 'created',
+  \`created_at\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (\`customer_id\`) REFERENCES \`customers\`(\`id\`)
+);`,
+      blog_cms: `CREATE TABLE authors (
+  id SERIAL PRIMARY KEY,
+  handle VARCHAR(64) NOT NULL UNIQUE,
+  bio TEXT
+);
+
+CREATE TABLE articles (
+  id SERIAL PRIMARY KEY,
+  author_id INTEGER NOT NULL REFERENCES authors(id),
+  slug VARCHAR(160) NOT NULL UNIQUE,
+  title VARCHAR(240) NOT NULL,
+  body TEXT NOT NULL,
+  published BOOLEAN NOT NULL DEFAULT false,
+  published_at TIMESTAMP
+);
+
+CREATE TABLE comments (
+  id SERIAL PRIMARY KEY,
+  article_id INTEGER NOT NULL REFERENCES articles(id),
+  author_name VARCHAR(100) NOT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);`,
+      ai_rag: `CREATE TABLE documents (
+  id UUID PRIMARY KEY,
+  source_uri TEXT NOT NULL,
+  content_hash VARCHAR(64) NOT NULL UNIQUE,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  indexed_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE chunks (
+  id UUID PRIMARY KEY,
+  document_id UUID NOT NULL REFERENCES documents(id),
+  chunk_index INTEGER NOT NULL,
+  chunk_text TEXT NOT NULL,
+  meta JSONB
+);`
+    };
+
+    let currentOrmFmt = "prisma";
+    let parsedTables = [];
+    let debounceTimer = null;
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function toPascalCase(str) {
+      return str.replace(/(^|[_-])([a-z0-9])/gi, (_, __, c) => c.toUpperCase());
+    }
+
+    function toCamelCase(str) {
+      const p = toPascalCase(str);
+      return p.charAt(0).toLowerCase() + p.slice(1);
+    }
+
+    function stripIdent(s) {
+      return s.trim().replace(/^[`"\[]|[`"\]]$/g, "");
+    }
+
+    function splitTopLevelCommas(body) {
+      const parts = [];
+      let cur = "";
+      let depth = 0;
+      let inSingle = false;
+      let inDouble = false;
+      for (let i = 0; i < body.length; i++) {
+        const ch = body[i];
+        if (ch === "'" && !inDouble) inSingle = !inSingle;
+        else if (ch === '"' && !inSingle) inDouble = !inDouble;
+        else if (!inSingle && !inDouble) {
+          if (ch === "(") depth++;
+          else if (ch === ")") depth = Math.max(0, depth - 1);
+          else if (ch === "," && depth === 0) {
+            if (cur.trim()) parts.push(cur.trim());
+            cur = "";
+            continue;
+          }
+        }
+        cur += ch;
+      }
+      if (cur.trim()) parts.push(cur.trim());
+      return parts;
+    }
+
+    function normalizeSqlType(rawType) {
+      const t = rawType.toUpperCase().replace(/\s+/g, " ").trim();
+      const base = t.split("(")[0].trim();
+      if (base === "UUID") return { raw: rawType, kind: "uuid", auto: false };
+      if (base === "BIGSERIAL") return { raw: rawType, kind: "bigint", auto: true };
+      if (base === "SERIAL" || base === "SMALLSERIAL") return { raw: rawType, kind: "int", auto: true };
+      if (["BIGINT", "INT8"].includes(base)) return { raw: rawType, kind: "bigint", auto: false };
+      if (["INT", "INTEGER", "INT4", "SMALLINT", "TINYINT"].includes(base)) return { raw: rawType, kind: "int", auto: false };
+      if (["DECIMAL", "NUMERIC"].includes(base)) return { raw: rawType, kind: "decimal", auto: false };
+      if (["FLOAT", "DOUBLE", "REAL", "FLOAT4", "FLOAT8"].includes(base)) return { raw: rawType, kind: "float", auto: false };
+      if (["BOOL", "BOOLEAN"].includes(base)) return { raw: rawType, kind: "boolean", auto: false };
+      if (["JSON", "JSONB"].includes(base)) return { raw: rawType, kind: "json", auto: false };
+      if (["TIMESTAMP", "TIMESTAMPTZ", "DATETIME", "DATE"].includes(base)) return { raw: rawType, kind: "datetime", auto: false };
+      if (["BYTEA", "BLOB", "BINARY", "VARBINARY"].includes(base)) return { raw: rawType, kind: "bytes", auto: false };
+      return { raw: rawType, kind: "string", auto: false };
+    }
+
+    function parseSqlDdl(sqlText) {
+      const cleaned = sqlText
+        .replace(/--[^\n]*/g, "")
+        .replace(/\/\*[\s\S]*?\*\//g, "");
+
+      const tables = [];
+      const createRe = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:[`"\[]?([A-Za-z0-9_]+)[`"\]]?\.)?[`"\[]?([A-Za-z0-9_]+)[`"\]]?\s*\(/gi;
+      let match;
+
+      while ((match = createRe.exec(cleaned)) !== null) {
+        const schema = match[1] || null;
+        const tableName = stripIdent(match[2]);
+        let startIdx = createRe.lastIndex;
+        let depth = 1;
+        let idx = startIdx;
+        let inSingle = false;
+        while (idx < cleaned.length && depth > 0) {
+          const c = cleaned[idx];
+          if (c === "'") inSingle = !inSingle;
+          else if (!inSingle) {
+            if (c === "(") depth++;
+            else if (c === ")") depth--;
+          }
+          idx++;
+        }
+        const body = cleaned.slice(startIdx, idx - 1);
+        const items = splitTopLevelCommas(body);
+        const columns = [];
+        const foreignKeys = [];
+        const tablePks = new Set();
+        const tableUniques = new Set();
+
+        for (const item of items) {
+          const upper = item.toUpperCase();
+          // Table-level constraints
+          if (/^(?:CONSTRAINT\s+\S+\s+)?PRIMARY\s+KEY\s*\(([^)]+)\)/i.test(item)) {
+            const m = item.match(/PRIMARY\s+KEY\s*\(([^)]+)\)/i);
+            m[1].split(",").forEach(c => tablePks.add(stripIdent(c)));
+            continue;
+          }
+          if (/^(?:CONSTRAINT\s+\S+\s+)?FOREIGN\s+KEY\s*\(([^)]+)\)\s+REFERENCES\s+([`"\[]?[A-Za-z0-9_.]+[`"\]]?)\s*\(([^)]+)\)/i.test(item)) {
+            const m = item.match(/FOREIGN\s+KEY\s*\(([^)]+)\)\s+REFERENCES\s+([`"\[]?[A-Za-z0-9_.]+[`"\]]?)\s*\(([^)]+)\)/i);
+            const fromCol = stripIdent(m[1]);
+            const refTable = stripIdent(m[2].split(".").pop());
+            const refCol = stripIdent(m[3]);
+            foreignKeys.push({ column: fromCol, refTable, refColumn: refCol });
+            continue;
+          }
+          if (/^(?:CONSTRAINT\s+\S+\s+)?UNIQUE\s*(?:KEY|INDEX)?\s*(?:\S+\s*)?\(([^)]+)\)/i.test(item)) {
+            const m = item.match(/\(([^)]+)\)/);
+            if (m) m[1].split(",").forEach(c => tableUniques.add(stripIdent(c)));
+            continue;
+          }
+          if (/^(?:CONSTRAINT|CHECK|INDEX|KEY)\b/i.test(upper)) continue;
+
+          // Column definition: name + type(args?) + modifiers
+          const colMatch = item.match(/^([`"\[]?[A-Za-z0-9_]+[`"\]]?)\s+([A-Za-z0-9_]+(?:\s*\([^)]+\))?(?:\s+WITHOUT\s+TIME\s+ZONE|\s+WITH\s+TIME\s+ZONE)?)([\s\S]*)$/i);
+          if (!colMatch) continue;
+          const colName = stripIdent(colMatch[1]);
+          const rawType = colMatch[2].trim();
+          const rest = colMatch[3] || "";
+          const norm = normalizeSqlType(rawType);
+
+          const isPk = /\bPRIMARY\s+KEY\b/i.test(rest);
+          const isNotNull = isPk || /\bNOT\s+NULL\b/i.test(rest);
+          const isUnique = /\bUNIQUE\b/i.test(rest);
+          const isAuto = norm.auto || /\bAUTO_INCREMENT\b|\bAUTOINCREMENT\b/i.test(rest);
+          const defMatch = rest.match(/\bDEFAULT\s+([^\s,]+(?:\([^)]*\))?)/i);
+          const defaultVal = defMatch ? defMatch[1] : null;
+          const refMatch = rest.match(/\bREFERENCES\s+([`"\[]?[A-Za-z0-9_.]+[`"\]]?)\s*\(([^)]+)\)/i);
+          let ref = null;
+          if (refMatch) {
+            ref = { refTable: stripIdent(refMatch[1].split(".").pop()), refColumn: stripIdent(refMatch[2]) };
+            foreignKeys.push({ column: colName, ...ref });
+          }
+
+          columns.push({
+            name: colName,
+            rawType,
+            kind: norm.kind,
+            isPk,
+            isNotNull,
+            isUnique,
+            isAuto,
+            defaultVal,
+            ref
+          });
+        }
+
+        // Apply table-level constraints back to columns
+        columns.forEach(c => {
+          if (tablePks.has(c.name)) { c.isPk = true; c.isNotNull = true; }
+          if (tableUniques.has(c.name)) c.isUnique = true;
+          if (!c.ref) {
+            const fk = foreignKeys.find(f => f.column === c.name);
+            if (fk) c.ref = { refTable: fk.refTable, refColumn: fk.refColumn };
+          }
+        });
+
+        tables.push({ schema, name: tableName, columns, foreignKeys });
+      }
+      return tables;
+    }
+
+    function auditSchema(tables) {
+      const warnings = [];
+      tables.forEach(t => {
+        if (!t.columns.some(c => c.isPk)) {
+          warnings.push(`[WARN] Table '${t.name}' has no PRIMARY KEY defined (hurts replication & ORM identity).`);
+        }
+        t.columns.forEach(c => {
+          if (c.kind === "float" && /(price|amount|cost|balance|total|fee|usd)/i.test(c.name)) {
+            warnings.push(`[WARN] '${t.name}.${c.name}' uses floating-point (${c.rawType}) for monetary data; use DECIMAL/NUMERIC instead.`);
+          }
+          if (c.ref && !c.isPk && !c.isUnique) {
+            warnings.push(`[INFO] Consider adding an index on foreign key '${t.name}.${c.name}' -> '${c.ref.refTable}.${c.ref.refColumn}' for fast JOINs.`);
+          }
+        });
+      });
+      return warnings;
+    }
+
+    function generatePrisma(tables) {
+      const mapKind = k => ({ uuid: "String", bigint: "BigInt", int: "Int", decimal: "Decimal", float: "Float", boolean: "Boolean", json: "Json", datetime: "DateTime", bytes: "Bytes", string: "String" }[k] || "String");
+      return tables.map(t => {
+        const lines = [`model ${toPascalCase(t.name)} {`];
+        t.columns.forEach(c => {
+          const pType = mapKind(c.kind) + (c.isNotNull ? "" : "?");
+          const attrs = [];
+          if (c.isPk) attrs.push("@id");
+          if (c.isUnique) attrs.push("@unique");
+          if (c.isAuto) attrs.push("@default(autoincrement())");
+          else if (c.defaultVal) {
+            const d = c.defaultVal.toLowerCase();
+            if (d.includes("uuid")) attrs.push("@default(uuid())");
+            else if (d.includes("now") || d.includes("current_timestamp")) attrs.push("@default(now())");
+            else if (d === "true" || d === "false" || /^\d+$/.test(d)) attrs.push(`@default(${d})`);
+            else if (/^'.*'$/.test(c.defaultVal)) attrs.push(`@default("${c.defaultVal.slice(1, -1)}")`);
+          }
+          if (c.kind === "uuid") attrs.push("@db.Uuid");
+          lines.push(`  ${toCamelCase(c.name)} ${pType}${attrs.length ? " " + attrs.join(" ") : ""} @map("${c.name}")`);
+        });
+        t.foreignKeys.forEach(fk => {
+          const relName = toCamelCase(fk.refTable.replace(/s$/, ""));
+          lines.push(`  ${relName} ${toPascalCase(fk.refTable)} @relation(fields: [${toCamelCase(fk.column)}], references: [${toCamelCase(fk.refColumn)}])`);
+        });
+        lines.push(`  @@map("${t.name}")`, "}");
+        return lines.join("\n");
+      }).join("\n\n");
+    }
+
+    function generateDrizzle(tables) {
+      const lines = ['import { pgTable, uuid, serial, bigserial, integer, bigint, varchar, text, boolean, numeric, doublePrecision, jsonb, timestamp } from "drizzle-orm/pg-core";', ""];
+      tables.forEach(t => {
+        const varName = toCamelCase(t.name);
+        lines.push(`export const ${varName} = pgTable("${t.name}", {`);
+        t.columns.forEach(c => {
+          let fn = `text("${c.name}")`;
+          if (c.kind === "uuid") fn = `uuid("${c.name}")`;
+          else if (c.kind === "bigint" && c.isAuto) fn = `bigserial("${c.name}", { mode: "number" })`;
+          else if (c.kind === "int" && c.isAuto) fn = `serial("${c.name}")`;
+          else if (c.kind === "bigint") fn = `bigint("${c.name}", { mode: "number" })`;
+          else if (c.kind === "int") fn = `integer("${c.name}")`;
+          else if (c.kind === "decimal") fn = `numeric("${c.name}")`;
+          else if (c.kind === "float") fn = `doublePrecision("${c.name}")`;
+          else if (c.kind === "boolean") fn = `boolean("${c.name}")`;
+          else if (c.kind === "json") fn = `jsonb("${c.name}")`;
+          else if (c.kind === "datetime") fn = `timestamp("${c.name}", { withTimezone: true })`;
+          else if (/VARCHAR\((\d+)\)/i.test(c.rawType)) fn = `varchar("${c.name}", { length: ${c.rawType.match(/(\d+)/)[1]} })`;
+
+          if (c.isPk) fn += ".primaryKey()";
+          if (c.isNotNull && !c.isPk) fn += ".notNull()";
+          if (c.isUnique) fn += ".unique()";
+          if (c.ref) fn += `.references(() => ${toCamelCase(c.ref.refTable)}.${toCamelCase(c.ref.refColumn)})`;
+          lines.push(`  ${toCamelCase(c.name)}: ${fn},`);
+        });
+        lines.push("});", "");
+      });
+      return lines.join("\n");
+    }
+
+    function generateTsZod(tables) {
+      const tsKind = k => ({ int: "number", bigint: "number", float: "number", decimal: "string", boolean: "boolean", json: "Record<string, unknown>", datetime: "string", bytes: "Uint8Array" }[k] || "string");
+      const zKind = k => ({ uuid: "z.string().uuid()", int: "z.number().int()", bigint: "z.number().int()", float: "z.number()", decimal: "z.string()", boolean: "z.boolean()", json: "z.record(z.unknown())", datetime: "z.string().datetime()" }[k] || "z.string()");
+      const lines = ['import { z } from "zod";', ""];
+      tables.forEach(t => {
+        const name = toPascalCase(t.name);
+        lines.push(`export interface ${name} {`);
+        t.columns.forEach(c => lines.push(`  ${c.name}${c.isNotNull ? "" : "?"}: ${tsKind(c.kind)}${c.isNotNull ? "" : " | null"};`));
+        lines.push("}", "", `export const ${name}Schema = z.object({`);
+        t.columns.forEach(c => lines.push(`  ${c.name}: ${zKind(c.kind)}${c.isNotNull ? "" : ".nullable().optional()"},`));
+        lines.push("});", "");
+      });
+      return lines.join("\n");
+    }
+
+    function generateGoGorm(tables) {
+      const goKind = (k, nn) => {
+        const base = { int: "int32", bigint: "int64", float: "float64", decimal: "string", boolean: "bool", json: "map[string]any", datetime: "time.Time", bytes: "[]byte" }[k] || "string";
+        return nn ? base : "*" + base;
+      };
+      const lines = ['package models', "", 'import "time"', ""];
+      tables.forEach(t => {
+        lines.push(`type ${toPascalCase(t.name)} struct {`);
+        t.columns.forEach(c => {
+          const tags = [`column:${c.name}`];
+          if (c.isPk) tags.push("primaryKey");
+          if (c.isUnique) tags.push("uniqueIndex");
+          if (c.isNotNull) tags.push("not null");
+          lines.push(`\t${toPascalCase(c.name)} ${goKind(c.kind, c.isNotNull)} \`json:"${c.name}" db:"${c.name}" gorm:"${tags.join(";")}"\``);
+        });
+        lines.push("}", "");
+      });
+      return lines.join("\n");
+    }
+
+    function generateSqlAlchemy(tables) {
+      const pyKind = k => ({ int: "int", bigint: "int", float: "float", decimal: "Decimal", boolean: "bool", json: "dict", datetime: "datetime", bytes: "bytes" }[k] || "str");
+      const lines = [
+        "from datetime import datetime",
+        "from decimal import Decimal",
+        "from typing import Optional",
+        "from sqlalchemy import ForeignKey",
+        "from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column",
+        "",
+        "class Base(DeclarativeBase):",
+        "    pass",
+        ""
+      ];
+      tables.forEach(t => {
+        lines.push(`class ${toPascalCase(t.name)}(Base):`, `    __tablename__ = "${t.name}"`);
+        t.columns.forEach(c => {
+          const pt = c.isNotNull ? pyKind(c.kind) : `Optional[${pyKind(c.kind)}]`;
+          const args = [];
+          if (c.ref) args.push(`ForeignKey("${c.ref.refTable}.${c.ref.refColumn}")`);
+          if (c.isPk) args.push("primary_key=True");
+          if (c.isUnique) args.push("unique=True");
+          if (!c.isNotNull) args.push("nullable=True");
+          lines.push(`    ${c.name}: Mapped[${pt}] = mapped_column(${args.join(", ")})`);
+        });
+        lines.push("");
+      });
+      return lines.join("\n");
+    }
+
+    function generateMermaidEr(tables) {
+      const lines = ["erDiagram"];
+      tables.forEach(t => {
+        lines.push(`  ${t.name} {`);
+        t.columns.forEach(c => {
+          const flags = [];
+          if (c.isPk) flags.push("PK");
+          if (c.ref) flags.push("FK");
+          if (c.isUnique) flags.push("UK");
+          const cleanType = c.rawType.replace(/\s+/g, "_").replace(/[(),]/g, "");
+          lines.push(`    ${cleanType} ${c.name}${flags.length ? " " + flags.join(",") : ""}`);
+        });
+        lines.push("  }");
+      });
+      tables.forEach(t => {
+        t.foreignKeys.forEach(fk => {
+          lines.push(`  ${fk.refTable} ||--o{ ${t.name} : "${fk.column}"`);
+        });
+      });
+      return lines.join("\n");
+    }
+
+    function generateMockSeedSql(tables) {
+      const lines = ["-- Synthesized Sample Seed Data (100% Local Offline Generator)"];
+      tables.forEach(t => {
+        const cols = t.columns.map(c => c.name);
+        const vals = t.columns.map(c => {
+          const n = c.name.toLowerCase();
+          if (c.kind === "uuid") return `'0196a1b2-7c3d-7000-8000-000000000001'`;
+          if (c.kind === "int" || c.kind === "bigint") return n.includes("qty") || n.includes("count") ? "42" : "1";
+          if (c.kind === "decimal" || c.kind === "float") return "49.99";
+          if (c.kind === "boolean") return "true";
+          if (c.kind === "json") return `'{"source":"seed","version":1}'`;
+          if (c.kind === "datetime") return `'2026-11-25T12:00:00Z'`;
+          if (n.includes("email")) return `'dev.sample@example.com'`;
+          if (n.includes("slug") || n.includes("handle")) return `'sample-item-01'`;
+          if (n.includes("status")) return `'active'`;
+          return `'sample_${c.name}'`;
+        });
+        lines.push(`INSERT INTO ${t.name} (${cols.join(", ")})\nVALUES (${vals.join(", ")});`, "");
+      });
+      return lines.join("\n");
+    }
+
+    function parseAndRender() {
+      const sql = document.getElementById("sqlInput").value;
+      parsedTables = parseSqlDdl(sql);
+      const totalCols = parsedTables.reduce((a, t) => a + t.columns.length, 0);
+      const totalFks = parsedTables.reduce((a, t) => a + t.foreignKeys.length, 0);
+      const warnings = auditSchema(parsedTables);
+
+      document.getElementById("kpiTables").innerText = parsedTables.length;
+      document.getElementById("kpiCols").innerText = totalCols;
+      document.getElementById("kpiFks").innerText = totalFks;
+      document.getElementById("kpiWarns").innerText = warnings.length;
+
+      renderOrm();
+      renderErCards(warnings);
+      document.getElementById("seedOutput").textContent = parsedTables.length ? generateMockSeedSql(parsedTables) : "-- No CREATE TABLE statements parsed.";
+      document.getElementById("astOutput").textContent = JSON.stringify(parsedTables, null, 2);
+    }
+
+    function renderOrm() {
+      const out = document.getElementById("ormOutput");
+      if (!parsedTables.length) {
+        out.textContent = "// Paste one or more CREATE TABLE statements on the left.";
+        return;
+      }
+      if (currentOrmFmt === "prisma") out.textContent = generatePrisma(parsedTables);
+      else if (currentOrmFmt === "drizzle") out.textContent = generateDrizzle(parsedTables);
+      else if (currentOrmFmt === "ts_zod") out.textContent = generateTsZod(parsedTables);
+      else if (currentOrmFmt === "golang") out.textContent = generateGoGorm(parsedTables);
+      else if (currentOrmFmt === "sqlalchemy") out.textContent = generateSqlAlchemy(parsedTables);
+      else out.textContent = generateMermaidEr(parsedTables);
+    }
+
+    function renderErCards(warnings) {
+      const grid = document.getElementById("erCards");
+      if (!parsedTables.length) {
+        grid.innerHTML = '<div style="color:var(--muted); font-family:var(--mono); font-size:12px;">[INFO] No tables parsed yet.</div>';
+      } else {
+        grid.innerHTML = parsedTables.map(t => `
+          <div class="er-table">
+            <div class="er-title"><span>${escapeHtml(t.name)}</span><span style="color:var(--muted); font-weight:400;">${t.columns.length} cols</span></div>
+            ${t.columns.map(c => {
+              let tags = "";
+              if (c.isPk) tags += '<span class="k-badge k-PK">PK</span>';
+              if (c.ref) tags += '<span class="k-badge k-FK">FK</span>';
+              if (c.isUnique) tags += '<span class="k-badge k-UQ">UQ</span>';
+              if (c.isNotNull && !c.isPk) tags += '<span class="k-badge k-NN">NN</span>';
+              return `<div class="er-col"><span>${tags}<strong>${escapeHtml(c.name)}</strong></span><span style="color:var(--muted);">${escapeHtml(c.rawType)}</span></div>`;
+            }).join("")}
+          </div>
+        `).join("");
+      }
+
+      const auditEl = document.getElementById("auditList");
+      if (!warnings.length) {
+        auditEl.innerHTML = '<div style="color:var(--green);">[PASS] Zero schema design warnings detected.</div>';
+      } else {
+        auditEl.innerHTML = warnings.map(w => `<div class="audit-row" style="color:${w.startsWith('[WARN]') ? 'var(--amber)' : 'var(--muted)'};">${escapeHtml(w)}</div>`).join("");
+      }
+    }
+
+    function switchTab(name) {
+      const map = { orm: ["tabBtnOrm", "tabOrm"], er: ["tabBtnEr", "tabEr"], seed: ["tabBtnSeed", "tabSeed"], ast: ["tabBtnAst", "tabAst"] };
+      Object.values(map).forEach(([b, p]) => {
+        document.getElementById(b).classList.remove("active");
+        document.getElementById(p).classList.remove("active");
+      });
+      document.getElementById(map[name][0]).classList.add("active");
+      document.getElementById(map[name][1]).classList.add("active");
+    }
+
+    function setOrmFormat(fmt) {
+      currentOrmFmt = fmt;
+      document.querySelectorAll("#tabOrm .pill").forEach(el => {
+        el.classList.toggle("active", el.getAttribute("data-fmt") === fmt);
+      });
+      renderOrm();
+    }
+
+    function applyPreset(key) {
+      document.getElementById("sqlInput").value = PRESETS[key] || PRESETS.saas_billing;
+      parseAndRender();
+    }
+
+    function loadSqlFile(event) {
+      const f = event.target.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById("sqlInput").value = e.target.result;
+        parseAndRender();
+        showToast(`[LOADED] ${f.name} loaded locally`);
+      };
+      reader.readAsText(f);
+    }
+
+    function downloadFile(txt, filename) {
+      const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("[DOWNLOAD] Exported " + filename);
+    }
+
+    function downloadOrm() {
+      const names = { prisma: "schema.prisma", drizzle: "schema.ts", ts_zod: "models.zod.ts", golang: "models.go", sqlalchemy: "models.py", mermaid: "schema-er.mmd" };
+      downloadFile(document.getElementById("ormOutput").textContent, names[currentOrmFmt] || "schema.txt");
+    }
+
+    function downloadSeed() {
+      downloadFile(document.getElementById("seedOutput").textContent, "seed.sql");
+    }
+
+    function copyText(txt) {
+      navigator.clipboard.writeText(txt).then(() => showToast("[COPIED] Copied to clipboard"));
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.innerText = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 2200);
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("sqlInput").addEventListener("input", () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(parseAndRender, 180);
+      });
+      applyPreset("saas_billing");
+    });
+  </script>
+</body>
+</html>

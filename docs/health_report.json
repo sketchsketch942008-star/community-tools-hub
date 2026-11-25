@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-11-25 19:05:48",
+  "timestamp": "2026-11-25 21:08:16",
   "overall_status": "PASS",
   "compliance_gate": "PASS",
-  "tools_count": 25,
+  "tools_count": 26,
   "tools": [
     {
       "tool_id": "base64-binary-studio",
@@ -255,6 +255,18 @@
       "version": "v1.0.0",
       "title": "SecurityHeaders Studio - Modern CORS &amp; CSP Policy Visual Studio v1.0.0",
       "size_bytes": 41545
+    },
+    {
+      "tool_id": "sql-ddl-studio",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "compliance_audit": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "SQLForge DDL Studio - Offline SQL DDL Parser, Schema Linter &amp; Prisma/Drizzle/Go ORM Converter v1.0.0",
+      "size_bytes": 39801
     },
     {
       "tool_id": "svg-cleaner-studio",
