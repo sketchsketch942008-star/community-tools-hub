@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GhostChar &amp; Unicode Inspector Studio - Invisible Char, BiDi, Homoglyph &amp; CRLF Sanitizer v1.0.0</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --panel: #131c31;
+      --editor: #070b14;
+      --border: #26334d;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --green: #34d399;
+      --amber: #fbbf24;
+      --rose: #fb7185;
+      --purple: #c084fc;
+      --orange: #fb923c;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .back-btn {
+      color: var(--primary);
+      text-decoration: none;
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+    .back-btn:hover { background: rgba(56, 189, 248, 0.2); }
+    h1 { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .badge {
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .badge-ver { background: rgba(192, 132, 252, 0.15); color: var(--purple); border: 1px solid rgba(192, 132, 252, 0.3); }
+    .badge-sec { background: rgba(52, 211, 153, 0.12); color: var(--green); border: 1px solid rgba(52, 211, 153, 0.3); }
+    .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .select-box {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .btn {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: var(--mono);
+    }
+    .btn:hover { background: #2d3c56; }
+    .btn-primary { background: var(--primary); color: #0b1120; border-color: var(--primary); }
+    .btn-primary:hover { background: var(--primary-hover); color: #fff; }
+    .btn-clean { background: #10b981; color: #0b1120; border-color: #10b981; }
+    .btn-clean:hover { background: #059669; color: #fff; }
+
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 10px;
+      padding: 12px 20px;
+      background: #0e1627;
+      border-bottom: 1px solid var(--border);
+    }
+    .kpi-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+    .kpi-label { font-size: 10.5px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; }
+    .kpi-val { font-size: 19px; font-weight: 700; font-family: var(--mono); margin-top: 2px; }
+    .c-blue { color: var(--primary); }
+    .c-green { color: var(--green); }
+    .c-amber { color: var(--amber); }
+    .c-rose { color: var(--rose); }
+    .c-purple { color: var(--purple); }
+    .c-orange { color: var(--orange); }
+
+    .workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1.25fr;
+      gap: 14px;
+      padding: 14px 20px;
+    }
+    @media (max-width: 960px) { .workspace { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .card-head {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      background: #162238;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 12px;
+      font-family: var(--mono);
+    }
+    .mini-btn {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: var(--mono);
+      cursor: pointer;
+    }
+    .mini-btn:hover { color: var(--text); border-color: var(--primary); }
+
+    textarea.code-in {
+      flex: 1;
+      width: 100%;
+      min-height: 360px;
+      background: var(--editor);
+      color: #e2e8f0;
+      border: none;
+      outline: none;
+      padding: 14px;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.65;
+      resize: vertical;
+    }
+
+    .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-family: var(--mono);
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { background: var(--editor); border-color: var(--primary); color: var(--primary); }
+
+    .tab-panel { display: none; padding: 14px; flex: 1; overflow: auto; max-height: 560px; }
+    .tab-panel.active { display: block; }
+
+    .xray-box {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.9;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #e2e8f0;
+    }
+    .ghost-pill {
+      display: inline-block;
+      padding: 0 5px;
+      margin: 0 1px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.5;
+      vertical-align: baseline;
+      cursor: help;
+    }
+    .g-INVISIBLE { background: rgba(251, 113, 133, 0.25); color: #fda4af; border: 1px solid rgba(251, 113, 133, 0.6); }
+    .g-BIDI { background: rgba(244, 63, 94, 0.35); color: #fecdd3; border: 1px solid #f43f5e; }
+    .g-TAG { background: rgba(192, 132, 252, 0.3); color: #e9d5ff; border: 1px solid #c084fc; }
+    .g-HOMOGLYPH { background: rgba(251, 191, 36, 0.22); color: #fde68a; border: 1px solid rgba(251, 191, 36, 0.6); }
+    .g-SMART_PUNCT { background: rgba(56, 189, 248, 0.22); color: #bae6fd; border: 1px solid rgba(56, 189, 248, 0.6); }
+    .g-CRLF { background: rgba(251, 146, 60, 0.22); color: #fed7aa; border: 1px solid rgba(251, 146, 60, 0.6); }
+
+    .legend {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--muted);
+    }
+
+    table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11.5px; }
+    th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { background: #0e172a; color: var(--muted); font-size: 10.5px; text-transform: uppercase; }
+    tr:hover td { background: rgba(56, 189, 248, 0.04); }
+
+    .opt-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+      background: #0e172a;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      font-size: 12px;
+      font-family: var(--mono);
+    }
+    @media (max-width: 640px) { .opt-grid { grid-template-columns: 1fr; } }
+    .opt-grid label { display: flex; align-items: center; gap: 7px; cursor: pointer; color: #cbd5e1; }
+
+    pre.code-out {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.55;
+      color: #a5f3fc;
+      overflow: auto;
+      max-height: 300px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .pill {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-family: var(--mono);
+      cursor: pointer;
+    }
+    .pill.active { border-color: var(--primary); color: var(--primary); background: rgba(56, 189, 248, 0.12); }
+
+    footer {
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+      padding: 8px 20px;
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-family: var(--mono);
+    }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--green);
+      color: #0b1120;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+      z-index: 99;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <a href="../../index.html" class="back-btn">[BACK] Hub Portal</a>
+      <h1>
+        GhostChar &amp; Unicode Inspector Studio
+        <span class="badge badge-ver">v1.0.0</span>
+        <span class="badge badge-sec">[100% OFFLINE]</span>
+      </h1>
+    </div>
+    <div class="controls">
+      <select id="presetSelect" class="select-box" onchange="applyPreset(this.value)">
+        <option value="sql_broken">[PRESET] Broken SQL / PDF Paste (ZWSP + NBSP + Smart Quotes)</option>
+        <option value="trojan_source">[PRESET] Trojan Source CVE-2021-42574 (BiDi RLO + Homoglyph)</option>
+        <option value="ai_prompt_tags">[PRESET] Hidden AI Prompt Injection (Unicode Tags + BOM)</option>
+        <option value="docker_crlf">[PRESET] Windows-to-Linux Dockerfile / Shell CRLF Trap</option>
+      </select>
+      <button class="btn btn-clean" onclick="applyCleanedToInput()">[SANITIZE INPUT]</button>
+      <button class="btn btn-primary" onclick="runInspection()">[SCAN NOW]</button>
+    </div>
+  </header>
+
+  <section class="kpi-strip">
+    <div class="kpi-card"><div class="kpi-label">Total Chars</div><div id="kpiChars" class="kpi-val c-blue">0</div></div>
+    <div class="kpi-card"><div class="kpi-label">UTF-8 Bytes</div><div id="kpiBytes" class="kpi-val c-blue">0</div></div>
+    <div class="kpi-card"><div class="kpi-label">Invisible/ZW</div><div id="kpiInvisible" class="kpi-val c-rose">0</div></div>
+    <div class="kpi-card"><div class="kpi-label">BiDi / Tags</div><div id="kpiBidi" class="kpi-val c-purple">0</div></div>
+    <div class="kpi-card"><div class="kpi-label">Homoglyphs</div><div id="kpiHomoglyph" class="kpi-val c-amber">0</div></div>
+    <div class="kpi-card"><div class="kpi-label">Smart Punct</div><div id="kpiSmart" class="kpi-val c-blue">0</div></div>
+    <div class="kpi-card"><div class="kpi-label">CRLF (\r)</div><div id="kpiCrlf" class="kpi-val c-orange">0</div></div>
+    <div class="kpi-card"><div class="kpi-label">Verdict</div><div id="kpiVerdict" class="kpi-val c-green">CLEAN</div></div>
+  </section>
+
+  <main class="workspace">
+    <!-- Left Panel: Raw Text Input -->
+    <div class="card">
+      <div class="card-head">
+        <span>[INPUT] Raw Text / Code / SQL / Prompt</span>
+        <div style="display:flex; gap:6px;">
+          <input type="file" id="fileInput" style="display:none" onchange="loadLocalFile(event)">
+          <button class="mini-btn" onclick="document.getElementById('fileInput').click()">[LOAD FILE]</button>
+          <button class="mini-btn" onclick="copyRaw()">[COPY]</button>
+          <button class="mini-btn" onclick="clearRaw()">[CLEAR]</button>
+        </div>
+      </div>
+      <textarea id="rawInput" class="code-in" spellcheck="false" placeholder="Paste suspicious SQL, code, JSON, AI prompt, or shell script here..."></textarea>
+    </div>
+
+    <!-- Right Panel: 4 Diagnostic & Cleaning Tabs -->
+    <div class="card">
+      <div class="card-head">
+        <div class="tabs">
+          <button id="tabBtnXray" class="tab-btn active" onclick="switchTab('xray')">[1] X-RAY VIEW</button>
+          <button id="tabBtnTable" class="tab-btn" onclick="switchTab('table')">[2] FORENSIC TABLE</button>
+          <button id="tabBtnClean" class="tab-btn" onclick="switchTab('clean')">[3] SANITIZER</button>
+          <button id="tabBtnCode" class="tab-btn" onclick="switchTab('code')">[4] FIX SNIPPETS</button>
+        </div>
+      </div>
+
+      <!-- Tab 1: X-Ray View -->
+      <div id="tabXray" class="tab-panel active">
+        <div class="legend">
+          <span><span class="ghost-pill g-INVISIBLE">INVISIBLE</span> Zero-Width/BOM/NBSP</span>
+          <span><span class="ghost-pill g-BIDI">BIDI</span> Trojan Source RLO</span>
+          <span><span class="ghost-pill g-TAG">TAG</span> Hidden AI Tag</span>
+          <span><span class="ghost-pill g-HOMOGLYPH">HOMOGLYPH</span> Confusable</span>
+          <span><span class="ghost-pill g-SMART_PUNCT">SMART</span> Quotes/Dash</span>
+          <span><span class="ghost-pill g-CRLF">CRLF</span> \r</span>
+        </div>
+        <div id="xrayOutput" class="xray-box"></div>
+      </div>
+
+      <!-- Tab 2: Forensic Anomaly Table -->
+      <div id="tabTable" class="tab-panel">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:72px;">Line:Col</th>
+              <th style="width:105px;">Category</th>
+              <th style="width:90px;">Codepoint</th>
+              <th style="width:105px;">UTF-8 Hex</th>
+              <th>Name &amp; Risk</th>
+              <th style="width:90px;">Fix</th>
+            </tr>
+          </thead>
+          <tbody id="anomalyTableBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Tab 3: One-Click Sanitizer -->
+      <div id="tabClean" class="tab-panel">
+        <div class="opt-grid">
+          <label><input type="checkbox" id="optInvisible" checked onchange="renderSanitized()"> Strip Zero-Width, BOM &amp; Hidden AI Tags</label>
+          <label><input type="checkbox" id="optBidi" checked onchange="renderSanitized()"> Strip BiDi Trojan Source Controls</label>
+          <label><input type="checkbox" id="optNbsp" checked onchange="renderSanitized()"> Normalize NBSP/Unicode Spaces -&gt; ASCII</label>
+          <label><input type="checkbox" id="optSmart" checked onchange="renderSanitized()"> Smart Quotes &amp; Dashes -&gt; ASCII</label>
+          <label><input type="checkbox" id="optHomoglyph" checked onchange="renderSanitized()"> Cyrillic/Greek Homoglyphs -&gt; Latin</label>
+          <label><input type="checkbox" id="optCrlf" checked onchange="renderSanitized()"> Normalize CRLF (\r\n) -&gt; Unix LF (\n)</label>
+        </div>
+        <div class="toolbar">
+          <span id="cleanStats" style="font-family:var(--mono); font-size:11.5px; color:var(--green);">[OK] Ready</span>
+          <div style="display:flex; gap:6px;">
+            <button class="btn" onclick="copyCleaned()">[COPY CLEANED]</button>
+            <button class="btn btn-primary" onclick="downloadCleaned()">[DOWNLOAD]</button>
+          </div>
+        </div>
+        <pre id="cleanedOutput" class="code-out"></pre>
+      </div>
+
+      <!-- Tab 4: Fix Snippets -->
+      <div id="tabCode" class="tab-panel">
+        <div class="toolbar">
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button class="pill active" data-lang="js" onclick="setSnippetLang('js')">JavaScript / TS</button>
+            <button class="pill" data-lang="python" onclick="setSnippetLang('python')">Python</button>
+            <button class="pill" data-lang="sql" onclick="setSnippetLang('sql')">SQL (PG/Snowflake)</button>
+            <button class="pill" data-lang="bash" onclick="setSnippetLang('bash')">Bash / sed / tr</button>
+          </div>
+          <button class="btn" onclick="copySnippet()">[COPY SNIPPET]</button>
+        </div>
+        <pre id="snippetOutput" class="code-out"></pre>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <span>[OK] 100% Client-Side Memory Analysis | Zero External Scripts | Zero Data Upload</span>
+    <span>OpenTools Hub · Community Micro-Tool Matrix #23</span>
+  </footer>
+
+  <div id="toast" class="toast">[OK] Copied</div>
+
+  <script>
+    const INVISIBLE_MAP = {
+      0x200B: { short: "ZWSP", name: "Zero-Width Space", fix: "remove" },
+      0x200C: { short: "ZWNJ", name: "Zero-Width Non-Joiner", fix: "remove" },
+      0x200D: { short: "ZWJ", name: "Zero-Width Joiner", fix: "remove" },
+      0xFEFF: { short: "BOM", name: "Byte Order Mark / ZWNBSP", fix: "remove" },
+      0x00AD: { short: "SHY", name: "Soft Hyphen", fix: "remove" },
+      0x2060: { short: "WJ", name: "Word Joiner", fix: "remove" },
+      0x180E: { short: "MVS", name: "Mongolian Vowel Separator", fix: "remove" },
+      0x00A0: { short: "NBSP", name: "Non-Breaking Space", fix: "space" },
+      0x2002: { short: "ENSP", name: "En Space", fix: "space" },
+      0x2003: { short: "EMSP", name: "Em Space", fix: "space" },
+      0x2009: { short: "THSP", name: "Thin Space", fix: "space" },
+      0x202F: { short: "NNBSP", name: "Narrow No-Break Space", fix: "space" },
+      0x3000: { short: "IDSP", name: "Ideographic Fullwidth Space", fix: "space" }
+    };
+
+    const BIDI_MAP = {
+      0x202A: "LRE (Left-to-Right Embedding)",
+      0x202B: "RLE (Right-to-Left Embedding)",
+      0x202C: "PDF (Pop Directional Formatting)",
+      0x202D: "LRO (Left-to-Right Override)",
+      0x202E: "RLO (Right-to-Left Override - Trojan Source)",
+      0x2066: "LRI (Left-to-Right Isolate)",
+      0x2067: "RLI (Right-to-Left Isolate)",
+      0x2068: "FSI (First Strong Isolate)",
+      0x2069: "PDI (Pop Directional Isolate)",
+      0x200E: "LRM (Left-to-Right Mark)",
+      0x200F: "RLM (Right-to-Left Mark)",
+      0x061C: "ALM (Arabic Letter Mark)"
+    };
+
+    const HOMOGLYPH_MAP = {
+      0x0430: { ascii: "a", name: "Cyrillic Small Letter A" },
+      0x0435: { ascii: "e", name: "Cyrillic Small Letter Ie" },
+      0x043E: { ascii: "o", name: "Cyrillic Small Letter O" },
+      0x0440: { ascii: "p", name: "Cyrillic Small Letter Er" },
+      0x0441: { ascii: "c", name: "Cyrillic Small Letter Es" },
+      0x0445: { ascii: "x", name: "Cyrillic Small Letter Ha" },
+      0x0443: { ascii: "y", name: "Cyrillic Small Letter U" },
+      0x0410: { ascii: "A", name: "Cyrillic Capital Letter A" },
+      0x0415: { ascii: "E", name: "Cyrillic Capital Letter Ie" },
+      0x041E: { ascii: "O", name: "Cyrillic Capital Letter O" },
+      0x0420: { ascii: "P", name: "Cyrillic Capital Letter Er" },
+      0x0421: { ascii: "C", name: "Cyrillic Capital Letter Es" },
+      0x03BF: { ascii: "o", name: "Greek Small Letter Omicron" },
+      0x03B1: { ascii: "a", name: "Greek Small Letter Alpha" },
+      0x0391: { ascii: "A", name: "Greek Capital Letter Alpha" }
+    };
+
+    const SMART_PUNCT_MAP = {
+      0x201C: { ascii: '"', short: "LDQUO", name: "Left Double Quotation Mark" },
+      0x201D: { ascii: '"', short: "RDQUO", name: "Right Double Quotation Mark" },
+      0x2018: { ascii: "'", short: "LSQUO", name: "Left Single Quotation Mark" },
+      0x2019: { ascii: "'", short: "RSQUO", name: "Right Single Quotation Mark" },
+      0x2013: { ascii: "-", short: "NDASH", name: "En Dash (breaks CLI flags)" },
+      0x2014: { ascii: "--", short: "MDASH", name: "Em Dash (breaks CLI flags)" },
+      0x2026: { ascii: "...", short: "ELLIP", name: "Horizontal Ellipsis" },
+      0xFF1A: { ascii: ":", short: "FW_COLON", name: "Fullwidth Colon" },
+      0xFF0C: { ascii: ",", short: "FW_COMMA", name: "Fullwidth Comma" }
+    };
+
+    const PRESETS = {
+      sql_broken:
+        "SELECT id, email, status\r\n" +
+        "FROM users\r\n" +
+        "WHERE\u00A0status = \u201Cactive\u200B\u201D\r\n" +
+        "  AND email = 'admin\u200B@company.org';",
+      trojan_source:
+        "// CVE-2021-42574 Trojan Source & Homoglyph Demo\n" +
+        "const accessLevel = \"user\";\n" +
+        "const is\u0410dmin = false; // Cyrillic capital A\n" +
+        "if (accessLevel != \"user\u202E \u2066// Check if admin\u2069 \u2066\") {\n" +
+        "  console.log(\"Granted admin privileges\");\n" +
+        "}",
+      ai_prompt_tags:
+        "\uFEFFSummarize this customer feedback cleanly:\n" +
+        "Great product, fast shipping!\u{E0001}\u{E0049}\u{E0047}\u{E004E}\u{E004F}\u{E0052}\u{E0045}\u200C\n" +
+        "Order ID: ORD-2026\u00AD-9981",
+      docker_crlf:
+        "\uFEFF#!/bin/bash\r\n" +
+        "# Entrypoint edited on Windows\r\n" +
+        "set -euo pipefail\r\n" +
+        "uvicorn app.main:app \u2013host 0.0.0.0 \u2013port 8080\r\n"
+    };
+
+    let currentSnippetLang = "js";
+    let latestScan = null;
+    let debounceTimer = null;
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function codePointHex(cp) {
+      return "U+" + cp.toString(16).toUpperCase().padStart(4, "0");
+    }
+
+    function utf8HexBytes(ch) {
+      const bytes = new TextEncoder().encode(ch);
+      return Array.from(bytes).map(b => b.toString(16).toUpperCase().padStart(2, "0")).join(" ");
+    }
+
+    function classifyChar(ch, cp) {
+      if (cp === 0x0D) {
+        return { category: "CRLF", short: "CR \\r", name: "Carriage Return (Windows CRLF)", replacement: "", fixLabel: "strip \\r" };
+      }
+      if (BIDI_MAP[cp]) {
+        return { category: "BIDI", short: "BIDI " + codePointHex(cp), name: BIDI_MAP[cp], replacement: "", fixLabel: "strip" };
+      }
+      if (cp >= 0xE0000 && cp <= 0xE007F) {
+        const decoded = (cp >= 0xE0020 && cp <= 0xE007E) ? ` ('${String.fromCharCode(cp - 0xE0000)}')` : "";
+        return { category: "TAG", short: "TAG " + codePointHex(cp), name: "Hidden Unicode Tag Char" + decoded + " (AI Injection Risk)", replacement: "", fixLabel: "strip" };
+      }
+      if (INVISIBLE_MAP[cp]) {
+        const info = INVISIBLE_MAP[cp];
+        return {
+          category: "INVISIBLE",
+          short: info.short + " " + codePointHex(cp),
+          name: info.name,
+          replacement: info.fix === "space" ? " " : "",
+          fixLabel: info.fix === "space" ? "to space" : "strip",
+          isSpace: info.fix === "space"
+        };
+      }
+      if (HOMOGLYPH_MAP[cp]) {
+        const h = HOMOGLYPH_MAP[cp];
+        return { category: "HOMOGLYPH", short: "HOMO '" + h.ascii + "' " + codePointHex(cp), name: `${h.name} (looks like '${h.ascii}')`, replacement: h.ascii, fixLabel: `to '${h.ascii}'` };
+      }
+      if (SMART_PUNCT_MAP[cp]) {
+        const sp = SMART_PUNCT_MAP[cp];
+        return { category: "SMART_PUNCT", short: sp.short + " " + codePointHex(cp), name: sp.name, replacement: sp.ascii, fixLabel: `to ${sp.ascii}` };
+      }
+      return null;
+    }
+
+    function analyzeUnicodeText(text) {
+      const chars = Array.from(text);
+      const anomalies = [];
+      let line = 1, col = 1;
+      const counts = { INVISIBLE: 0, BIDI: 0, TAG: 0, HOMOGLYPH: 0, SMART_PUNCT: 0, CRLF: 0 };
+
+      for (let i = 0; i < chars.length; i++) {
+        const ch = chars[i];
+        const cp = ch.codePointAt(0);
+        const info = classifyChar(ch, cp);
+        if (info) {
+          counts[info.category]++;
+          anomalies.push({
+            index: i,
+            line,
+            col,
+            ch,
+            cp,
+            hex: codePointHex(cp),
+            utf8: utf8HexBytes(ch),
+            ...info
+          });
+        }
+        if (ch === "\n") { line++; col = 1; }
+        else { col++; }
+      }
+
+      const utf8Bytes = new TextEncoder().encode(text).length;
+      return { text, chars, anomalies, counts, utf8Bytes };
+    }
+
+    function sanitizeText(text, opts) {
+      const chars = Array.from(text);
+      let removed = 0, replaced = 0;
+      const out = [];
+      for (const ch of chars) {
+        const cp = ch.codePointAt(0);
+        const info = classifyChar(ch, cp);
+        if (!info) { out.push(ch); continue; }
+        if (info.category === "CRLF" && opts.crlf) { removed++; continue; }
+        if (info.category === "BIDI" && opts.bidi) { removed++; continue; }
+        if (info.category === "TAG" && opts.invisible) { removed++; continue; }
+        if (info.category === "INVISIBLE") {
+          if (info.isSpace && opts.nbsp) { out.push(" "); replaced++; continue; }
+          if (!info.isSpace && opts.invisible) { removed++; continue; }
+        }
+        if (info.category === "HOMOGLYPH" && opts.homoglyph) { out.push(info.replacement); replaced++; continue; }
+        if (info.category === "SMART_PUNCT" && opts.smart) { out.push(info.replacement); replaced++; continue; }
+        out.push(ch);
+      }
+      return { cleaned: out.join(""), removed, replaced };
+    }
+
+    function runInspection() {
+      const raw = document.getElementById("rawInput").value;
+      const scan = analyzeUnicodeText(raw);
+      latestScan = scan;
+
+      document.getElementById("kpiChars").innerText = scan.chars.length;
+      document.getElementById("kpiBytes").innerText = scan.utf8Bytes;
+      document.getElementById("kpiInvisible").innerText = scan.counts.INVISIBLE;
+      document.getElementById("kpiBidi").innerText = scan.counts.BIDI + scan.counts.TAG;
+      document.getElementById("kpiHomoglyph").innerText = scan.counts.HOMOGLYPH;
+      document.getElementById("kpiSmart").innerText = scan.counts.SMART_PUNCT;
+      document.getElementById("kpiCrlf").innerText = scan.counts.CRLF;
+
+      const verdictEl = document.getElementById("kpiVerdict");
+      if (scan.counts.BIDI > 0 || scan.counts.TAG > 0 || scan.counts.HOMOGLYPH > 0) {
+        verdictEl.innerText = "HIGH RISK";
+        verdictEl.className = "kpi-val c-rose";
+      } else if (scan.anomalies.length > 0) {
+        verdictEl.innerText = "DIRTY";
+        verdictEl.className = "kpi-val c-amber";
+      } else {
+        verdictEl.innerText = "CLEAN";
+        verdictEl.className = "kpi-val c-green";
+      }
+
+      renderXray(scan);
+      renderTable(scan);
+      renderSanitized();
+      renderSnippets();
+    }
+
+    function renderXray(scan) {
+      const box = document.getElementById("xrayOutput");
+      if (!scan.chars.length) {
+        box.innerHTML = '<span style="color:var(--muted);">[INFO] Paste any text on the left to inspect hidden characters.</span>';
+        return;
+      }
+      const anomalyByIndex = new Map(scan.anomalies.map(a => [a.index, a]));
+      let html = "";
+      for (let i = 0; i < scan.chars.length; i++) {
+        const a = anomalyByIndex.get(i);
+        if (a) {
+          const title = escapeHtml(`${a.name} | ${a.hex} | UTF-8: ${a.utf8} | L${a.line}:C${a.col}`);
+          html += `<span class="ghost-pill g-${a.category}" title="${title}">[${escapeHtml(a.short)}]</span>`;
+        } else {
+          html += escapeHtml(scan.chars[i]);
+        }
+      }
+      box.innerHTML = html;
+    }
+
+    function renderTable(scan) {
+      const tbody = document.getElementById("anomalyTableBody");
+      if (!scan.anomalies.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--green); padding:18px;">[PASS] Zero invisible, BiDi, homoglyph, smart punctuation, or CRLF anomalies detected.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = scan.anomalies.map(a => `
+        <tr>
+          <td>L${a.line}:C${a.col}</td>
+          <td><span class="ghost-pill g-${a.category}">${a.category}</span></td>
+          <td style="color:var(--primary); font-weight:700;">${a.hex}</td>
+          <td style="color:var(--muted);">${a.utf8}</td>
+          <td>${escapeHtml(a.name)}</td>
+          <td style="color:var(--green);">${escapeHtml(a.fixLabel)}</td>
+        </tr>
+      `).join("");
+    }
+
+    function getSanitizeOpts() {
+      return {
+        invisible: document.getElementById("optInvisible").checked,
+        bidi: document.getElementById("optBidi").checked,
+        nbsp: document.getElementById("optNbsp").checked,
+        smart: document.getElementById("optSmart").checked,
+        homoglyph: document.getElementById("optHomoglyph").checked,
+        crlf: document.getElementById("optCrlf").checked
+      };
+    }
+
+    function renderSanitized() {
+      const raw = document.getElementById("rawInput").value;
+      const res = sanitizeText(raw, getSanitizeOpts());
+      const savedBytes = new TextEncoder().encode(raw).length - new TextEncoder().encode(res.cleaned).length;
+      document.getElementById("cleanedOutput").textContent = res.cleaned;
+      document.getElementById("cleanStats").innerText =
+        `[OK] Removed: ${res.removed} | Normalized: ${res.replaced} | Bytes Delta: ${savedBytes >= 0 ? "-" : "+"}${Math.abs(savedBytes)} B`;
+    }
+
+    function applyCleanedToInput() {
+      const raw = document.getElementById("rawInput").value;
+      const res = sanitizeText(raw, getSanitizeOpts());
+      document.getElementById("rawInput").value = res.cleaned;
+      runInspection();
+      showToast(`[CLEANED] Removed ${res.removed}, normalized ${res.replaced}`);
+    }
+
+    function renderSnippets() {
+      const out = document.getElementById("snippetOutput");
+      if (currentSnippetLang === "js") {
+        out.textContent =
+`// JavaScript / TypeScript: Strip Invisible, BiDi & Hidden AI Tag Chars + Normalize CRLF
+export function sanitizeGhostChars(input) {
+  return input
+    .replace(/\\r\\n?/g, "\\n")
+    .replace(/[\\u200B-\\u200F\\u202A-\\u202E\\u2060\\u2066-\\u2069\\uFEFF\\u00AD]/g, "")
+    .replace(/[\\u{E0000}-\\u{E007F}]/gu, "")
+    .replace(/[\\u00A0\\u2002\\u2003\\u2009\\u202F\\u3000]/g, " ")
+    .replace(/[\\u201C\\u201D]/g, '"')
+    .replace(/[\\u2018\\u2019]/g, "'")
+    .replace(/[\\u2013\\u2014]/g, "-");
+}`;
+      } else if (currentSnippetLang === "python") {
+        out.textContent =
+`# Python 3: Strip Invisible, BiDi & Hidden AI Unicode Tags + Normalize CRLF
+import re
+
+GHOST_RE = re.compile(r"[\\u200b-\\u200f\\u202a-\\u202e\\u2060\\u2066-\\u2069\\ufeff\\u00ad\\U000e0000-\\U000e007f]")
+SPACE_RE = re.compile(r"[\\u00a0\\u2002\\u2003\\u2009\\u202f\\u3000]")
+
+def sanitize_text(text: str) -> str:
+    text = text.replace("\\r\\n", "\\n").replace("\\r", "\\n")
+    text = GHOST_RE.sub("", text)
+    text = SPACE_RE.sub(" ", text)
+    return text.translate(str.maketrans({
+        "\\u201c": '"', "\\u201d": '"', "\\u2018": "'", "\\u2019": "'", "\\u2013": "-", "\\u2014": "--"
+    }))`;
+      } else if (currentSnippetLang === "sql") {
+        out.textContent =
+`-- PostgreSQL / Snowflake: Clean Invisible Zero-Width, NBSP & Non-ASCII Control Chars
+SELECT
+  id,
+  REGEXP_REPLACE(
+    REPLACE(REPLACE(raw_col, CHR(160), ' '), CHR(13), ''),
+    '[\\u200B-\\u200F\\u202A-\\u202E\\u2060\\uFEFF\\u00AD]',
+    '',
+    'g'
+  ) AS cleaned_col
+FROM your_table;`;
+      } else {
+        out.textContent =
+`# Bash / Linux: Strip UTF-8 BOM, Zero-Width Spaces & Convert Windows CRLF to Unix LF
+sed -i '1s/^\\xEF\\xBB\\xBF//' target_file.sh
+sed -i 's/\\r$//' target_file.sh
+perl -CSD -pi -e 's/[\\x{200B}-\\x{200F}\\x{202A}-\\x{202E}\\x{2060}\\x{2066}-\\x{2069}\\x{FEFF}]//g' target_file.sh`;
+      }
+    }
+
+    function switchTab(name) {
+      const map = { xray: ["tabBtnXray", "tabXray"], table: ["tabBtnTable", "tabTable"], clean: ["tabBtnClean", "tabClean"], code: ["tabBtnCode", "tabCode"] };
+      Object.values(map).forEach(([b, p]) => {
+        document.getElementById(b).classList.remove("active");
+        document.getElementById(p).classList.remove("active");
+      });
+      document.getElementById(map[name][0]).classList.add("active");
+      document.getElementById(map[name][1]).classList.add("active");
+    }
+
+    function setSnippetLang(lang) {
+      currentSnippetLang = lang;
+      document.querySelectorAll("#tabCode .pill").forEach(el => {
+        el.classList.toggle("active", el.getAttribute("data-lang") === lang);
+      });
+      renderSnippets();
+    }
+
+    function applyPreset(key) {
+      document.getElementById("rawInput").value = PRESETS[key] || PRESETS.sql_broken;
+      runInspection();
+    }
+
+    function loadLocalFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById("rawInput").value = e.target.result;
+        runInspection();
+        showToast(`[LOADED] ${file.name} loaded locally`);
+      };
+      reader.readAsText(file);
+    }
+
+    function copyRaw() {
+      navigator.clipboard.writeText(document.getElementById("rawInput").value).then(() => showToast("[COPIED] Raw text copied"));
+    }
+
+    function clearRaw() {
+      document.getElementById("rawInput").value = "";
+      runInspection();
+    }
+
+    function copyCleaned() {
+      navigator.clipboard.writeText(document.getElementById("cleanedOutput").textContent).then(() => showToast("[COPIED] Sanitized text copied"));
+    }
+
+    function downloadCleaned() {
+      const txt = document.getElementById("cleanedOutput").textContent;
+      const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "sanitized-clean-output.txt";
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("[DOWNLOAD] Exported sanitized-clean-output.txt");
+    }
+
+    function copySnippet() {
+      navigator.clipboard.writeText(document.getElementById("snippetOutput").textContent).then(() => showToast("[COPIED] Sanitizer snippet copied"));
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.innerText = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 2200);
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("rawInput").addEventListener("input", () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(runInspection, 150);
+      });
+      applyPreset("sql_broken");
+    });
+  </script>
+</body>
+</html>

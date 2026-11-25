@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-11-25 02:19:48",
+  "timestamp": "2026-11-25 18:14:05",
   "overall_status": "PASS",
-  "tools_count": 22,
+  "tools_count": 23,
   "tools": [
     {
       "tool_id": "base64-binary-studio",
@@ -233,6 +233,17 @@
       "version": "v1.0.0",
       "title": "TokenCompressor Studio - AI Prompt &amp; Context Token Optimizer",
       "size_bytes": 27012
+    },
+    {
+      "tool_id": "unicode-ghost-inspector",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "GhostChar &amp; Unicode Inspector Studio - Invisible Char, BiDi, Homoglyph &amp; CRLF Sanitizer v1.0.0",
+      "size_bytes": 34547
     },
     {
       "tool_id": "websocket-inspector-studio",

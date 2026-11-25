@@ -105,7 +105,7 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         """执行自主健康巡检引擎并验证 PASS 状态"""
         report = hub_health_checker.run_health_check()
         self.assertEqual(report["overall_status"], "PASS", f"Health check failed: {report}")
-        self.assertEqual(report["tools_count"], 22)
+        self.assertEqual(report["tools_count"], 23)
         
         for tool in report["tools"]:
             self.assertEqual(tool["status"], "PASS", f"Tool {tool['tool_id']} not passing: {tool}")
@@ -380,6 +380,24 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         self.assertIn("utf8ToBase64", content)
         self.assertIn("exportMissingPatch", content)
         self.assertIn("toggleMaskMode", content)
+        self.assertIn("URL.createObjectURL", content)
+
+    def test_unicode_ghost_inspector_features(self):
+        """验证 GhostChar & Unicode Inspector Studio 页面结构、隐形字符取证与一键清洗核心功能"""
+        tool_file = self.tools_dir / "unicode-ghost-inspector" / "index.html"
+        self.assertTrue(tool_file.exists())
+        content = tool_file.read_text(encoding="utf-8")
+        self.assertIn("GhostChar &amp; Unicode Inspector Studio", content)
+        self.assertIn("analyzeUnicodeText", content)
+        self.assertIn("sanitizeText", content)
+        self.assertIn("classifyChar", content)
+        self.assertIn("INVISIBLE_MAP", content)
+        self.assertIn("BIDI_MAP", content)
+        self.assertIn("HOMOGLYPH_MAP", content)
+        self.assertIn("SMART_PUNCT_MAP", content)
+        self.assertIn("renderXray", content)
+        self.assertIn("renderSnippets", content)
+        self.assertIn("applyCleanedToInput", content)
         self.assertIn("URL.createObjectURL", content)
 
 if __name__ == "__main__":
