@@ -106,7 +106,7 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         report = hub_health_checker.run_health_check()
         self.assertEqual(report["overall_status"], "PASS", f"Health check failed: {report}")
         self.assertEqual(report["compliance_gate"], "PASS", f"Compliance gate failed: {report}")
-        self.assertEqual(report["tools_count"], 28)
+        self.assertEqual(report["tools_count"], 29)
         
         for tool in report["tools"]:
             self.assertEqual(tool["status"], "PASS", f"Tool {tool['tool_id']} not passing: {tool}")
@@ -484,6 +484,21 @@ class TestOpenToolsHubRegression(unittest.TestCase):
         self.assertIn("computeFingerprints", content)
         self.assertIn("formatAsn1Tree", content)
         self.assertIn("crypto.subtle.digest", content)
+        self.assertIn("URL.createObjectURL", content)
+
+    def test_systemd_unit_studio_features(self):
+        """验证 SystemdGuard Unit Studio 页面结构、沙盒加固生成与安全暴露分审计核心功能"""
+        tool_file = self.tools_dir / "systemd-unit-studio" / "index.html"
+        self.assertTrue(tool_file.exists())
+        content = tool_file.read_text(encoding="utf-8")
+        self.assertIn("SystemdGuard Unit Studio", content)
+        self.assertIn("generateUnitText", content)
+        self.assertIn("generateDropinText", content)
+        self.assertIn("parseAndAuditUnit", content)
+        self.assertIn("HARDENING_CHECKS", content)
+        self.assertIn("NoNewPrivileges", content)
+        self.assertIn("ProtectSystem", content)
+        self.assertIn("MemoryDenyWriteExecute", content)
         self.assertIn("URL.createObjectURL", content)
 
     def test_content_compliance_and_zero_telemetry_gate(self):

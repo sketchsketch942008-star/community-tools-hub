@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SystemdGuard Unit Studio - Offline Linux .service Builder &amp; Hardening Auditor v1.0.0</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --panel: #131c31;
+      --editor: #070b14;
+      --border: #26334d;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --green: #34d399;
+      --amber: #fbbf24;
+      --rose: #fb7185;
+      --purple: #c084fc;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .back-btn {
+      color: var(--primary);
+      text-decoration: none;
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+    .back-btn:hover { background: rgba(56, 189, 248, 0.2); }
+    h1 { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .badge {
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .badge-ver { background: rgba(192, 132, 252, 0.15); color: var(--purple); border: 1px solid rgba(192, 132, 252, 0.3); }
+    .badge-sec { background: rgba(52, 211, 153, 0.12); color: var(--green); border: 1px solid rgba(52, 211, 153, 0.3); }
+    .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .select-box, .text-input {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: var(--mono);
+      outline: none;
+    }
+    .text-input:focus, .select-box:focus { border-color: var(--primary); }
+    .btn {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: var(--mono);
+    }
+    .btn:hover { background: #2d3c56; }
+    .btn-primary { background: var(--primary); color: #0b1120; border-color: var(--primary); }
+    .btn-primary:hover { background: var(--primary-hover); color: #fff; }
+
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      padding: 10px 20px;
+      background: #0e1627;
+      border-bottom: 1px solid var(--border);
+    }
+    .kpi-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+    .kpi-label { font-size: 10.5px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; }
+    .kpi-val { font-size: 18px; font-weight: 700; font-family: var(--mono); margin-top: 2px; }
+    .c-blue { color: var(--primary); }
+    .c-green { color: var(--green); }
+    .c-amber { color: var(--amber); }
+    .c-rose { color: var(--rose); }
+    .c-purple { color: var(--purple); }
+
+    .workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 14px;
+      padding: 14px 20px;
+    }
+    @media (max-width: 960px) { .workspace { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .card-head {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      background: #162238;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 12px;
+      font-family: var(--mono);
+    }
+    .form-body { padding: 14px; overflow-y: auto; max-height: 620px; }
+    .sec-title {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--primary);
+      margin: 12px 0 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+      text-transform: uppercase;
+    }
+    .sec-title:first-child { margin-top: 0; }
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 600px) { .field-grid { grid-template-columns: 1fr; } }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field.full { grid-column: 1 / -1; }
+    .field label { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+    .check-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 11.5px;
+    }
+    @media (max-width: 600px) { .check-grid { grid-template-columns: 1fr; } }
+    .check-grid label { display: flex; align-items: center; gap: 6px; cursor: pointer; color: #cbd5e1; }
+
+    .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-family: var(--mono);
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { background: var(--editor); border-color: var(--primary); color: var(--primary); }
+    .tab-panel { display: none; padding: 14px; flex: 1; overflow: auto; max-height: 620px; }
+    .tab-panel.active { display: block; }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    pre.code-out {
+      background: var(--editor);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.55;
+      color: #bae6fd;
+      overflow: auto;
+      max-height: 460px;
+      white-space: pre;
+    }
+    textarea.audit-in {
+      width: 100%;
+      height: 170px;
+      background: var(--editor);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: #e2e8f0;
+      padding: 10px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.5;
+      outline: none;
+      margin-bottom: 10px;
+      resize: vertical;
+    }
+    table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11.5px; }
+    th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { background: #0e172a; color: var(--muted); font-size: 10.5px; text-transform: uppercase; }
+    .st-tag {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .st-PASS { background: rgba(52, 211, 153, 0.16); color: var(--green); border: 1px solid rgba(52, 211, 153, 0.4); }
+    .st-WARN { background: rgba(251, 191, 36, 0.2); color: var(--amber); border: 1px solid rgba(251, 191, 36, 0.45); }
+    .st-FAIL { background: rgba(244, 63, 94, 0.24); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.55); }
+
+    footer {
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+      padding: 8px 20px;
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-family: var(--mono);
+    }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--green);
+      color: #0b1120;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+      z-index: 99;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <a href="../../index.html" class="back-btn">[BACK] Hub Portal</a>
+      <h1>
+        SystemdGuard Unit Studio
+        <span class="badge badge-ver">v1.0.0</span>
+        <span class="badge badge-sec">[EXPOSURE AUDITOR · 100% OFFLINE]</span>
+      </h1>
+    </div>
+    <div class="controls">
+      <select id="presetSelect" class="select-box" onchange="applyPreset(this.value)">
+        <option value="go_api">[PRESET] Go / Rust Static Binary (Max Hardening SAFE)</option>
+        <option value="node_app">[PRESET] Node.js / Bun Backend (V8 JIT Safe)</option>
+        <option value="python_uvicorn">[PRESET] Python FastAPI / Uvicorn Worker</option>
+        <option value="legacy_unsafe">[PRESET] Unhardened Legacy Root Service (Audit Demo)</option>
+      </select>
+      <button class="btn btn-primary" onclick="rebuildAll()">[GENERATE &amp; AUDIT]</button>
+    </div>
+  </header>
+
+  <section class="kpi-strip">
+    <div class="kpi-card"><div class="kpi-label">Exposure Score</div><div id="kpiExposure" class="kpi-val c-green">1.2 / 10</div></div>
+    <div class="kpi-card"><div class="kpi-label">Security Level</div><div id="kpiLevel" class="kpi-val c-green">SAFE</div></div>
+    <div class="kpi-card"><div class="kpi-label">Hardening Checks</div><div id="kpiPassed" class="kpi-val c-blue">0 / 12</div></div>
+    <div class="kpi-card"><div class="kpi-label">Runtime Warnings</div><div id="kpiWarns" class="kpi-val c-amber">0</div></div>
+  </section>
+
+  <main class="workspace">
+    <!-- Left Panel: Builder Form -->
+    <div class="card">
+      <div class="card-head"><span>[BUILDER] Unit Metadata &amp; Sandbox Directives</span></div>
+      <div class="form-body">
+        <div class="sec-title">1. Service Identity &amp; Execution</div>
+        <div class="field-grid">
+          <div class="field"><label>Unit Name (.service)</label><input id="fName" class="text-input" oninput="rebuildAll()"></div>
+          <div class="field"><label>Service Type</label>
+            <select id="fType" class="select-box" onchange="rebuildAll()">
+              <option value="simple">simple</option>
+              <option value="exec">exec</option>
+              <option value="notify">notify</option>
+              <option value="oneshot">oneshot</option>
+            </select>
+          </div>
+          <div class="field full"><label>Description</label><input id="fDesc" class="text-input" oninput="rebuildAll()"></div>
+          <div class="field full"><label>ExecStart</label><input id="fExec" class="text-input" oninput="rebuildAll()"></div>
+          <div class="field"><label>WorkingDirectory</label><input id="fWorkdir" class="text-input" oninput="rebuildAll()"></div>
+          <div class="field"><label>EnvironmentFile (optional)</label><input id="fEnvFile" class="text-input" placeholder="/etc/app-api/env" oninput="rebuildAll()"></div>
+          <div class="field"><label>User (ignored if DynamicUser)</label><input id="fUser" class="text-input" oninput="rebuildAll()"></div>
+          <div class="field"><label>Restart Policy</label>
+            <select id="fRestart" class="select-box" onchange="rebuildAll()">
+              <option value="on-failure">on-failure</option>
+              <option value="always">always</option>
+              <option value="no">no</option>
+            </select>
+          </div>
+          <div class="field"><label>MemoryMax (e.g. 512M)</label><input id="fMemMax" class="text-input" oninput="rebuildAll()"></div>
+          <div class="field"><label>LimitNOFILE</label><input id="fNofile" class="text-input" oninput="rebuildAll()"></div>
+        </div>
+
+        <div class="sec-title">2. Filesystem &amp; Privilege Sandboxing</div>
+        <div class="field-grid" style="margin-bottom:10px;">
+          <div class="field"><label>ProtectSystem</label>
+            <select id="fProtectSys" class="select-box" onchange="rebuildAll()">
+              <option value="strict">strict (read-only rootfs)</option>
+              <option value="full">full</option>
+              <option value="true">true</option>
+              <option value="no">no (unprotected)</option>
+            </select>
+          </div>
+          <div class="field"><label>ProtectHome</label>
+            <select id="fProtectHome" class="select-box" onchange="rebuildAll()">
+              <option value="yes">yes (inaccessible)</option>
+              <option value="read-only">read-only</option>
+              <option value="no">no (unprotected)</option>
+            </select>
+          </div>
+          <div class="field"><label>ReadWritePaths (optional)</label><input id="fRwPaths" class="text-input" placeholder="/var/lib/app-api" oninput="rebuildAll()"></div>
+          <div class="field"><label>AmbientCapabilities</label><input id="fAmbCap" class="text-input" placeholder="CAP_NET_BIND_SERVICE" oninput="rebuildAll()"></div>
+        </div>
+
+        <div class="check-grid">
+          <label><input type="checkbox" id="cDynUser" onchange="rebuildAll()"> DynamicUser=yes</label>
+          <label><input type="checkbox" id="cNoNewPriv" onchange="rebuildAll()"> NoNewPrivileges=yes</label>
+          <label><input type="checkbox" id="cPrivTmp" onchange="rebuildAll()"> PrivateTmp=yes</label>
+          <label><input type="checkbox" id="cPrivDev" onchange="rebuildAll()"> PrivateDevices=yes</label>
+          <label><input type="checkbox" id="cKernelTun" onchange="rebuildAll()"> ProtectKernelTunables=yes</label>
+          <label><input type="checkbox" id="cKernelMod" onchange="rebuildAll()"> ProtectKernelModules=yes</label>
+          <label><input type="checkbox" id="cCgroups" onchange="rebuildAll()"> ProtectControlGroups=yes</label>
+          <label><input type="checkbox" id="cRestrictNs" onchange="rebuildAll()"> RestrictNamespaces=yes</label>
+          <label><input type="checkbox" id="cLockPers" onchange="rebuildAll()"> LockPersonality=yes</label>
+          <label><input type="checkbox" id="cMdwe" onchange="rebuildAll()"> MemoryDenyWriteExecute=yes</label>
+          <label><input type="checkbox" id="cSyscall" onchange="rebuildAll()"> SystemCallFilter=@system-service</label>
+          <label><input type="checkbox" id="cAddrFam" onchange="rebuildAll()"> RestrictAddressFamilies=AF_INET...</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Unit Output, Drop-In, Paste Auditor, CLI -->
+    <div class="card">
+      <div class="card-head">
+        <div class="tabs">
+          <button id="tabBtnUnit" class="tab-btn active" onclick="switchTab('unit')">[1] .SERVICE UNIT</button>
+          <button id="tabBtnDropin" class="tab-btn" onclick="switchTab('dropin')">[2] DROP-IN OVERRIDE</button>
+          <button id="tabBtnAudit" class="tab-btn" onclick="switchTab('audit')">[3] EXPOSURE AUDITOR</button>
+          <button id="tabBtnCli" class="tab-btn" onclick="switchTab('cli')">[4] DEPLOY CLI</button>
+        </div>
+      </div>
+
+      <div id="tabUnit" class="tab-panel active">
+        <div class="toolbar">
+          <span id="unitPathLabel" style="font-family:var(--mono); font-size:12px; color:var(--muted);">/etc/systemd/system/app-api.service</span>
+          <div style="display:flex; gap:6px;">
+            <button class="btn" onclick="copyText(document.getElementById('unitOutput').textContent)">[COPY]</button>
+            <button class="btn btn-primary" onclick="downloadUnit()">[DOWNLOAD .SERVICE]</button>
+          </div>
+        </div>
+        <pre id="unitOutput" class="code-out"></pre>
+      </div>
+
+      <div id="tabDropin" class="tab-panel">
+        <div class="toolbar">
+          <span id="dropinPathLabel" style="font-family:var(--mono); font-size:12px; color:var(--muted);">/etc/systemd/system/app-api.service.d/hardening.conf</span>
+          <div style="display:flex; gap:6px;">
+            <button class="btn" onclick="copyText(document.getElementById('dropinOutput').textContent)">[COPY]</button>
+            <button class="btn btn-primary" onclick="downloadFile(document.getElementById('dropinOutput').textContent, 'hardening.conf')">[DOWNLOAD]</button>
+          </div>
+        </div>
+        <pre id="dropinOutput" class="code-out"></pre>
+      </div>
+
+      <div id="tabAudit" class="tab-panel">
+        <div class="toolbar">
+          <span style="font-family:var(--mono); font-size:12px; color:var(--muted);">Audit current unit OR paste any existing .service file below:</span>
+          <button class="btn btn-primary" onclick="auditPastedUnit()">[AUDIT PASTED UNIT]</button>
+        </div>
+        <textarea id="auditInput" class="audit-in" spellcheck="false" oninput="auditPastedUnit()"></textarea>
+        <div id="runtimeCaveatBox" style="margin-bottom:10px;"></div>
+        <table>
+          <thead>
+            <tr><th style="width:185px;">Directive</th><th style="width:75px;">Status</th><th style="width:75px;">Weight</th><th>Security Impact</th></tr>
+          </thead>
+          <tbody id="auditTableBody"></tbody>
+        </table>
+      </div>
+
+      <div id="tabCli" class="tab-panel">
+        <div class="toolbar">
+          <span style="font-family:var(--mono); font-size:12px; color:var(--muted);">Install, verify syntax, inspect exposure score &amp; tail logs:</span>
+          <button class="btn" onclick="copyText(document.getElementById('cliOutput').textContent)">[COPY CLI]</button>
+        </div>
+        <pre id="cliOutput" class="code-out"></pre>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <span>[OK] 100% Client-Side Systemd Unit Builder &amp; Exposure Estimator | Zero Upload</span>
+    <span>OpenTools Hub · Community Micro-Tool Matrix #29</span>
+  </footer>
+
+  <div id="toast" class="toast">[OK] Copied</div>
+
+  <script>
+    const PRESETS = {
+      go_api: {
+        name: "app-gateway", type: "simple", desc: "Go Production HTTP API Gateway",
+        exec: "/opt/app-gateway/bin/server --listen :8080", workdir: "/opt/app-gateway",
+        envFile: "/etc/app-gateway/config.env", user: "appgw", restart: "on-failure",
+        memMax: "512M", nofile: "65536", protectSys: "strict", protectHome: "yes",
+        rwPaths: "/var/lib/app-gateway", ambCap: "",
+        dynUser: true, noNewPriv: true, privTmp: true, privDev: true,
+        kernelTun: true, kernelMod: true, cgroups: true, restrictNs: true,
+        lockPers: true, mdwe: true, syscall: true, addrFam: true
+      },
+      node_app: {
+        name: "node-worker", type: "simple", desc: "Node.js 22 Production Service",
+        exec: "/usr/bin/node /opt/node-worker/dist/index.js", workdir: "/opt/node-worker",
+        envFile: "/etc/node-worker/app.env", user: "nodeapp", restart: "on-failure",
+        memMax: "1G", nofile: "65536", protectSys: "strict", protectHome: "yes",
+        rwPaths: "/var/lib/node-worker", ambCap: "",
+        dynUser: false, noNewPriv: true, privTmp: true, privDev: true,
+        kernelTun: true, kernelMod: true, cgroups: true, restrictNs: true,
+        lockPers: true, mdwe: false, syscall: true, addrFam: true
+      },
+      python_uvicorn: {
+        name: "fastapi-svc", type: "simple", desc: "Python FastAPI Uvicorn Microservice",
+        exec: "/opt/fastapi-svc/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000",
+        workdir: "/opt/fastapi-svc", envFile: "/etc/fastapi-svc/env", user: "pyapp",
+        restart: "on-failure", memMax: "768M", nofile: "32768", protectSys: "strict",
+        protectHome: "yes", rwPaths: "/var/lib/fastapi-svc", ambCap: "",
+        dynUser: false, noNewPriv: true, privTmp: true, privDev: true,
+        kernelTun: true, kernelMod: true, cgroups: true, restrictNs: true,
+        lockPers: true, mdwe: false, syscall: true, addrFam: true
+      },
+      legacy_unsafe: {
+        name: "legacy-daemon", type: "simple", desc: "Legacy Unhardened Root Daemon",
+        exec: "/usr/local/bin/legacy-server", workdir: "/opt/legacy",
+        envFile: "", user: "root", restart: "no",
+        memMax: "", nofile: "", protectSys: "no", protectHome: "no",
+        rwPaths: "", ambCap: "",
+        dynUser: false, noNewPriv: false, privTmp: false, privDev: false,
+        kernelTun: false, kernelMod: false, cgroups: false, restrictNs: false,
+        lockPers: false, mdwe: false, syscall: false, addrFam: false
+      }
+    };
+
+    const HARDENING_CHECKS = [
+      { key: "NonRootUser", label: "User != root / DynamicUser=yes", weight: 1.5, test: m => m.get("dynamicuser") === "yes" || (m.has("user") && !["root", "0"].includes(m.get("user"))), desc: "Prevents host root compromise if RCE occurs." },
+      { key: "NoNewPrivileges", label: "NoNewPrivileges=yes", weight: 1.0, test: m => m.get("nonewprivileges") === "yes" || m.get("nonewprivileges") === "true", desc: "Blocks setuid/setgid privilege escalation." },
+      { key: "ProtectSystem", label: "ProtectSystem=strict|full", weight: 1.2, test: m => ["strict", "full"].includes(m.get("protectsystem")), desc: "Mounts OS hierarchy read-only to block persistence." },
+      { key: "ProtectHome", label: "ProtectHome=yes|read-only", weight: 0.8, test: m => ["yes", "true", "read-only"].includes(m.get("protecthome")), desc: "Hides /home and /root user directories." },
+      { key: "PrivateTmp", label: "PrivateTmp=yes", weight: 0.7, test: m => ["yes", "true"].includes(m.get("privatetmp")), desc: "Isolates /tmp to prevent symlink & temp-file attacks." },
+      { key: "PrivateDevices", label: "PrivateDevices=yes", weight: 0.8, test: m => ["yes", "true"].includes(m.get("privatedevices")), desc: "Denies raw access to physical /dev hardware nodes." },
+      { key: "ProtectKernelTunables", label: "ProtectKernelTunables=yes", weight: 0.6, test: m => ["yes", "true"].includes(m.get("protectkerneltunables")), desc: "Makes /proc/sys and /sys read-only." },
+      { key: "ProtectKernelModules", label: "ProtectKernelModules=yes", weight: 0.6, test: m => ["yes", "true"].includes(m.get("protectkernelmodules")), desc: "Disables loading/unloading kernel modules." },
+      { key: "ProtectControlGroups", label: "ProtectControlGroups=yes", weight: 0.5, test: m => ["yes", "true"].includes(m.get("protectcontrolgroups")), desc: "Mounts cgroup hierarchy read-only." },
+      { key: "RestrictNamespaces", label: "RestrictNamespaces=yes", weight: 0.6, test: m => ["yes", "true"].includes(m.get("restrictnamespaces")), desc: "Prevents creating unprivileged Linux namespaces." },
+      { key: "SystemCallFilter", label: "SystemCallFilter=@system-service", weight: 1.0, test: m => (m.get("systemcallfilter") || "").includes("@system-service"), desc: "Applies seccomp BPF syscall allowlist." },
+      { key: "MemoryDenyWriteExecute", label: "MemoryDenyWriteExecute=yes", weight: 0.7, test: m => ["yes", "true"].includes(m.get("memorydenywriteexecute")), desc: "Blocks W+X memory pages (disable for V8/JVM JIT runtimes)." }
+    ];
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function readFormConfig() {
+      return {
+        name: (document.getElementById("fName").value.trim() || "app-service").replace(/\.service$/i, ""),
+        type: document.getElementById("fType").value,
+        desc: document.getElementById("fDesc").value.trim() || "Production Service",
+        exec: document.getElementById("fExec").value.trim() || "/usr/local/bin/server",
+        workdir: document.getElementById("fWorkdir").value.trim(),
+        envFile: document.getElementById("fEnvFile").value.trim(),
+        user: document.getElementById("fUser").value.trim(),
+        restart: document.getElementById("fRestart").value,
+        memMax: document.getElementById("fMemMax").value.trim(),
+        nofile: document.getElementById("fNofile").value.trim(),
+        protectSys: document.getElementById("fProtectSys").value,
+        protectHome: document.getElementById("fProtectHome").value,
+        rwPaths: document.getElementById("fRwPaths").value.trim(),
+        ambCap: document.getElementById("fAmbCap").value.trim(),
+        dynUser: document.getElementById("cDynUser").checked,
+        noNewPriv: document.getElementById("cNoNewPriv").checked,
+        privTmp: document.getElementById("cPrivTmp").checked,
+        privDev: document.getElementById("cPrivDev").checked,
+        kernelTun: document.getElementById("cKernelTun").checked,
+        kernelMod: document.getElementById("cKernelMod").checked,
+        cgroups: document.getElementById("cCgroups").checked,
+        restrictNs: document.getElementById("cRestrictNs").checked,
+        lockPers: document.getElementById("cLockPers").checked,
+        mdwe: document.getElementById("cMdwe").checked,
+        syscall: document.getElementById("cSyscall").checked,
+        addrFam: document.getElementById("cAddrFam").checked
+      };
+    }
+
+    function buildHardeningDirectives(cfg) {
+      const lines = [];
+      if (cfg.dynUser) lines.push("DynamicUser=yes");
+      else if (cfg.user) lines.push(`User=${cfg.user}`, `Group=${cfg.user}`);
+      if (cfg.noNewPriv) lines.push("NoNewPrivileges=yes");
+      if (cfg.protectSys && cfg.protectSys !== "no") lines.push(`ProtectSystem=${cfg.protectSys}`);
+      if (cfg.protectHome && cfg.protectHome !== "no") lines.push(`ProtectHome=${cfg.protectHome}`);
+      if (cfg.rwPaths) lines.push(`ReadWritePaths=${cfg.rwPaths}`);
+      if (cfg.privTmp) lines.push("PrivateTmp=yes");
+      if (cfg.privDev) lines.push("PrivateDevices=yes");
+      if (cfg.kernelTun) lines.push("ProtectKernelTunables=yes");
+      if (cfg.kernelMod) lines.push("ProtectKernelModules=yes");
+      if (cfg.cgroups) lines.push("ProtectControlGroups=yes");
+      if (cfg.restrictNs) lines.push("RestrictNamespaces=yes");
+      if (cfg.lockPers) lines.push("LockPersonality=yes");
+      if (cfg.mdwe) lines.push("MemoryDenyWriteExecute=yes");
+      if (cfg.syscall) lines.push("SystemCallArchitectures=native", "SystemCallFilter=@system-service", "SystemCallFilter=~@privileged @resources");
+      if (cfg.addrFam) lines.push("RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX");
+      if (cfg.ambCap) lines.push(`CapabilityBoundingSet=${cfg.ambCap}`, `AmbientCapabilities=${cfg.ambCap}`);
+      else if (cfg.noNewPriv) lines.push("CapabilityBoundingSet=");
+      return lines;
+    }
+
+    function generateUnitText(cfg) {
+      const lines = [
+        "[Unit]",
+        `Description=${cfg.desc}`,
+        "After=network-online.target",
+        "Wants=network-online.target",
+        "StartLimitIntervalSec=60",
+        "StartLimitBurst=5",
+        "",
+        "[Service]",
+        `Type=${cfg.type}`,
+        `ExecStart=${cfg.exec}`
+      ];
+      if (cfg.workdir) lines.push(`WorkingDirectory=${cfg.workdir}`);
+      if (cfg.envFile) lines.push(`EnvironmentFile=-${cfg.envFile}`);
+      if (cfg.restart !== "no") lines.push(`Restart=${cfg.restart}`, "RestartSec=5s");
+      if (cfg.memMax) lines.push(`MemoryMax=${cfg.memMax}`);
+      if (cfg.nofile) lines.push(`LimitNOFILE=${cfg.nofile}`);
+      lines.push("StandardOutput=journal", "StandardError=journal");
+
+      const hard = buildHardeningDirectives(cfg);
+      if (hard.length) lines.push("", "# Security Sandboxing Directives", ...hard);
+
+      lines.push("", "[Install]", "WantedBy=multi-user.target");
+      return lines.join("\n");
+    }
+
+    function generateDropinText(cfg) {
+      const hard = buildHardeningDirectives(cfg);
+      return [
+        `# Drop-in hardening override: /etc/systemd/system/${cfg.name}.service.d/hardening.conf`,
+        "[Service]",
+        ...(hard.length ? hard : ["# Enable hardening checkboxes on the left to generate directives"])
+      ].join("\n");
+    }
+
+    function parseAndAuditUnit(unitText) {
+      const directives = new Map();
+      const rawMap = new Map();
+      unitText.split(/\r?\n/).forEach(line => {
+        const t = line.trim();
+        if (!t || t.startsWith("#") || t.startsWith(";") || t.startsWith("[")) return;
+        const eq = t.indexOf("=");
+        if (eq === -1) return;
+        const k = t.slice(0, eq).trim().toLowerCase();
+        const v = t.slice(eq + 1).trim();
+        if (k === "systemcallfilter" && directives.has(k)) {
+          directives.set(k, directives.get(k) + " " + v.toLowerCase());
+        } else {
+          directives.set(k, v.toLowerCase());
+        }
+        rawMap.set(k, v);
+      });
+
+      let exposure = 10.0;
+      let passed = 0;
+      const results = HARDENING_CHECKS.map(chk => {
+        const ok = chk.test(directives);
+        if (ok) {
+          exposure -= chk.weight;
+          passed++;
+        }
+        return { ...chk, ok };
+      });
+      exposure = Math.max(0.0, Math.round(exposure * 10) / 10);
+
+      const level = exposure <= 2.5 ? "SAFE" : exposure <= 4.9 ? "OK" : exposure <= 7.4 ? "EXPOSED" : "UNSAFE";
+      const caveats = [];
+      const execRaw = rawMap.get("execstart") || "";
+      if (directives.get("memorydenywriteexecute") === "yes" && /(node|bun|deno|java|pypy|dotnet)/i.test(execRaw)) {
+        caveats.push("[WARN] JIT Runtime Conflict: MemoryDenyWriteExecute=yes crashes V8/JVM/PyPy JIT compilers. Disable it for Node.js/Java.");
+      }
+      if (!directives.has("restart") || directives.get("restart") === "no") {
+        caveats.push("[WARN] Reliability: Missing Restart=on-failure; service will stay down after unexpected crashes.");
+      }
+      if (directives.get("protectsystem") === "strict" && !directives.has("readwritepaths") && !directives.has("statedirectory")) {
+        caveats.push("[INFO] ProtectSystem=strict mounts rootfs read-only; add ReadWritePaths= or StateDirectory= if app writes local files.");
+      }
+      return { exposure, level, passed, total: HARDENING_CHECKS.length, results, caveats };
+    }
+
+    function rebuildAll() {
+      const cfg = readFormConfig();
+      const unitTxt = generateUnitText(cfg);
+      const dropinTxt = generateDropinText(cfg);
+
+      document.getElementById("unitPathLabel").innerText = `/etc/systemd/system/${cfg.name}.service`;
+      document.getElementById("dropinPathLabel").innerText = `/etc/systemd/system/${cfg.name}.service.d/hardening.conf`;
+      document.getElementById("unitOutput").textContent = unitTxt;
+      document.getElementById("dropinOutput").textContent = dropinTxt;
+      document.getElementById("auditInput").value = unitTxt;
+      document.getElementById("cliOutput").textContent =
+`# 1. Install unit file & reload systemd daemon
+sudo cp ${cfg.name}.service /etc/systemd/system/${cfg.name}.service
+sudo systemctl daemon-reload
+
+# 2. Verify unit syntax before starting
+sudo systemd-analyze verify /etc/systemd/system/${cfg.name}.service
+
+# 3. Enable & start service
+sudo systemctl enable --now ${cfg.name}.service
+sudo systemctl status ${cfg.name}.service
+
+# 4. Run native systemd security exposure audit
+systemd-analyze security ${cfg.name}.service
+
+# 5. Stream live structured logs
+sudo journalctl -u ${cfg.name}.service -n 100 -f`;
+
+      auditPastedUnit();
+    }
+
+    function auditPastedUnit() {
+      const txt = document.getElementById("auditInput").value;
+      const res = parseAndAuditUnit(txt);
+
+      const expEl = document.getElementById("kpiExposure");
+      const lvlEl = document.getElementById("kpiLevel");
+      expEl.innerText = `${res.exposure.toFixed(1)} / 10`;
+      lvlEl.innerText = res.level;
+      const cls = res.exposure <= 2.5 ? "kpi-val c-green" : res.exposure <= 5.5 ? "kpi-val c-amber" : "kpi-val c-rose";
+      expEl.className = cls;
+      lvlEl.className = cls;
+
+      document.getElementById("kpiPassed").innerText = `${res.passed} / ${res.total}`;
+      document.getElementById("kpiWarns").innerText = res.caveats.length;
+
+      const cavBox = document.getElementById("runtimeCaveatBox");
+      cavBox.innerHTML = res.caveats.map(c =>
+        `<div style="padding:8px 10px; margin-bottom:6px; background:var(--editor); border:1px solid var(--amber); border-radius:6px; font-family:var(--mono); font-size:11.5px; color:var(--amber);">${escapeHtml(c)}</div>`
+      ).join("");
+
+      document.getElementById("auditTableBody").innerHTML = res.results.map(r => `
+        <tr>
+          <td style="color:#fff; font-weight:600;">${escapeHtml(r.label)}</td>
+          <td><span class="st-tag ${r.ok ? 'st-PASS' : 'st-FAIL'}">${r.ok ? '[PASS]' : '[MISSING]'}</span></td>
+          <td style="color:var(--muted);">-${r.weight.toFixed(1)}</td>
+          <td style="color:var(--muted);">${escapeHtml(r.desc)}</td>
+        </tr>
+      `).join("");
+    }
+
+    function applyPreset(key) {
+      const p = PRESETS[key] || PRESETS.go_api;
+      document.getElementById("fName").value = p.name;
+      document.getElementById("fType").value = p.type;
+      document.getElementById("fDesc").value = p.desc;
+      document.getElementById("fExec").value = p.exec;
+      document.getElementById("fWorkdir").value = p.workdir;
+      document.getElementById("fEnvFile").value = p.envFile;
+      document.getElementById("fUser").value = p.user;
+      document.getElementById("fRestart").value = p.restart;
+      document.getElementById("fMemMax").value = p.memMax;
+      document.getElementById("fNofile").value = p.nofile;
+      document.getElementById("fProtectSys").value = p.protectSys;
+      document.getElementById("fProtectHome").value = p.protectHome;
+      document.getElementById("fRwPaths").value = p.rwPaths;
+      document.getElementById("fAmbCap").value = p.ambCap;
+      document.getElementById("cDynUser").checked = p.dynUser;
+      document.getElementById("cNoNewPriv").checked = p.noNewPriv;
+      document.getElementById("cPrivTmp").checked = p.privTmp;
+      document.getElementById("cPrivDev").checked = p.privDev;
+      document.getElementById("cKernelTun").checked = p.kernelTun;
+      document.getElementById("cKernelMod").checked = p.kernelMod;
+      document.getElementById("cCgroups").checked = p.cgroups;
+      document.getElementById("cRestrictNs").checked = p.restrictNs;
+      document.getElementById("cLockPers").checked = p.lockPers;
+      document.getElementById("cMdwe").checked = p.mdwe;
+      document.getElementById("cSyscall").checked = p.syscall;
+      document.getElementById("cAddrFam").checked = p.addrFam;
+      rebuildAll();
+      if (key === "legacy_unsafe") switchTab("audit");
+    }
+
+    function switchTab(name) {
+      const map = { unit: ["tabBtnUnit", "tabUnit"], dropin: ["tabBtnDropin", "tabDropin"], audit: ["tabBtnAudit", "tabAudit"], cli: ["tabBtnCli", "tabCli"] };
+      Object.values(map).forEach(([b, p]) => {
+        document.getElementById(b).classList.remove("active");
+        document.getElementById(p).classList.remove("active");
+      });
+      document.getElementById(map[name][0]).classList.add("active");
+      document.getElementById(map[name][1]).classList.add("active");
+    }
+
+    function downloadUnit() {
+      const name = (document.getElementById("fName").value.trim() || "app-service").replace(/\.service$/i, "");
+      downloadFile(document.getElementById("unitOutput").textContent, `${name}.service`);
+    }
+
+    function downloadFile(txt, filename) {
+      const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("[DOWNLOAD] Exported " + filename);
+    }
+
+    function copyText(txt) {
+      navigator.clipboard.writeText(txt).then(() => showToast("[COPIED] Copied to clipboard"));
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.innerText = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 2200);
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      applyPreset("go_api");
+    });
+  </script>
+</body>
+</html>

@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-11-25 23:48:02",
+  "timestamp": "2026-11-25 23:55:17",
   "overall_status": "PASS",
   "compliance_gate": "PASS",
-  "tools_count": 28,
+  "tools_count": 29,
   "tools": [
     {
       "tool_id": "base64-binary-studio",
@@ -291,6 +291,18 @@
       "version": "v1.0.0",
       "title": "SVG Cleaner & Security Studio - 矢量图形无损压缩与 XSS 脱敏清洗器",
       "size_bytes": 9483
+    },
+    {
+      "tool_id": "systemd-unit-studio",
+      "entry_point": "index.html",
+      "exists": true,
+      "status": "PASS",
+      "compliance_audit": "PASS",
+      "errors": [],
+      "warnings": [],
+      "version": "v1.0.0",
+      "title": "SystemdGuard Unit Studio - Offline Linux .service Builder &amp; Hardening Auditor v1.0.0",
+      "size_bytes": 36189
     },
     {
       "tool_id": "token-compressor-studio",

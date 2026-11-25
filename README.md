@@ -63,6 +63,7 @@ flowchart LR
 | **SQLForge DDL Studio** | [`tools/sql-ddl-studio`](./tools/sql-ddl-studio/index.html) | `v1.0.0` | 纯离线 SQL DDL AST 解析与 ORM 生成工坊；支持一键转 Prisma、Drizzle、TS+Zod、Go GORM、SQLAlchemy、Mermaid ER 与 Seed SQL | 纯前端沙盒 | [OK] PASS |
 | **DockerLint Optimizer Studio** | [`tools/dockerfile-linter-studio`](./tools/dockerfile-linter-studio/index.html) | `v1.0.0` | 离线阶段感知 Dockerfile 安全审计、层缓存分析与多阶段加固模板 / `.dockerignore` 生成工坊 | 纯前端沙盒 | [OK] PASS |
 | **CertLens X.509 Inspector** | [`tools/x509-cert-inspector`](./tools/x509-cert-inspector/index.html) | `v1.0.0` | 纯前端 RFC 5280 ASN.1/DER 证书离线解码器；支持多级证书链校验、SAN/过期审计、Web Crypto SHA-256 指纹与 ASN.1 树 | 纯前端沙盒 | [OK] PASS |
+| **SystemdGuard Unit Studio** | [`tools/systemd-unit-studio`](./tools/systemd-unit-studio/index.html) | `v1.0.0` | 离线 Linux `.service` 单元构建、12 项沙盒安全暴露分审计、Drop-In 加固补丁与部署 CLI 生成工坊 | 纯前端沙盒 | [OK] PASS |
 
 ---
 
